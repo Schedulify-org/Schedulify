@@ -23,6 +23,7 @@ public:
     string Teacher;
     vector<Session> Lectures;
     vector<Session> Tirgulim;
+    vector<Session> labs;
 };
 
 unordered_map<int, course> courseDB;
