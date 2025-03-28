@@ -1,11 +1,9 @@
+#ifndef PARSER_H
+#define PARSER_H
 
-#include <iostream>
-#include <fstream>
-#include <unordered_map>
 #include <string>
 #include <vector>
-#include <sstream>
-
+#include <unordered_map>
 using namespace std;
 
 class Session {
@@ -17,18 +15,18 @@ public:
     string room_number;
 };
 
-class course {
+class Course {
 public:
     int id;
     string name;
-    string Teacher;
+    string teacher;
     vector<Session> Lectures;
     vector<Session> Tirgulim;
     vector<Session> labs;
 };
 
 // Global course database
-extern unordered_map<int, course> courseDB;
+extern unordered_map<int, Course> courseDB;
 
 // Parses one "S,day,start,end,building,room"
 Session parseSingleSession(const string& line);
@@ -36,3 +34,4 @@ Session parseSingleSession(const string& line);
 // Splits "L S,1,... S,2,..." into multiple sessions
 vector<Session> parseMultipleSessions(string line);
 
+#endif // PARSER_H
