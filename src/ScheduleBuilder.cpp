@@ -27,16 +27,16 @@ bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelectio
 
 // Recursive backtracking function:
 // Builds all valid combinations of CourseSelections (one from each course) without conflicts
-void ScheduleBuilder::backtrack(int index, const vector<vector<CourseSelection>>& allOptions, vector<CourseSelection>& current, vector<Schedule>& results) {
-    
-    if (index == allOptions.size()) {
+void ScheduleBuilder::backtrack(int currentCourse, const vector<vector<CourseSelection>>& allOptions, vector<CourseSelection>& currentCombination, vector<Schedule>& results) {
+
+    if (currentCourse == allOptions.size()) {
         results.push_back({current});
         return;
     }
 
-    for (const auto& option : allOptions[index]) {
+    for (const auto& option : allOptions[currentCourse]) {
         bool conflict = false;
-        for (const auto& selected : current) {
+        for (const auto& selected : currentCombination) {
             if (hasConflict(option, selected)) {
                 conflict = true;
                 break;
@@ -45,7 +45,7 @@ void ScheduleBuilder::backtrack(int index, const vector<vector<CourseSelection>>
         // If no conflicts, add it and continue recursively
         if (!conflict) {
             current.push_back(option);
-            backtrack(index + 1, allOptions, current, results);
+            backtrack(currentCourse + 1, allOptions, currentCombination, results);
             current.pop_back();
         }
     }
