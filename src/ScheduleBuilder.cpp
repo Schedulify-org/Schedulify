@@ -30,7 +30,7 @@ bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelectio
 void ScheduleBuilder::backtrack(int currentCourse, const vector<vector<CourseSelection>>& allOptions, vector<CourseSelection>& currentCombination, vector<Schedule>& results) {
 
     if (currentCourse == allOptions.size()) {
-        results.push_back({current});
+        results.push_back({currentCombination});
         return;
     }
 
