@@ -44,9 +44,9 @@ void ScheduleBuilder::backtrack(int currentCourse, const vector<vector<CourseSel
         }
         // If no conflicts, add it and continue recursively
         if (!conflict) {
-            current.push_back(option);
+            currentCombination.push_back(option);
             backtrack(currentCourse + 1, allOptions, currentCombination, results);
-            current.pop_back();
+            currentCombination.pop_back();
         }
     }
 }
