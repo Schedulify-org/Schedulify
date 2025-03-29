@@ -55,7 +55,7 @@ vector<CourseSelection> getValidCourseCombinations(int courseId,
                     }
                 } else {
                     // No labs exist, so combination must include lecture and tutorial.
-                    validCombinations.push_back({courseId, lecture, tutorial, nullptr});
+                    validCombinations.push_back({courseId, lecture, tutorial, nullptr}); //c
                 }
             }
         }
