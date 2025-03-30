@@ -19,8 +19,14 @@ FetchContent_MakeAvailable(googletest)
 add_executable(tests_executable
         main_tests.cpp
         mainAppTests.cpp
+        algorithm_test.cpp
+        CourseLegalComb_test.cpp
         ../src/main_app.cpp
         ../include/main_app.h
+        ../src/algoritm.cpp
+        ../src/ScheduleBuilder.cpp
+        ../src/CourseLegalComb.cpp
+        ../src/parser.cpp
 )
 
 target_link_libraries(tests_executable gtest_main)
