@@ -1,11 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
-#include <unordered_map>
 #include <string>
-//#include "../include/parser.h"
 #include "../include/algoritm.h"
+#include "../include/getSession.h"
+
 using namespace std;
 
 // Global vector containing all possible schedules (across all courses).
@@ -75,16 +72,6 @@ vector<CourseSelection> getValidCourseCombinations(int courseId,
     return validCombinations;
 }
 
-// Returns all sessions in a CourseSelection (for conflict checking).
-vector<const Session*> getSessions(const CourseSelection& cs) {
-    vector<const Session*> sessions;
-    sessions.push_back(cs.lecture);
-    if (cs.tutorial != nullptr)
-        sessions.push_back(cs.tutorial);
-    if (cs.lab != nullptr)
-        sessions.push_back(cs.lab);
-    return sessions;
-}
 
 // Checks for conflict between the sessions in current selections and a new selection.
 bool noConflict(const vector<CourseSelection>& current, const CourseSelection& cs) {

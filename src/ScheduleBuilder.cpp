@@ -3,14 +3,7 @@
 #include "../include/CourseLegalComb.h"
 #include "../include/schedule_types.h"
 #include "../include/TimeUtils.h"
-
-vector<const Session*> getSessions(const CourseSelection& cs) {
-    vector<const Session*> sessions;
-    if (cs.lecture) sessions.push_back(cs.lecture);
-    if (cs.tutorial) sessions.push_back(cs.tutorial);
-    if (cs.lab) sessions.push_back(cs.lab);
-    return sessions;
-}
+#include "../include/getSession.h"
 
 // Checks whether there is a time conflict between two CourseSelections
 bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) const {

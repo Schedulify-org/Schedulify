@@ -27,6 +27,7 @@ add_executable(tests_executable
         ../src/ScheduleBuilder.cpp
         ../src/CourseLegalComb.cpp
         ../src/parser.cpp
+        ../src/TimeUtils.cpp
 )
 
 target_link_libraries(tests_executable gtest_main)
