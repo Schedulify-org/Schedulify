@@ -2,21 +2,23 @@
 #include "../include/algoritm.h"
 
 // Optional: readable days
-enum DayOfWeek { Mon = 0, Tue, Wed, Thu, Fri, Sat, Sun };
+enum DayOfWeek {
+    Mon = 0, Tue, Wed, Thu, Fri, Sat, Sun
+};
 
 class ScheduleTest : public ::testing::Test {
 protected:
-    Session* createSession(const std::string& start, const std::string& end, int day) {
+    Session *createSession(const std::string &start, const std::string &end, int day) {
         return new Session{day, start, end, "", ""};
     }
 
     void TearDown() override {
-        for (auto* ptr : cleanup)
+        for (auto *ptr: cleanup)
             delete ptr;
         cleanup.clear();
     }
 
-    std::vector<const Session*> cleanup;
+    std::vector<const Session *> cleanup;
 };
 
 TEST_F(ScheduleTest, TimeToMinutesConversion) {
@@ -27,8 +29,8 @@ TEST_F(ScheduleTest, TimeToMinutesConversion) {
 }
 
 TEST_F(ScheduleTest, SessionsDoNotOverlapDifferentDays) {
-    auto* s1 = createSession("10:00", "11:00", Mon);
-    auto* s2 = createSession("10:00", "11:00", Tue);
+    auto *s1 = createSession("10:00", "11:00", Mon);
+    auto *s2 = createSession("10:00", "11:00", Tue);
     cleanup.push_back(s1);
     cleanup.push_back(s2);
 
@@ -36,8 +38,8 @@ TEST_F(ScheduleTest, SessionsDoNotOverlapDifferentDays) {
 }
 
 TEST_F(ScheduleTest, SessionsOverlapSameDay) {
-    auto* s1 = createSession("10:00", "12:00", Mon);
-    auto* s2 = createSession("11:00", "13:00", Mon);
+    auto *s1 = createSession("10:00", "12:00", Mon);
+    auto *s2 = createSession("11:00", "13:00", Mon);
     cleanup.push_back(s1);
     cleanup.push_back(s2);
 
@@ -45,8 +47,8 @@ TEST_F(ScheduleTest, SessionsOverlapSameDay) {
 }
 
 TEST_F(ScheduleTest, GetValidCourseCombinations_LectureOnly) {
-    auto* lec = createSession("08:00", "09:00", Wed);
-    std::vector<const Session*> lectures = {lec};
+    auto *lec = createSession("08:00", "09:00", Wed);
+    std::vector<const Session *> lectures = {lec};
 
     auto combos = getValidCourseCombinations(101, lectures, {}, {});
     ASSERT_EQ(combos.size(), 1);
@@ -56,10 +58,10 @@ TEST_F(ScheduleTest, GetValidCourseCombinations_LectureOnly) {
 }
 
 TEST_F(ScheduleTest, GetValidCourseCombinations_LectureAndTutorial_NoOverlap) {
-    auto* lec = createSession("08:00", "09:00", Wed);
-    auto* tut = createSession("09:00", "10:00", Wed);
-    std::vector<const Session*> lectures = {lec};
-    std::vector<const Session*> tutorials = {tut};
+    auto *lec = createSession("08:00", "09:00", Wed);
+    auto *tut = createSession("09:00", "10:00", Wed);
+    std::vector<const Session *> lectures = {lec};
+    std::vector<const Session *> tutorials = {tut};
 
     auto combos = getValidCourseCombinations(102, lectures, tutorials, {});
     ASSERT_EQ(combos.size(), 1);
@@ -68,10 +70,10 @@ TEST_F(ScheduleTest, GetValidCourseCombinations_LectureAndTutorial_NoOverlap) {
 }
 
 TEST_F(ScheduleTest, GetValidCourseCombinations_OverlapSkipped) {
-    auto* lec = createSession("08:00", "10:00", Wed);
-    auto* tut = createSession("09:00", "10:30", Wed); // overlaps
-    std::vector<const Session*> lectures = {lec};
-    std::vector<const Session*> tutorials = {tut};
+    auto *lec = createSession("08:00", "10:00", Wed);
+    auto *tut = createSession("09:00", "10:30", Wed); // overlaps
+    std::vector<const Session *> lectures = {lec};
+    std::vector<const Session *> tutorials = {tut};
 
     auto combos = getValidCourseCombinations(103, lectures, tutorials, {});
     EXPECT_EQ(combos.size(), 0); // No valid combinations
@@ -98,9 +100,9 @@ TEST_F(ScheduleTest, ConflictWithOverlappingSessions) {
 }
 
 TEST_F(ScheduleTest, BacktrackGeneratesAllValidSchedules) {
-    auto* lec1 = createSession("08:00", "09:00", Mon);
-    auto* lec2 = createSession("09:00", "10:00", Mon);
-    auto* lec3 = createSession("10:00", "11:00", Mon);
+    auto *lec1 = createSession("08:00", "09:00", Mon);
+    auto *lec2 = createSession("09:00", "10:00", Mon);
+    auto *lec3 = createSession("10:00", "11:00", Mon);
 
     std::vector<std::vector<CourseSelection>> options = {
             {
