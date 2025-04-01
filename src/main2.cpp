@@ -60,6 +60,7 @@ int main() {
 
     cout << "Total valid schedules: " << schedules.size() << endl;
 
+    //example for extraction data from the schedules variable -- IMPORTANT
     for (size_t i = 0; i < schedules.size(); i++) {
         cout << "\nSchedule " << i + 1 << ":" << endl;
         for (const auto& cs : schedules[i].selections) {

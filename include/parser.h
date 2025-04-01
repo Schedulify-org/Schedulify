@@ -3,7 +3,11 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
+#include <fstream>
+#include <iostream>
 #include <unordered_map>
+
 using namespace std;
 
 class Session {
@@ -25,8 +29,8 @@ public:
     vector<Session> labs;
 };
 
-// Global course database
-extern unordered_map<int, Course> courseDB;
+// Main parser method
+vector<Course> mainParse(const string& path);
 
 // Parses one "S,day,start,end,building,room"
 Session parseSingleSession(const string& line);

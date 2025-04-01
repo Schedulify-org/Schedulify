@@ -1,10 +1,55 @@
-#include <unordered_map>
-#include <sstream>
 #include "../include/parser.h"
+
 using namespace std;
 
+vector<Course> mainParse(const string& path) {
+    ifstream fin(path);
+    if (!fin.is_open()) {
+        cerr << "Cannot open file V1.0CourseDB.txt" << endl;
+        return {};
+    }
+    unordered_map<int, Course> courseDB;
+    string line;
 
-unordered_map<int, Course> courseDB;
+    while (getline(fin, line)) {
+        if (line == "$$$$" || line.empty())
+            continue;
+        Course c;
+        c.name = line;
+        if (!getline(fin, line) || line.empty()) continue;
+        try {
+            c.id = stoi(line);
+        } catch (...) {
+            cerr << "Error parsing course ID: " << line << endl;
+            continue;
+        }
+        if (!getline(fin, c.teacher)) break;
+
+        while (getline(fin, line)) {
+            if (line == "$$$$") break;
+            if (line.rfind("L S", 0) == 0) {
+                auto lectures = parseMultipleSessions(line.substr(2));
+                c.Lectures.insert(c.Lectures.end(), lectures.begin(), lectures.end());
+            } else if (line.rfind("T S", 0) == 0) {
+                auto tutorials = parseMultipleSessions(line.substr(2));
+                c.Tirgulim.insert(c.Tirgulim.end(), tutorials.begin(), tutorials.end());
+            } else if (line.rfind("M S", 0) == 0) {
+                auto labs = parseMultipleSessions(line.substr(2));
+                c.labs.insert(c.labs.end(), labs.begin(), labs.end());
+            }
+        }
+
+        courseDB.insert({ c.id, c });
+    }
+    fin.close();
+
+    vector<Course> courses;
+    courses.reserve(courseDB.size());
+    for (const auto& kv : courseDB)
+            courses.push_back(kv.second);
+
+    return courses;
+}
 
 // Parses one "S,day,start,end,building,room"
 Session parseSingleSession(const string& line) {
@@ -48,89 +93,3 @@ vector<Session> parseMultipleSessions(string line) {
     return sessions;
 }
 
-// int main() {
-//     ifstream Courses("V1.0CourseDB.txt");
-//     if (!Courses.is_open()) {
-//         cerr << "Failed to open file." << endl;
-//         return 1;
-//     }
-
-//     string line;
-
-//     // Read until we run out of lines
-//     while (true) {
-//         // 1) Try reading a line; if no line, break.
-//         if (!getline(Courses, line)) break;
-
-//         // 2) If line is $$$$ or empty, skip it and continue.
-//         if (line == "$$$$" || line.empty()) {
-//             continue;
-//         }
-
-//         // Now 'line' should hold the course name
-//         course a;
-//         a.name = line;
-
-//         // Next line should hold the numeric course ID
-//         if (!getline(Courses, line)) break;
-//         a.id = stoi(line);
-
-//         // Next line should hold the teacher's name
-//         if (!getline(Courses, a.Teacher)) break;
-
-//         // Read session lines until we see "$$$$" or EOF
-//         while (true) {
-//             // Attempt to read next line
-//             if (!getline(Courses, line)) {
-//                 // If we can't read anymore, break out of the session loop
-//                 break;
-//             }
-//             if (line == "$$$$") {
-//                 // Session data for this course ends here
-//                 break;
-//             }
-
-//             // Check if it's an L S or T S
-//             if (line.rfind("L S", 0) == 0) {
-//                 auto lectures = parseMultipleSessions(line.substr(2));
-//                 a.Lectures.insert(a.Lectures.end(), lectures.begin(), lectures.end());
-//             } 
-//             else if (line.rfind("T S", 0) == 0) {
-//                 auto tirgul = parseMultipleSessions(line.substr(2));
-//                 a.Tirgulim.insert(a.Tirgulim.end(), tirgul.begin(), tirgul.end());
-//             }
-//         }
-
-//         // Insert the course into our DB
-//         courseDB.insert({ a.id, a });
-//     }
-
-//     // Debug print
-//     for (const auto& [id, c] : courseDB) {
-//         cout << "Course ID: " << id << endl;
-//         cout << "Name: " << c.name << endl;
-//         cout << "Teacher: " << c.Teacher << endl;
-
-//         cout << "Lectures:" << endl;
-//         for (const auto& lec : c.Lectures) {
-//             cout << "  Day: S" << lec.day_of_week
-//                  << ", Start: " << lec.start_time 
-//                  << ", End: " << lec.end_time 
-//                  << ", Building: " << lec.building_number 
-//                  << ", Room: " << lec.room_number << endl;
-//         }
-
-//         cout << "Tirguim:" << endl;
-//         for (const auto& tirg : c.Tirgulim) {
-//             cout << "  Day: S" << tirg.day_of_week 
-//                  << ", Start: " << tirg.start_time 
-//                  << ", End: " << tirg.end_time 
-//                  << ", Building: " << tirg.building_number 
-//                  << ", Room: " << tirg.room_number << endl;
-//         }
-
-//         cout << "-----------------------" << endl;
-//     }
-
-//     return 0;
-// }

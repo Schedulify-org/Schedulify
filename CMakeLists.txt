@@ -9,7 +9,8 @@ include_directories(include)
 
 # Source files
 set(SOURCES
-    src/main2.cpp
+    src/main.cpp
+    src/main_app.cpp
     src/parser.cpp
     src/ScheduleBuilder.cpp
     src/CourseLegalComb.cpp

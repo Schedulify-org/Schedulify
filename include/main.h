@@ -2,8 +2,9 @@
 #define SCHED_MAIN_H
 
 #include <iostream>
-#include "main_app.h"
+#include <fstream>
+#include <string>
 
-using std::cout;
+using std::string;
 
 #endif
