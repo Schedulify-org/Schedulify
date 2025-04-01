@@ -9,13 +9,13 @@ include_directories(include)
 
 # Source files
 set(SOURCES
-    src/main.cpp
-    src/main_app.cpp
-    src/preParser.cpp
-    src/postParser.cpp
-    src/ScheduleBuilder.cpp
-    src/CourseLegalComb.cpp
-    src/TimeUtils.cpp
+        src/main/main.cpp
+        src/main/main_app.cpp
+        src/parsers/preParser.cpp
+        src/parsers/postParser.cpp
+        src/schedule_algorithm/ScheduleBuilder.cpp
+        src/schedule_algorithm/CourseLegalComb.cpp
+        src/schedule_algorithm/TimeUtils.cpp
 )
 
 # Add executable target

@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include "preParser.h"
-#include "schedule_types.h"
+#include "parsers/preParser.h"
+#include "algorithm/schedule_types.h"
 
 extern vector<Schedule> allPossibleSchedules;
 

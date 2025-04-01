@@ -1,6 +1,6 @@
 // TimeUtils.cpp
-#include "../include/TimeUtils.h"
-#include "../include/schedule_types.h"
+#include "algorithm/TimeUtils.h"
+#include "algorithm/schedule_types.h"
 #include <string>
 using namespace std;    
 int TimeUtils::toMinutes(const string& t) {

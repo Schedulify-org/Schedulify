@@ -21,13 +21,13 @@ add_executable(tests_executable
         mainAppTests.cpp
         algorithm_test.cpp
         CourseLegalComb_test.cpp
-        ../src/main_app.cpp
-        ../include/main_app.h
+        ../src/main/main_app.cpp
+        ../include/main/main_app.h
         ../src/algoritm.cpp
-        ../src/ScheduleBuilder.cpp
-        ../src/CourseLegalComb.cpp
-        ../src/preParser.cpp
-        ../src/TimeUtils.cpp
+        ../src/schedule_algorithm/ScheduleBuilder.cpp
+        ../src/schedule_algorithm/CourseLegalComb.cpp
+        ../src/parsers/preParser.cpp
+        ../src/schedule_algorithm/TimeUtils.cpp
 )
 
 target_link_libraries(tests_executable gtest_main)

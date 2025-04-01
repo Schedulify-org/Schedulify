@@ -1,7 +1,7 @@
 #include <vector>
 #include <string>
 #include "../include/algoritm.h"
-#include "../include/getSession.h"
+#include "algorithm/getSession.h"
 
 using namespace std;
 

@@ -1,9 +1,9 @@
 // ScheduleBuilder.cpp
-#include "../include/ScheduleBuilder.h"
-#include "../include/CourseLegalComb.h"
-#include "../include/schedule_types.h"
-#include "../include/TimeUtils.h"
-#include "../include/getSession.h"
+#include "algorithm/ScheduleBuilder.h"
+#include "algorithm/CourseLegalComb.h"
+#include "algorithm/schedule_types.h"
+#include "algorithm/TimeUtils.h"
+#include "algorithm/getSession.h"
 
 // Checks whether there is a time conflict between two CourseSelections
 bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) const {

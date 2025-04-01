@@ -2,7 +2,7 @@
 #define SCHEDULE_TYPES_H
 
 #include <vector>
-#include "preParser.h"
+#include "parsers/preParser.h"
 
 struct CourseSelection {
     int courseId;

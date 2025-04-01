@@ -2,7 +2,7 @@
 #define COURSELEGALCOMB_H
 
 #include <vector>
-#include "preParser.h"
+#include "parsers/preParser.h"
 #include "TimeUtils.h"
 #include "schedule_types.h"
 

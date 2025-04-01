@@ -1,4 +1,4 @@
-#include "../include/postParser.h"
+#include "parsers/postParser.h"
 
 void exportCompactJson(const vector<Schedule>& schedules, const string& outputPath) {
     ofstream outFile(outputPath);

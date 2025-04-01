@@ -1,4 +1,4 @@
-#include "../include/main_app.h"
+#include "main/main_app.h"
 
 int main_app(const string& inputPath, const string& outputPath){
 
