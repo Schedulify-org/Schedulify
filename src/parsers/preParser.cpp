@@ -110,4 +110,3 @@ vector<Session> parseMultipleSessions(string line) {
 
     return sessions;
 }
-

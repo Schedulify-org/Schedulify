@@ -1,6 +1,6 @@
 #include "main/main_app.h"
 
-int main_app(const string& inputPath, const string& outputPath){
+int main_app(const string& inputPath, const string& originOutputPath, const string& modifiedOutputPath){
 
     vector<Course> courses = mainParse(inputPath);
 
@@ -11,7 +11,9 @@ int main_app(const string& inputPath, const string& outputPath){
 
     printSchedules(courses);
 
-    exportCompactJson(schedules, outputPath);
+    exportCompactJson(schedules, originOutputPath);
+
+    exportSchedulesByDayJson(schedules, modifiedOutputPath);
 
     return 0;
 }

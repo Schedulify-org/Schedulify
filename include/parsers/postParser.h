@@ -3,7 +3,21 @@
 
 #include "schedule_algorithm/ScheduleBuilder.h"
 
+#include <algorithm>
+
+struct ScheduleItem {
+    int courseId;
+    string type;
+    string start;
+    string end;
+    string building;
+    string room;
+
+    string toJson() const;
+};
+
 // convert schedule to json file
 void exportCompactJson(const vector<Schedule>& schedules, const string& outputPath);
+void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath);
 
 #endif //POST_PARSER_H

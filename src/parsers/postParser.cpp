@@ -58,3 +58,84 @@ void exportCompactJson(const vector<Schedule>& schedules, const string& outputPa
     outFile << "]";
     outFile.close();
 }
+
+string dayToString(int day) {
+    static const string days[] = {
+            "sunday", "monday", "tuesday", "wednesday",
+            "thursday", "friday", "saturday"
+    };
+    return (day >= 0 && day < 7) ? days[day] : "unknown";
+}
+
+string ScheduleItem::toJson() const {
+    stringstream ss;
+    ss << "{\"course_id\":" << courseId
+       << ",\"item_type\":\"" << type << "\""
+       << ",\"start\":\"" << start << "\""
+       << ",\"end\":\"" << end << "\""
+       << ",\"building\":\"" << building << "\""
+       << ",\"room\":\"" << room << "\"}";
+    return ss.str();
+}
+
+void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath) {
+    ofstream outFile(outputPath);
+    if (!outFile.is_open()) {
+        cerr << "Failed to open output file: " << outputPath << endl;
+        return;
+    }
+
+    outFile << "[";
+
+    for (size_t i = 0; i < schedules.size(); ++i) {
+        const auto& schedule = schedules[i];
+        outFile << "{\"schedule_number\":" << (i + 1) << ",\"schedule\":[";
+
+        // Map: day index → vector of schedule items
+        unordered_map<int, vector<ScheduleItem>> dayMap;
+
+        for (const auto& cs : schedule.selections) {
+            auto add = [&](const Session* s, const string& type) {
+                if (!s) return;
+                dayMap[s->day_of_week].push_back(ScheduleItem{
+                        cs.courseId,
+                        type,
+                        s->start_time,
+                        s->end_time,
+                        s->building_number,
+                        s->room_number
+                });
+            };
+            add(cs.lecture, "lecture");
+            add(cs.tutorial, "tutorial");
+            add(cs.lab, "lab");
+        }
+
+        bool dayWritten = false;
+        for (int day = 0; day < 7; ++day) {
+            if (dayMap.count(day)) {
+                if (dayWritten) outFile << ",";
+                dayWritten = true;
+
+                // Sort schedule items by start time
+                auto& items = dayMap[day];
+                sort(items.begin(), items.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
+                    return a.start < b.start;
+                });
+
+                outFile << "{\"day\":\"" << dayToString(day) << "\",\"schedule_items\":[";
+                for (size_t j = 0; j < items.size(); ++j) {
+                    outFile << items[j].toJson();
+                    if (j + 1 < items.size()) outFile << ",";
+                }
+                outFile << "]}";
+            }
+        }
+
+        outFile << "]}";
+        if (i + 1 < schedules.size()) outFile << ",";
+    }
+
+    outFile << "]";
+    outFile.close();
+}
