@@ -57,21 +57,30 @@ Session parseSingleSession(const string& line) {
     stringstream ss(line);
     string token;
 
-    getline(ss, token, ','); // "S"
-    getline(ss, token, ','); 
-    s.day_of_week = stoi(token);
+    try {
+        getline(ss, token, ','); // "S"
 
-    getline(ss, token, ',');
-    s.start_time = token;
+        getline(ss, token, ',');
+        s.day_of_week = stoi(token);
+        if (s.day_of_week < 1 || s.day_of_week > 7) {
+            throw invalid_argument("Invalid day of week: " + token);
+        }
 
-    getline(ss, token, ',');
-    s.end_time = token;
+        getline(ss, token, ',');
+        s.start_time = token;
 
-    getline(ss, token, ',');
-    s.building_number = token;
+        getline(ss, token, ',');
+        s.end_time = token;
 
-    getline(ss, token, ',');
-    s.room_number = token;
+        getline(ss, token, ',');
+        s.building_number = token;
+
+        getline(ss, token, ',');
+        s.room_number = token;
+    } catch (const exception& e) {
+        cerr << "Error parsing session line: \"" << line << "\" — " << e.what() << endl;
+        throw;  // rethrow to let caller decide
+    }
 
     return s;
 }
@@ -79,17 +88,26 @@ Session parseSingleSession(const string& line) {
 // Splits "L S,1,... S,2,..." into multiple sessions
 vector<Session> parseMultipleSessions(string line) {
     vector<Session> sessions;
-    // Remove the first character, which is "L" or "T"
-    line = line.substr(1);
+    line = line.substr(1); // Remove the first character, which is "L" or "T"
+
 
     size_t pos;
     while ((pos = line.find(" S,")) != string::npos) {
         string part = line.substr(0, pos);
-        sessions.push_back(parseSingleSession(part));
-        // Keep "S," on the remaining part so parseSingleSession() works as intended
+        try {
+            sessions.push_back(parseSingleSession(part));
+        } catch (...) {
+            cerr << "Skipping malformed session part: \"" << part << "\"" << endl;
+        }
         line = "S," + line.substr(pos + 3);
     }
-    sessions.push_back(parseSingleSession(line));
+
+    try {
+        sessions.push_back(parseSingleSession(line));
+    } catch (...) {
+        cerr << "Skipping malformed session part: \"" << line << "\"" << endl;
+    }
+
     return sessions;
 }
 
