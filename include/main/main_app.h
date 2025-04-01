@@ -3,7 +3,7 @@
 
 #include "parsers/preParser.h"
 #include "parsers/postParser.h"
-#include "algorithm/ScheduleBuilder.h"
+#include "schedule_algorithm/ScheduleBuilder.h"
 
 #include <string>
 #include <iostream>

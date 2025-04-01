@@ -1,7 +1,7 @@
 #ifndef POST_PARSER_H
 #define POST_PARSER_H
 
-#include "algorithm/ScheduleBuilder.h"
+#include "schedule_algorithm/ScheduleBuilder.h"
 
 // convert schedule to json file
 void exportCompactJson(const vector<Schedule>& schedules, const string& outputPath);

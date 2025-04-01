@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "parsers/preParser.h"
-#include "algorithm/schedule_types.h"
+#include "schedule_algorithm/schedule_types.h"
 
 extern vector<Schedule> allPossibleSchedules;
 

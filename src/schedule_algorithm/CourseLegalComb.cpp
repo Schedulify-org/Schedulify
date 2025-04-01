@@ -1,5 +1,5 @@
-#include "algorithm/CourseLegalComb.h"
-#include "algorithm/TimeUtils.h"
+#include "schedule_algorithm/CourseLegalComb.h"
+#include "schedule_algorithm/TimeUtils.h"
 
 vector<CourseSelection> CourseLegalComb::generate(const Course& course) const {
     vector<CourseSelection> combinations;
