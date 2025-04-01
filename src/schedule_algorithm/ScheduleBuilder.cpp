@@ -1,0 +1,62 @@
+// ScheduleBuilder.cpp
+#include "schedule_algorithm/ScheduleBuilder.h"
+#include "schedule_algorithm/CourseLegalComb.h"
+#include "schedule_algorithm/schedule_types.h"
+#include "schedule_algorithm/TimeUtils.h"
+#include "schedule_algorithm/getSession.h"
+
+// Checks whether there is a time conflict between two CourseSelections
+bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) const {
+    vector<const Session*> aSessions = getSessions(a);
+    vector<const Session*> bSessions = getSessions(b);
+
+    for (const auto* s1 : aSessions) {
+        for (const auto* s2 : bSessions) {
+            if (TimeUtils::isOverlap(s1, s2)) return true;
+        }
+    }
+    return false;
+}
+
+// Recursive backtracking function:
+// Builds all valid combinations of CourseSelections (one from each course) without conflicts
+void ScheduleBuilder::backtrack(int currentCourse, const vector<vector<CourseSelection>>& allOptions, vector<CourseSelection>& currentCombination, vector<Schedule>& results) {
+
+    if (currentCourse == allOptions.size()) {
+        results.push_back({currentCombination});
+        return;
+    }
+
+    for (const auto& option : allOptions[currentCourse]) {
+        bool conflict = false;
+        for (const auto& selected : currentCombination) {
+            if (hasConflict(option, selected)) {
+                conflict = true;
+                break;
+            }
+        }
+        // If no conflicts, add it and continue recursively
+        if (!conflict) {
+            currentCombination.push_back(option);
+            backtrack(currentCourse + 1, allOptions, currentCombination, results);
+            currentCombination.pop_back();
+        }
+    }
+}
+// Main entry point for building schedules:
+// Generates valid combinations for each course and launches the backtracking search
+vector<Schedule> ScheduleBuilder::build(const vector<Course>& courses) {
+    CourseLegalComb generator;
+    vector<vector<CourseSelection>> allOptions;
+
+    // Generate all valid combinations of sessions for each course
+    for (const auto& course : courses) {
+        allOptions.push_back(generator.generate(course));
+    }
+
+    // Start the recursive backtracking
+    vector<Schedule> results;
+    vector<CourseSelection> current;
+    backtrack(0, allOptions, current, results);
+    return results;
+}

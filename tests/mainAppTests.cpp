@@ -1,4 +1,4 @@
-#include "../include/main_app.h"
+#include "main/main_app.h"
 #include <gtest/gtest.h>
 
 // Test: valid POST command in user's input
