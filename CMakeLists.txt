@@ -11,7 +11,8 @@ include_directories(include)
 set(SOURCES
     src/main.cpp
     src/main_app.cpp
-    src/parser.cpp
+    src/preParser.cpp
+    src/postParser.cpp
     src/ScheduleBuilder.cpp
     src/CourseLegalComb.cpp
     src/TimeUtils.cpp

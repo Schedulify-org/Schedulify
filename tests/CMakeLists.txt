@@ -26,7 +26,7 @@ add_executable(tests_executable
         ../src/algoritm.cpp
         ../src/ScheduleBuilder.cpp
         ../src/CourseLegalComb.cpp
-        ../src/parser.cpp
+        ../src/preParser.cpp
         ../src/TimeUtils.cpp
 )
 

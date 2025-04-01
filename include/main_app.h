@@ -1,7 +1,8 @@
 #ifndef SCHED_MAIN_APP_H
 #define SCHED_MAIN_APP_H
 
-#include "../include/parser.h"
+#include "../include/preParser.h"
+#include "../include/postParser.h"
 #include "../include/ScheduleBuilder.h"
 
 #include <string>

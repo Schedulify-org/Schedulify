@@ -1,5 +1,5 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef PRE_PARSER_H
+#define PRE_PARSER_H
 
 #include <string>
 #include <vector>
@@ -38,4 +38,4 @@ Session parseSingleSession(const string& line);
 // Splits "L S,1,... S,2,..." into multiple sessions
 vector<Session> parseMultipleSessions(string line);
 
-#endif // PARSER_H
+#endif // PRE_PARSER_H

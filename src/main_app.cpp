@@ -11,6 +11,8 @@ int main_app(const string& inputPath, const string& outputPath){
 
     printSchedules(courses);
 
+    exportCompactJson(schedules, outputPath);
+
     return 0;
 }
 
@@ -77,3 +79,4 @@ void printSchedules(const vector<Course>& courses) {
         cout << "---------------------------" << endl;
     }
 }
+
