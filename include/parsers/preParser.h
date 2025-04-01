@@ -29,8 +29,8 @@ public:
     vector<Session> labs;
 };
 
-// Main parser method
-vector<Course> mainParse(const string& path);
+// Parses full course DB from input stream
+vector<Course> parseCourseDB(const string& path);
 
 // Parses one "S,day,start,end,building,room"
 Session parseSingleSession(const string& line);

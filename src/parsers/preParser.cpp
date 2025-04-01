@@ -2,51 +2,95 @@
 
 using namespace std;
 
-vector<Course> mainParse(const string& path) {
-    ifstream fin(path);
-    if (!fin.is_open()) {
+// Parses full course DB from input stream
+vector<Course> parseCourseDB(const string& path) {
+
+    ifstream file(path);
+    if (!file.is_open()) {
         cerr << "Cannot open file V1.0CourseDB.txt" << endl;
         return {};
     }
-    unordered_map<int, Course> courseDB;
-    string line;
 
-    while (getline(fin, line)) {
-        if (line == "$$$$" || line.empty())
-            continue;
+    unordered_map<int, Course> courseDB;
+
+    string line;
+    int line_number = 0;
+    int course_count = 0;
+
+    while (getline(file, line)) {
+        line_number++;
+        if (line.empty() || line == "$$$$") continue;
+
         Course c;
+
+        // 1. Course name
         c.name = line;
-        if (!getline(fin, line) || line.empty()) continue;
+
+        // 2. Course ID
+        if (!getline(file, line)) {
+            cerr << "Error: Missing course ID after name at line " << line_number << endl;
+            break;
+        }
+        line_number++;
         try {
             c.id = stoi(line);
-        } catch (...) {
-            cerr << "Error parsing course ID: " << line << endl;
+        } catch (const exception& e) {
+            cerr << "Error: Invalid course ID at line " << line_number << ": " << line << " — " << e.what() << endl;
             continue;
         }
-        if (!getline(fin, c.teacher)) break;
 
-        while (getline(fin, line)) {
-            if (line == "$$$$") break;
-            if (line.rfind("L S", 0) == 0) {
-                auto lectures = parseMultipleSessions(line.substr(2));
-                c.Lectures.insert(c.Lectures.end(), lectures.begin(), lectures.end());
-            } else if (line.rfind("T S", 0) == 0) {
-                auto tutorials = parseMultipleSessions(line.substr(2));
-                c.Tirgulim.insert(c.Tirgulim.end(), tutorials.begin(), tutorials.end());
-            } else if (line.rfind("M S", 0) == 0) {
-                auto labs = parseMultipleSessions(line.substr(2));
-                c.labs.insert(c.labs.end(), labs.begin(), labs.end());
+        // Check for duplicate ID
+        if (courseDB.find(c.id) != courseDB.end()) {
+            cerr << "Warning: Duplicate course ID " << c.id << " at line " << line_number << ". Skipping." << endl;
+            continue;
+        }
+
+        // 3. Teacher name
+        if (!getline(file, line)) {
+            cerr << "Error: Missing teacher name at line " << line_number << " for course ID " << c.id << endl;
+            break;
+        }
+        line_number++;
+        c.teacher = line;
+
+        // 4. Session lines
+        while (getline(file, line)) {
+            line_number++;
+            if (line.empty() || line == "$$$$") break;
+
+            try {
+                if (line.rfind("L S", 0) == 0) {
+                    auto lectures = parseMultipleSessions(line.substr(2));
+                    c.Lectures.insert(c.Lectures.end(), lectures.begin(), lectures.end());
+                } else if (line.rfind("T S", 0) == 0) {
+                    auto tirgul = parseMultipleSessions(line.substr(2));
+                    c.Tirgulim.insert(c.Tirgulim.end(), tirgul.begin(), tirgul.end());
+                } else if (line.rfind("M S", 0) == 0) {
+                    auto labs = parseMultipleSessions(line.substr(2));
+                    c.labs.insert(c.labs.end(), labs.begin(), labs.end());
+                } else {
+                    cerr << "Warning: Unknown session format at line " << line_number << ": " << line << endl;
+                }
+            } catch (const exception& e) {
+                cerr << "Error parsing session line at line " << line_number << ": " << e.what() << endl;
             }
         }
 
-        courseDB.insert({ c.id, c });
+        // 5. Store course
+        courseDB[c.id] = c;
+        course_count++;
     }
-    fin.close();
+
+    if (course_count == 0) {
+        cerr << "Warning: No valid courses found in the input." << endl;
+    } else {
+        cout << "Successfully parsed " << course_count << " courses." << endl;
+    }
 
     vector<Course> courses;
     courses.reserve(courseDB.size());
     for (const auto& kv : courseDB)
-            courses.push_back(kv.second);
+        courses.push_back(kv.second);
 
     return courses;
 }

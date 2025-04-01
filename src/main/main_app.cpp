@@ -2,7 +2,7 @@
 
 int main_app(const string& inputPath, const string& originOutputPath, const string& modifiedOutputPath){
 
-    vector<Course> courses = mainParse(inputPath);
+    vector<Course> courses = parseCourseDB(inputPath);
 
     printCourses(courses);
 
