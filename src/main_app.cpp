@@ -6,6 +6,11 @@ int main_app(const string& inputPath, const string& outputPath){
 
     printCourses(courses);
 
+    ScheduleBuilder builder;
+    auto schedules = builder.build(courses);
+
+    printSchedules(courses);
+
     return 0;
 }
 
@@ -35,5 +40,40 @@ void printCourses(const vector<Course>& courses) {
         printSessionList(c.labs);
 
         cout << "---------------------------\n";
+    }
+}
+
+void printSchedules(const vector<Course>& courses) {
+    ScheduleBuilder builder;
+    auto schedules = builder.build(courses);
+
+    cout << "Total valid schedules: " << schedules.size() << endl;
+
+    //example for extraction data from the schedules variable -- IMPORTANT
+    for (size_t i = 0; i < schedules.size(); i++) {
+        cout << "\nSchedule " << i + 1 << ":" << endl;
+        for (const auto& cs : schedules[i].selections) {
+            cout << "Course " << cs.courseId << ":" << endl;
+            cout << "Course ID " << cs.courseId << ":" << endl;
+            if (cs.lecture) {
+                cout << "  Lecture: Day " << cs.lecture->day_of_week
+                     << " " << cs.lecture->start_time << "-" << cs.lecture->end_time
+                     << " in building " << cs.lecture->building_number
+                     << " room " << cs.lecture->room_number << endl;
+            }
+            if (cs.tutorial) {
+                cout << "  Tutorial: Day " << cs.tutorial->day_of_week
+                     << " " << cs.tutorial->start_time << "-" << cs.tutorial->end_time
+                     << " in building " << cs.tutorial->building_number
+                     << " room " << cs.tutorial->room_number << endl;
+            }
+            if (cs.lab) {
+                cout << "  Lab: Day " << cs.lab->day_of_week
+                     << " " << cs.lab->start_time << "-" << cs.lab->end_time
+                     << " in building " << cs.lab->building_number
+                     << " room " << cs.lab->room_number << endl;
+            }
+        }
+        cout << "---------------------------" << endl;
     }
 }

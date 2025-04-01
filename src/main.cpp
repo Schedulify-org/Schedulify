@@ -2,8 +2,8 @@
 #include "../include/main_app.h"
 
 int main() {
-    string inputPath = "src/V1.0CourseDB.txt";
-    string outputPath = "src/V1.outputSched.txt";
+    string inputPath = "../data/V1.0CourseDB.txt";
+    string outputPath = "../data/V1.outputSched.txt";
 
     main_app(inputPath, outputPath);
 
