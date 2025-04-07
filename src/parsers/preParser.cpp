@@ -23,8 +23,8 @@ bool isValidTime(const string& time) {
     }
 }
 
-// Reads user input ID pairs from file (e.g., student/course ID)
-unordered_set<int> readUserCourseIDsFromFile(const string& filename) {
+// Reads user input ID's from file (e.g., student/course ID)
+unordered_set<int> readSelectedCourseIDs(const string& filename) {
     ifstream inputFile(filename);
     unordered_set<int> courseIDs;
 
@@ -132,7 +132,7 @@ vector<Course> parseCourseDB(const string& path) {
         cout << "Successfully parsed " << course_count << " courses." << endl;
     }
 
-    unordered_set<int> userRequestedIDs = readUserCourseIDsFromFile("../data/userInput.txt");
+    unordered_set<int> userRequestedIDs = readSelectedCourseIDs("../data/userInput.txt");
 
     if (userRequestedIDs.empty()) {
         cerr << "Error: No valid user course IDs found in userInput.txt." << endl;
