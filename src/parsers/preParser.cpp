@@ -1,18 +1,65 @@
 #include "parsers/preParser.h"
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include <string>
 
 using namespace std;
 
+// helper function for simple 24-hour time validation
+bool isValidTime(const string& time) {
+    if (time.size() != 5 || time[2] != ':') return false;
+
+    try {
+        int hour = stoi(time.substr(0, 2));
+        int minute = stoi(time.substr(3, 2));
+
+        return hour >= 0 && hour < 24 && minute >= 0 && minute < 60;
+    } catch (...) {
+        return false;
+    }
+}
+
+// Reads user input ID pairs from file (e.g., student/course ID)
+unordered_set<int> readUserCourseIDsFromFile(const string& filename) {
+    ifstream inputFile(filename);
+    unordered_set<int> courseIDs;
+
+    if (!inputFile) {
+        cerr << "Could not open the file: " << filename << endl;
+        return courseIDs;
+    }
+
+    string line;
+    while (getline(inputFile, line)) {
+        istringstream iss(line);
+        string token;
+        while (iss >> token) {
+            try {
+                int id = stoi(token);
+                courseIDs.insert(id);
+            } catch (...) {
+                cerr << "Invalid course ID: " << token << endl;
+            }
+        }
+    }
+
+    inputFile.close();
+    return courseIDs;
+}
+
 // Parses full course DB from input stream
 vector<Course> parseCourseDB(const string& path) {
-
     ifstream file(path);
     if (!file.is_open()) {
-        cerr << "Cannot open file V1.0CourseDB.txt" << endl;
+        cerr << "Cannot open file: " << path << endl;
         return {};
     }
 
     unordered_map<int, Course> courseDB;
-
     string line;
     int line_number = 0;
     int course_count = 0;
@@ -39,7 +86,6 @@ vector<Course> parseCourseDB(const string& path) {
             continue;
         }
 
-        // Check for duplicate ID
         if (courseDB.find(c.id) != courseDB.end()) {
             cerr << "Warning: Duplicate course ID " << c.id << " at line " << line_number << ". Skipping." << endl;
             continue;
@@ -76,7 +122,6 @@ vector<Course> parseCourseDB(const string& path) {
             }
         }
 
-        // 5. Store course
         courseDB[c.id] = c;
         course_count++;
     }
@@ -87,15 +132,35 @@ vector<Course> parseCourseDB(const string& path) {
         cout << "Successfully parsed " << course_count << " courses." << endl;
     }
 
-    vector<Course> courses;
-    courses.reserve(courseDB.size());
-    for (const auto& kv : courseDB)
-        courses.push_back(kv.second);
+    unordered_set<int> userRequestedIDs = readUserCourseIDsFromFile("../data/userInput.txt");
 
-    return courses;
+    if (userRequestedIDs.empty()) {
+        cerr << "Error: No valid user course IDs found in userInput.txt." << endl;
+        return {};
+    }
+
+    vector<Course> userSelectedCourses;
+    for (const auto& [id, course] : courseDB) {
+        if (userRequestedIDs.find(id) != userRequestedIDs.end()) {
+            userSelectedCourses.push_back(course);
+        }
+    }
+
+    if (userSelectedCourses.size() > 7) {
+        cerr << "Error: User selected more than 7 valid courses (" << userSelectedCourses.size() << "). Limit is 7." << endl;
+        return {};
+    }
+
+    if (userSelectedCourses.empty()) {
+        cerr << "Error: No matching courses from user input exist in course database." << endl;
+        return {};
+    }
+
+    cout << "User selected " << userSelectedCourses.size() << " valid courses." << endl;
+    return userSelectedCourses;
 }
 
-// Parses one "S,day,start,end,building,room"
+// Parses one session string "S,day,start,end,building,room"
 Session parseSingleSession(const string& line) {
     Session s;
     stringstream ss(line);
@@ -116,6 +181,15 @@ Session parseSingleSession(const string& line) {
         getline(ss, token, ',');
         s.end_time = token;
 
+        // ✅ Add simple time format checks
+        if (!isValidTime(s.start_time) || !isValidTime(s.end_time)) {
+            throw invalid_argument("Invalid time format: " + s.start_time + ", " + s.end_time);
+        }
+
+        if (s.start_time >= s.end_time) {
+            throw invalid_argument("Start time must be before end time: " + s.start_time + " >= " + s.end_time);
+        }
+
         getline(ss, token, ',');
         s.building_number = token;
 
@@ -123,17 +197,16 @@ Session parseSingleSession(const string& line) {
         s.room_number = token;
     } catch (const exception& e) {
         cerr << "Error parsing session line: \"" << line << "\" — " << e.what() << endl;
-        throw;  // rethrow to let caller decide
+        throw;
     }
 
     return s;
 }
 
-// Splits "L S,1,... S,2,..." into multiple sessions
+// Parses multiple sessions from string like "S,1,... S,2,..."
 vector<Session> parseMultipleSessions(string line) {
     vector<Session> sessions;
-    line = line.substr(1); // Remove the first character, which is "L" or "T"
-
+    line = line.substr(1); // remove "L", "T", or "M"
 
     size_t pos;
     while ((pos = line.find(" S,")) != string::npos) {
