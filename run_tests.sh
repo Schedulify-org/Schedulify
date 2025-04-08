@@ -4,6 +4,7 @@
 set -e
 
 # Convert line endings (do this once manually from Windows editor or with dos2unix/sed)
+sed -i 's/\r$//' run_tests.sh
 
 # Build the Docker image
 docker build -f Dockerfile_tests -t schedulify-test .
