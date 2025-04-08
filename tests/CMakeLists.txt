@@ -4,7 +4,7 @@ project(sched_tests)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_definitions(USER_DB_PATH="../../data/test_files/mainAppTests.txt")
+add_compile_definitions(USER_DB_PATH="../../data/V1.0CourseDB.txt")
 
 include_directories(../include ../src ..)
 
@@ -20,7 +20,9 @@ add_executable(tests_executable
         main_tests.cpp
         algorithm_test.cpp
         CourseLegalComb_test.cpp
+        TimeUtils_test.cpp
         preParser_test.cpp
+        ScheduleBuilder_test.cpp
         ../src/main/main_app.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp
         ../src/schedule_algorithm/CourseLegalComb.cpp
