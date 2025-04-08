@@ -29,6 +29,7 @@ add_executable(tests_executable
         ../src/parsers/preParser.cpp
         ../src/schedule_algorithm/TimeUtils.cpp
         ../src/parsers/postParser.cpp
+        postParser_test.cpp
 )
 
 target_link_libraries(tests_executable gtest_main)
