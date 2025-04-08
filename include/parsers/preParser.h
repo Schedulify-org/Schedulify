@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 using namespace std;
 
@@ -22,6 +23,7 @@ public:
 class Course {
 public:
     int id;
+    string raw_id;
     string name;
     string teacher;
     vector<Session> Lectures;
@@ -31,6 +33,8 @@ public:
 
 // Parses full course DB from input stream
 vector<Course> parseCourseDB(const string& path);
+
+unordered_set<string> readSelectedCourseIDs(const string& filename);
 
 // Parses one "S,day,start,end,building,room"
 Session parseSingleSession(const string& line);

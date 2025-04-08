@@ -29,7 +29,7 @@ void printSessionList(const vector<Session>& sessions) {
 void printCourses(const vector<Course>& courses) {
     for (const auto& c : courses) {
         cout << "Course: " << c.name << "\n";
-        cout << "ID: " << c.id << "\n";
+        cout << "ID: " << c.raw_id << "\n";
         cout << "Teacher: " << c.teacher << "\n";
 
         cout << "Lectures:\n";
@@ -56,7 +56,13 @@ void printSchedules(const vector<Course>& courses) {
         cout << "\nSchedule " << i + 1 << ":" << endl;
         for (const auto& cs : schedules[i].selections) {
             cout << "Course " << cs.courseId << ":" << endl;
-            cout << "Course ID " << cs.courseId << ":" << endl;
+            auto it = find_if(courses.begin(), courses.end(), [&](const Course& c) { return c.id == cs.courseId; });
+            if (it != courses.end()) {
+                cout << "Course ID " << it->raw_id << ":" << endl;
+            } else {
+                cout << "Course ID " << cs.courseId << " (unmatched):" << endl;
+            }
+
             if (cs.lecture) {
                 cout << "  Lecture: Day " << cs.lecture->day_of_week
                      << " " << cs.lecture->start_time << "-" << cs.lecture->end_time
