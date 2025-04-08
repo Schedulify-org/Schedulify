@@ -6,7 +6,8 @@
 #include <algorithm>
 
 struct ScheduleItem {
-    int courseId;
+    string courseName;
+    string raw_id;
     string type;
     string start;
     string end;
@@ -18,6 +19,7 @@ struct ScheduleItem {
 
 // convert schedule to json file
 void exportCompactJson(const vector<Schedule>& schedules, const string& outputPath);
-void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath);
+void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses);
+void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses);
 
 #endif //POST_PARSER_H
