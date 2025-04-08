@@ -1,4 +1,5 @@
 #include "parsers/postParser.h"
+#include <iomanip>
 
 void exportCompactJson(const vector<Schedule>& schedules, const string& outputPath) {
     ofstream outFile(outputPath);
@@ -139,3 +140,62 @@ void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& o
     outFile << "]";
     outFile.close();
 }
+
+void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& outputPath) {
+    ofstream outFile(outputPath);
+    if (!outFile.is_open()) {
+        cerr << "Failed to open output file: " << outputPath << endl;
+        return;
+    }
+
+    for (size_t i = 0; i < schedules.size(); ++i) {
+        const auto& schedule = schedules[i];
+        outFile << "schedule " << (i + 1) << ":\n";
+
+        // Map day index to schedule items
+        unordered_map<int, vector<ScheduleItem>> dayMap;
+
+        for (const auto& cs : schedule.selections) {
+            auto add = [&](const Session* s, const string& type) {
+                if (!s) return;
+                dayMap[s->day_of_week].push_back(ScheduleItem{
+                        cs.courseId,
+                        type,
+                        s->start_time,
+                        s->end_time,
+                        s->building_number,
+                        s->room_number
+                });
+            };
+            add(cs.lecture, "lecture");
+            add(cs.tutorial, "tutorial");
+            add(cs.lab, "lab");
+        }
+
+        for (int day = 0; day < 7; ++day) {
+            if (dayMap.count(day)) {
+                outFile << "       " << dayToString(day) << ":\n";
+
+                auto& items = dayMap[day];
+                sort(items.begin(), items.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
+                    return a.start < b.start;
+                });
+
+                for (const auto& item : items) {
+                    outFile << "              "
+                            << item.courseId << " (" << item.courseId << "), "
+                            << item.type << ", "
+                            << item.start << "-" << item.end
+                            << " in building " << item.building
+                            << " room " << item.room << "\n";
+                }
+            }
+        }
+
+        if (i + 1 < schedules.size())
+            outFile << "\n";
+    }
+
+    outFile.close();
+}
+

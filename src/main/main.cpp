@@ -2,11 +2,9 @@
 
 int main() {
     string inputPath = "../data/V1.0CourseDB.txt";
-    string originOutputPath = "../data/V1.originOutputSched.json";
-    string modifiedOutputPath = "../data/V1.modifiedOutputPath.json";
+    string modifiedOutputPath = "../data/V1.schedOutput.txt";
 
-
-    main_app(inputPath, originOutputPath, modifiedOutputPath);
+    main_app(inputPath, modifiedOutputPath);
 
     return 1;
 }

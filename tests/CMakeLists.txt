@@ -23,7 +23,6 @@ add_executable(tests_executable
         CourseLegalComb_test.cpp
         ../src/main/main_app.cpp
         ../include/main/main_app.h
-        ../src/algoritm.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp
         ../src/schedule_algorithm/CourseLegalComb.cpp
         ../src/parsers/preParser.cpp

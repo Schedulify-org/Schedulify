@@ -19,5 +19,6 @@ struct ScheduleItem {
 // convert schedule to json file
 void exportCompactJson(const vector<Schedule>& schedules, const string& outputPath);
 void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath);
+void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& outputPath);
 
 #endif //POST_PARSER_H
