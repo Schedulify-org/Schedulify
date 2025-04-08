@@ -31,8 +31,10 @@ public:
     vector<Session> labs;
 };
 
+bool isValidTime(const string& time);
+
 // Parses full course DB from input stream
-vector<Course> parseCourseDB(const string& path);
+vector<Course> parseCourseDB(const string& path, const string& userInput);
 
 unordered_set<string> readSelectedCourseIDs(const string& filename);
 
@@ -41,5 +43,9 @@ Session parseSingleSession(const string& line);
 
 // Splits "L S,1,... S,2,..." into multiple sessions
 vector<Session> parseMultipleSessions(string line);
+
+bool isInteger(const std::string& s);
+
+bool validateID(string raw_id);
 
 #endif // PRE_PARSER_H

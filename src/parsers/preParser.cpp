@@ -4,7 +4,7 @@
 using namespace std;
 
 // helper function for simple 24-hour time validation
-bool isValidTime(const string& time) {
+bool isValidTime(const string& time)  {
     if (time.size() != 5 || time[2] != ':') return false;
 
     try {
@@ -29,10 +29,16 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
 
     string line;
     while (getline(inputFile, line)) {
+        int count = 0;
         istringstream iss(line);
         string token;
         while (iss >> token) {
+            count++;
+            if (!validateID(token)) continue;
             courseIDs.insert(token);
+        }
+        if (count > 7) {
+            courseIDs.clear();
         }
     }
 
@@ -41,7 +47,7 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
 }
 
 // Parses full course DB from input stream
-vector<Course> parseCourseDB(const string& path) {
+vector<Course> parseCourseDB(const string& path, const string& userInput) {
     ifstream file(path);
     if (!file.is_open()) {
         cerr << "Cannot open file: " << path << endl;
@@ -68,14 +74,14 @@ vector<Course> parseCourseDB(const string& path) {
             break;
         }
         line_number++;
-        try {
-            c.id = stoi(line);
-            c.raw_id = line;  // <--- store raw string version
-        } catch (const exception& e) {
-            cerr << "Error: Invalid course ID at line " << line_number << ": " << line << " — " << e.what() << endl;
+        if (!validateID(line)) {
+            cerr << "Error: Invalid course ID at line " << line_number << ": " << line << endl;
             continue;
         }
-
+        else {
+            c.id = stoi(line);
+            c.raw_id = line;  // <--- store raw string version
+        }
 
         if (courseDB.find(c.id) != courseDB.end()) {
             cerr << "Warning: Duplicate course ID " << c.id << " at line " << line_number << ". Skipping." << endl;
@@ -123,19 +129,28 @@ vector<Course> parseCourseDB(const string& path) {
         cout << "Successfully parsed " << course_count << " courses." << endl;
     }
 
-    unordered_set<string> rawIDs = readSelectedCourseIDs("../data/userInput.txt");
+    unordered_set<string> rawIDs = readSelectedCourseIDs(userInput);
     unordered_set<int> userRequestedIDs;
 
     for (const auto& strID : rawIDs) {
-        try {
-            userRequestedIDs.insert(stoi(strID));
-        } catch (...) {
-            cerr << "Invalid course ID in userInput.txt (not an int): " << strID << endl;
+        if (!validateID(strID)) {
+            cerr << "Invalid course ID in validUserInput.txt (not an int): " << strID << endl;
+            continue;
         }
+
+        int id = stoi(strID);
+
+        // Check if course exists in courseDB
+        if (courseDB.find(id) == courseDB.end()) {
+            cerr << id << " this course does not exist" << endl;
+            continue;
+        }
+
+        userRequestedIDs.insert(id);
     }
 
     if (userRequestedIDs.empty()) {
-        cerr << "Error: No valid user course IDs found in userInput.txt." << endl;
+        cerr << "Error: No valid user course IDs found in validUserInput.txt." << endl;
         return {};
     }
 
@@ -158,6 +173,7 @@ vector<Course> parseCourseDB(const string& path) {
 
     cout << "User selected " << userSelectedCourses.size() << " valid courses." << endl;
     return userSelectedCourses;
+
 }
 
 // Parses one session string "S,day,start,end,building,room"
@@ -226,4 +242,20 @@ vector<Session> parseMultipleSessions(string line) {
     }
 
     return sessions;
+}
+
+bool validateID(string raw_id) {
+    if (raw_id.size()!=5) return false;
+    if (!isInteger(raw_id)) return false;
+    return true;
+}
+
+bool isInteger(const std::string& s) {
+    try {
+        std::size_t pos;
+        std::stoi(s, &pos);
+        return pos == s.size(); // ensure entire string was consumed
+    } catch (...) {
+        return false;
+    }
 }
