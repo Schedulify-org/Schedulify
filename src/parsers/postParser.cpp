@@ -70,7 +70,7 @@ string dayToString(int day) {
 
 string ScheduleItem::toJson() const {
     stringstream ss;
-    ss << "{\"course_id\":" << courseId
+    ss << "{\"course_id\":" << courseName
        << ",\"item_type\":\"" << type << "\""
        << ",\"start\":\"" << start << "\""
        << ",\"end\":\"" << end << "\""
@@ -79,7 +79,7 @@ string ScheduleItem::toJson() const {
     return ss.str();
 }
 
-void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath) {
+void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses) {
     ofstream outFile(outputPath);
     if (!outFile.is_open()) {
         cerr << "Failed to open output file: " << outputPath << endl;
@@ -96,10 +96,25 @@ void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& o
         unordered_map<int, vector<ScheduleItem>> dayMap;
 
         for (const auto& cs : schedule.selections) {
+
+            string raw_id;
+            string courseName;
+
+            auto it = find_if(courses.begin(), courses.end(), [&](const Course& c) { return c.id == cs.courseId; });
+            if (it != courses.end()) {
+                raw_id = it->raw_id;
+                courseName = it->name;
+            } else {
+                raw_id = to_string(cs.courseId);
+                courseName = to_string(cs.courseId);
+            }
+
+
             auto add = [&](const Session* s, const string& type) {
                 if (!s) return;
                 dayMap[s->day_of_week].push_back(ScheduleItem{
-                        cs.courseId,
+                        courseName,
+                        raw_id,
                         type,
                         s->start_time,
                         s->end_time,
@@ -141,7 +156,7 @@ void exportSchedulesByDayJson(const vector<Schedule>& schedules, const string& o
     outFile.close();
 }
 
-void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& outputPath) {
+void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses) {
     ofstream outFile(outputPath);
     if (!outFile.is_open()) {
         cerr << "Failed to open output file: " << outputPath << endl;
@@ -156,10 +171,24 @@ void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& o
         unordered_map<int, vector<ScheduleItem>> dayMap;
 
         for (const auto& cs : schedule.selections) {
+
+            string raw_id;
+            string courseName;
+
+            auto it = find_if(courses.begin(), courses.end(), [&](const Course& c) { return c.id == cs.courseId; });
+            if (it != courses.end()) {
+                raw_id = it->raw_id;
+                courseName = it->name;
+            } else {
+                raw_id = to_string(cs.courseId);
+                courseName = to_string(cs.courseId);
+            }
+
             auto add = [&](const Session* s, const string& type) {
                 if (!s) return;
                 dayMap[s->day_of_week].push_back(ScheduleItem{
-                        cs.courseId,
+                        courseName,
+                        raw_id,
                         type,
                         s->start_time,
                         s->end_time,
@@ -183,7 +212,7 @@ void exportSchedulesByDayText(const vector<Schedule>& schedules, const string& o
 
                 for (const auto& item : items) {
                     outFile << "              "
-                            << item.courseId << " (" << item.courseId << "), "
+                            << item.courseName << " (" << item.raw_id << "), "
                             << item.type << ", "
                             << item.start << "-" << item.end
                             << " in building " << item.building

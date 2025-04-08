@@ -11,7 +11,7 @@ int main_app(const string& inputPath, const string& modifiedOutputPath){
 
     printSchedules(courses);
 
-    exportSchedulesByDayText(schedules, modifiedOutputPath);
+    exportSchedulesByDayText(schedules, modifiedOutputPath, courses);
 
     return 0;
 }
