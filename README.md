@@ -34,3 +34,11 @@
       ./run_tests.sh
 
 - 🪟 Windows: ``` bash run_tests.sh  ```
+
+## Output
+
+- Results will be saved to a file named:  
+  #### data/V1.schedOutput.txt #
+- This file will be created in the /data directory of the project after running the app.
+- Test results are shown directly in the terminal during execution.
+****
