@@ -4,12 +4,29 @@
 #include <string>
 
 using namespace std;    
-int TimeUtils::toMinutes(const string& t) {
-    int colonPos = t.find(':');
-    int hours = stoi(t.substr(0, colonPos));
-    int minutes = stoi(t.substr(colonPos + 1));
+int TimeUtils::toMinutes(const std::string& t) {
+    size_t colonPos = t.find(':');
+    if (colonPos == std::string::npos) {
+        throw std::invalid_argument("Missing colon in time string: " + t);
+    }
+
+    std::string hourStr = t.substr(0, colonPos);
+    std::string minuteStr = t.substr(colonPos + 1);
+
+    if (hourStr.empty() || minuteStr.empty()) {
+        throw std::invalid_argument("Empty hour or minute in time string: " + t);
+    }
+
+    int hours = std::stoi(hourStr);
+    int minutes = std::stoi(minuteStr);
+
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        throw std::invalid_argument("Hour or minute out of range: " + t);
+    }
+
     return hours * 60 + minutes;
 }
+
 
 bool TimeUtils::isOverlap(const Session* s1, const Session* s2) {
     if (s1->day_of_week != s2->day_of_week) return false;
