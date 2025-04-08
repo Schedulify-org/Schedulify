@@ -1,0 +1,520 @@
+schedule 1:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 2:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 3:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 4:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 5:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 605 room 14
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 6:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 605 room 14
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 7:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 8:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 9:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 10:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 11:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 12:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 13:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 14:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 15:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 16:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 17:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 18:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 19:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 20:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 21:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       tuesday:
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 22:
+       monday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 23:
+       monday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 24:
+       monday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 25:
+       monday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 26:
+       monday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 42
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 27:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 605 room 14
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 28:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 605 room 14
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 29:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 30:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 31:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 32:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1104 room 42
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 33:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 34:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 35:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 36:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 10:00-12:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 37:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 38:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 39:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 40:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 12:00-14:00 in building 1300 room 1
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 41:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 42:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), lecture, 16:00-17:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 43:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+              Calculus 1 (00001), tutorial, 18:00-19:00 in building 1100 room 22
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061
+
+schedule 44:
+       tuesday:
+              Calculus 1 (eng) (83112), lecture, 14:00-16:00 in building 1401 room 4
+       wednesday:
+              Calculus 1 (00001), lecture, 17:00-18:00 in building 1100 room 42
+              Calculus 1 (00001), tutorial, 19:00-20:00 in building 1100 room 42
+       thursday:
+              Calculus 1 (eng) (83112), tutorial, 16:00-18:00 in building 1104 room 244
+       friday:
+              Software Project (83533), lecture, 10:00-16:00 in building 605 room 061
+              Software Project (83533), tutorial, 16:00-17:00 in building 605 room 061

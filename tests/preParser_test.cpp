@@ -49,7 +49,9 @@ TEST(PreParserTest, ParsesValidCourseDB) {
     ASSERT_EQ(courses.size(), 3);
     EXPECT_EQ(courses[0].id, 83112);
     EXPECT_EQ(courses[0].Lectures.size(), 2);
-//    EXPECT_EQ(courses[0].Lectures[0].day_of_week, 3);
+    EXPECT_EQ(courses[0].Lectures[0].day_of_week, 1);
+    std::cout << "Parsed day_of_week: " << courses[0].Lectures[0].day_of_week << std::endl;
+
 }
 
 //Test invalid coruse id:id
@@ -79,13 +81,14 @@ TEST(PreParserTest, InvalidUserInput_InvalidID) {
     ASSERT_EQ(input.size(), 4) << "Expected no valid course IDs, but got some.";
 }
 //Test: invalid user input too many courses
-TEST(PreParserTest, InvalidUserInput_TooManyCourses) {
-    string testPath = "../../testData/invalidUserInput_many.txt";
+TEST(PreParserTest, RejectsMoreThanSevenTotalCourses) {
+    string testPath = "../../testData/userInput_TooManyTotal.txt";
     unordered_set<string> input = readSelectedCourseIDs(testPath);
-    // You can replace MAX_COURSES with your actual system limit if needed
-    size_t MAX_COURSES = 7; // just an example
-    EXPECT_LE(input.size(), MAX_COURSES) << "Too many courses were accepted.";
+
+    EXPECT_TRUE(input.empty()) << "Expected input to be rejected due to more than 7 valid course IDs.";
 }
+
+
 
 //Test: invalid user input: no input
 TEST(PreParserTest, InvalidUserInput_EmptyFile) {
@@ -103,5 +106,28 @@ TEST(PreParserTest, InvalidUserInput_NonNumericStrings) {
                             << "Non-numeric course ID detected: " << id;
     }
 }
+//Test user input test duplicate user input
+TEST(PreParserTest, DuplicateUserInputIDs) {
+    string testPath = "../../testData/duplicateUserInput.txt";
+
+    // Optional: capture stderr to verify warning
+    testing::internal::CaptureStderr();
+
+    unordered_set<string> input = readSelectedCourseIDs(testPath);
+    string output = testing::internal::GetCapturedStderr();
+
+    // Should contain only 3 unique valid course IDs
+    unordered_set<string> expected = {"83112", "83533", "00001"};
+
+    ASSERT_EQ(input.size(), expected.size());
+    for (const auto& id : expected) {
+        EXPECT_TRUE(input.count(id)) << "Missing expected course ID: " << id;
+    }
+
+    // Check for duplicate warning in stderr (optional)
+    EXPECT_NE(output.find("Warning: Duplicate course ID found in user input: 83112"), string::npos);
+    EXPECT_NE(output.find("Warning: Duplicate course ID found in user input: 00001"), string::npos);
+}
+
 
 
