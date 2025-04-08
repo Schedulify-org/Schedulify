@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <sstream>
-#include "parsers/postParser.h"  // Your header file
+#include "parsers/postParser.h"
 
 Course createCourse(int id, const string& raw_id, const string& name) {
     return Course{id, raw_id, name};
@@ -15,14 +15,14 @@ Schedule createScheduleWithOneSelection(int courseId, Session* lec, Session* tut
     return Schedule{{cs}};
 }
 
-TEST(DayToStringTest, ValidAndInvalidDays) {
+TEST(postParserTest, ValidAndInvalidDays) {
     EXPECT_EQ(dayToString(1), "sunday");
     EXPECT_EQ(dayToString(7), "saturday");
     EXPECT_EQ(dayToString(0), "unknown");
     EXPECT_EQ(dayToString(8), "unknown");
 }
 
-TEST(GetCourseInfoTest, FoundAndNotFound) {
+TEST(postParserTest, FoundAndNotFound) {
     vector<Course> courses = {
         createCourse(1, "M101", "Math 101"),
         createCourse(2, "CS101", "Intro to CS")
@@ -37,7 +37,7 @@ TEST(GetCourseInfoTest, FoundAndNotFound) {
     EXPECT_EQ(info2.raw_id, "99");
 }
 
-TEST(AddSessionToDayMapTest, ValidAndNullSessions) {
+TEST(postParserTest, ValidAndNullSessions) {
     unordered_map<int, vector<ScheduleItem>> dayMap;
 
     addSessionToDayMap(dayMap, nullptr, "lecture", "Math", "M101");
@@ -51,7 +51,7 @@ TEST(AddSessionToDayMapTest, ValidAndNullSessions) {
     delete session;
 }
 
-TEST(BuildDayMapTest, SingleCourseSelection) {
+TEST(postParserTest, SingleCourseSelection) {
     vector<Course> courses = { createCourse(1, "M101", "Math 101") };
     Session* lec = createSession(1, "09:00", "10:00", "2", "200");
     Schedule schedule = createScheduleWithOneSelection(1, lec, nullptr, nullptr);
@@ -65,7 +65,7 @@ TEST(BuildDayMapTest, SingleCourseSelection) {
     delete lec;
 }
 
-TEST(WriteDayScheduleToFileTest, SortedSessionsOutput) {
+TEST(postParserTest, SortedSessionsOutput) {
     vector<ScheduleItem> items = {
         {"Course A", "C001", "lecture", "10:00", "11:00", "1", "101"},
         {"Course A", "C001", "lecture", "08:00", "09:00", "1", "101"},
@@ -82,7 +82,7 @@ TEST(WriteDayScheduleToFileTest, SortedSessionsOutput) {
     EXPECT_LT(pos1, pos2);
 }
 
-TEST(WriteScheduleToFileTest, OneScheduleOutput) {
+TEST(postParserTest, OneScheduleOutput) {
     vector<Course> courses = { createCourse(1, "PHY101", "Physics 101") };
     Session* lec = createSession(1, "09:00", "10:00", "3", "305");
     Schedule sched = createScheduleWithOneSelection(1, lec, nullptr, nullptr);
@@ -98,7 +98,7 @@ TEST(WriteScheduleToFileTest, OneScheduleOutput) {
     delete lec;
 }
 
-TEST(ExportSchedulesTest, MultipleSchedules) {
+TEST(postParserTest, MultipleSchedules) {
     vector<Course> courses = { createCourse(1, "ENG101", "English") };
     Session* lec1 = createSession(1, "08:00", "09:00", "1", "201");
     Session* lec2 = createSession(2, "10:00", "11:00", "1", "202");
