@@ -24,9 +24,9 @@ bool isValidTime(const string& time) {
 }
 
 // Reads user input ID's from file (e.g., student/course ID)
-unordered_set<int> readSelectedCourseIDs(const string& filename) {
+unordered_set<string> readSelectedCourseIDs(const string& filename) {
     ifstream inputFile(filename);
-    unordered_set<int> courseIDs;
+    unordered_set<string> courseIDs;
 
     if (!inputFile) {
         cerr << "Could not open the file: " << filename << endl;
@@ -38,12 +38,7 @@ unordered_set<int> readSelectedCourseIDs(const string& filename) {
         istringstream iss(line);
         string token;
         while (iss >> token) {
-            try {
-                int id = stoi(token);
-                courseIDs.insert(id);
-            } catch (...) {
-                cerr << "Invalid course ID: " << token << endl;
-            }
+            courseIDs.insert(token);
         }
     }
 
@@ -73,7 +68,7 @@ vector<Course> parseCourseDB(const string& path) {
         // 1. Course name
         c.name = line;
 
-        // 2. Course ID
+// 2. Course ID
         if (!getline(file, line)) {
             cerr << "Error: Missing course ID after name at line " << line_number << endl;
             break;
@@ -81,10 +76,12 @@ vector<Course> parseCourseDB(const string& path) {
         line_number++;
         try {
             c.id = stoi(line);
+            c.raw_id = line;  // <--- store raw string version
         } catch (const exception& e) {
             cerr << "Error: Invalid course ID at line " << line_number << ": " << line << " — " << e.what() << endl;
             continue;
         }
+
 
         if (courseDB.find(c.id) != courseDB.end()) {
             cerr << "Warning: Duplicate course ID " << c.id << " at line " << line_number << ". Skipping." << endl;
@@ -132,7 +129,16 @@ vector<Course> parseCourseDB(const string& path) {
         cout << "Successfully parsed " << course_count << " courses." << endl;
     }
 
-    unordered_set<int> userRequestedIDs = readSelectedCourseIDs("../data/userInput.txt");
+    unordered_set<string> rawIDs = readSelectedCourseIDs("../data/userInput.txt");
+    unordered_set<int> userRequestedIDs;
+
+    for (const auto& strID : rawIDs) {
+        try {
+            userRequestedIDs.insert(stoi(strID));
+        } catch (...) {
+            cerr << "Invalid course ID in userInput.txt (not an int): " << strID << endl;
+        }
+    }
 
     if (userRequestedIDs.empty()) {
         cerr << "Error: No valid user course IDs found in userInput.txt." << endl;

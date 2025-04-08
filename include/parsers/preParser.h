@@ -22,6 +22,7 @@ public:
 class Course {
 public:
     int id;
+    string raw_id;
     string name;
     string teacher;
     vector<Session> Lectures;
