@@ -51,7 +51,6 @@ TEST(PreParserTest, ParsesValidCourseDB) {
     EXPECT_EQ(courses[0].Lectures.size(), 2);
     EXPECT_EQ(courses[0].Lectures[0].day_of_week, 1);
     std::cout << "Parsed day_of_week: " << courses[0].Lectures[0].day_of_week << std::endl;
-
 }
 
 //Test invalid coruse id:id
