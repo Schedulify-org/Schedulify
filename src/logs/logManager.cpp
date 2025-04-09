@@ -1,5 +1,7 @@
 #include "logs/logManager.h"
 
+namespace fs = std::filesystem;
+
 string getTimestampedLogPath() {
     ostringstream oss;
     oss << "../data/logs/" << getTimeStamp() << ".log";
@@ -17,6 +19,7 @@ string getTimeStamp() {
 }
 
 void createLogFile(const string& path) {
+    fs::create_directories("../data/logs");
     ofstream out(path);
     out.close();
 }
