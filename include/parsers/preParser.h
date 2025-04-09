@@ -46,6 +46,6 @@ vector<Session> parseMultipleSessions(string line);
 
 bool isInteger(const std::string& s);
 
-bool validateID(string raw_id);
+bool validateID(const string& raw_id);
 
 #endif // PRE_PARSER_H

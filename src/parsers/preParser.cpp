@@ -68,13 +68,9 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
     return courseIDs;
 }
 
-
-
-
-
 // Parses full course DB from input stream
 vector<Course> parseCourseDB(const string& path, const string& userInput) {
-    ifstream file(path);
+    fstream file(path);
     if (!file.is_open()) {
         ostringstream message;
         message << "Cannot open file: " << path;
@@ -97,7 +93,7 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
         // 1. Course name
         c.name = line;
 
-// 2. Course ID
+        // 2. Course ID
         if (!getline(file, line)) {
             ostringstream message;
             message << "Error: Missing course ID after name at line " << line_number;
@@ -329,7 +325,7 @@ vector<Session> parseMultipleSessions(string line) {
     return sessions;
 }
 
-bool validateID(string raw_id) {
+bool validateID(const string& raw_id) {
     if (raw_id.size()!=5) return false;
     if (!isInteger(raw_id)) return false;
     return true;
