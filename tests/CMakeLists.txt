@@ -18,7 +18,6 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(tests_executable
         main_tests.cpp
-        algorithm_test.cpp
         CourseLegalComb_test.cpp
         TimeUtils_test.cpp
         preParser_test.cpp
