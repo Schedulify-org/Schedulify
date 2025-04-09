@@ -14,10 +14,4 @@ using std::cout;
 // main function to load data file, generate schedules and export as json
 int main_app(const string& inputPath, const string& modifiedOutputPath, const string& userInput);
 
-// print parsed data as test
-void printCourses(const vector<Course>& courses);
-
-// print schedules as test
-void printSchedules(const vector<Course>& courses);
-
 #endif
