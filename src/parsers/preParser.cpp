@@ -267,9 +267,6 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
     message << "User selected " << userSelectedCourses.size() << " valid courses.";
     Logger::get().logInfo(message.str());
 
-
-
-
     return userSelectedCourses;
 
 }
@@ -317,22 +314,17 @@ Session parseSingleSession(const string& line) {
         if (validateLocation(token,4)) {
             s.building_number = token;
         }
-
         else {
             ostringstream message;
             message << "Found invalid Session,Building number must be from 1 - 9999";
             Logger::get().logError(message.str());
             throw invalid_argument(message.str());
-
-
         }
-
 
         getline(ss, token, ',');
         if (validateLocation(token,3)) {
             s.room_number = token;
         }
-
         else {
             ostringstream message;
             message << "Found invalid Session,Room number must be from 1 - 999";
@@ -344,10 +336,8 @@ Session parseSingleSession(const string& line) {
         ostringstream message;
         message << "Error parsing session line: \"" << line << "\" — " << e.what();
         Logger::get().logError(message.str());
-
         throw;
     }
-
     return s;
 }
 
@@ -377,7 +367,6 @@ vector<Session> parseMultipleSessions(string line) {
         Logger::get().logWarning(message.str());
 
     }
-
     return sessions;
 }
 
