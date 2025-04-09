@@ -19,7 +19,12 @@ int main_app(const string& inputPath, const string& modifiedOutputPath ,const st
     ScheduleBuilder builder;
     vector<Schedule> schedules = builder.build(courses);
 
-    Logger::get().logInfo("schedules build successfully, generating output");
+    if (schedules.empty()) {
+        Logger::get().logError("received empty result from algorithm, aborting process");
+        return 1;
+    }
+
+    Logger::get().logInfo("initiate output generation");
 
     bool success = exportSchedulesToText(schedules, modifiedOutputPath, courses);
 
