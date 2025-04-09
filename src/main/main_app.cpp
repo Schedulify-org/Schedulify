@@ -9,18 +9,30 @@ int main_app(const string& inputPath, const string& modifiedOutputPath ,const st
 
     vector<Course> courses = parseCourseDB(inputPath, userInput);
 
+    if (courses.empty()) {
+        Logger::get().logError("Error while parsing input data. aborting process");
+        return 1;
+    }
+
     Logger::get().logInfo("initiate schedules builder");
 
     ScheduleBuilder builder;
     vector<Schedule> schedules = builder.build(courses);
 
-    Logger::get().logInfo("schedules build successfully, generating output");
+    if (schedules.empty()) {
+        Logger::get().logError("received empty result from algorithm, aborting process");
+        return 1;
+    }
 
-    exportSchedulesToText(schedules, modifiedOutputPath, courses);
+    Logger::get().logInfo("initiate output generation");
 
-    ostringstream message;
-    message << "output finish, can be seen in " << modifiedOutputPath;
-    Logger::get().logInfo(message.str());
+    bool success = exportSchedulesToText(schedules, modifiedOutputPath, courses);
+
+    if (success) {
+        ostringstream message;
+        message << "output finish, can be seen in " << modifiedOutputPath;
+        Logger::get().logInfo(message.str());
+    }
 
     return 0;
 }

@@ -28,7 +28,7 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
         message << "Could not open the file: " << filename;
         Logger::get().logError(message.str());
 
-        return courseIDs;
+        return {};
     }
 
     string line;
@@ -166,6 +166,11 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
                     ostringstream message;
                     message << "Unknown session format at line " << line_number << ": " << line;
                     Logger::get().logWarning(message.str());
+                    while (getline(file, line)) {
+                        line_number++;
+                        if (line == "$$$$") break;
+                    }
+                    break;
                 }
             } catch (const exception& e) {
                 ostringstream message;
@@ -182,7 +187,24 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
 
     if (course_count == 0) {
         Logger::get().logError("No valid courses found in the input.");
+        return {};
     } else {
+        for (const auto& pair : courseDB) {
+            int courseId = pair.first;
+            const Course& course = pair.second;
+            if (course.Lectures.empty() && course.Tirgulim.empty() && course.labs.empty()) {
+                courseDB.erase(courseId);
+                course_count--;
+                ostringstream message;
+                message << "Course: " << courseId << "Have no Sessions and therefore has been deleted";
+                Logger::get().logError(message.str());
+
+            }
+        }
+        if (course_count == 0) {
+            Logger::get().logError("No valid courses found in the input.");
+            return {};
+        }
         ostringstream message;
         message << "Successfully parsed " << course_count << " courses.";
         Logger::get().logInfo(message.str());
@@ -261,7 +283,10 @@ Session parseSingleSession(const string& line) {
         getline(ss, token, ',');
         s.day_of_week = stoi(token);
         if (s.day_of_week < 1 || s.day_of_week > 7) {
-            throw invalid_argument("Invalid day of week: " + token);
+            ostringstream message;
+            message << "Invalid day of week: " + token;
+            Logger::get().logError(message.str());
+            throw invalid_argument(message.str());
         }
 
         getline(ss, token, ',');
@@ -270,28 +295,49 @@ Session parseSingleSession(const string& line) {
         getline(ss, token, ',');
         s.end_time = token;
 
-        // ✅ Add simple time format checks
+        //  Add simple time format checks
         if (!isValidTime(s.start_time) || !isValidTime(s.end_time)) {
-            throw invalid_argument("Invalid time format: " + s.start_time + ", " + s.end_time);
+            ostringstream message;
+            message << "Invalid time format: " + s.start_time + ", " + s.end_time;
+            Logger::get().logError(message.str());
+            throw invalid_argument(message.str());
         }
 
         if (s.start_time >= s.end_time) {
-            throw invalid_argument("Start time must be before end time: " + s.start_time + " >= " + s.end_time);
+            ostringstream message;
+            message << "Start time must be before end time: " + s.start_time + " >= " + s.end_time;
+            Logger::get().logError(message.str());
+            throw invalid_argument(message.str());
         }
 
         getline(ss, token, ',');
-        s.building_number = token;
+        if (validateLocation(token,4)) {
+            s.building_number = token;
+        }
+        else {
+            ostringstream message;
+            message << "Found invalid Session,Building number must be from 1 - 9999";
+            Logger::get().logError(message.str());
+            throw invalid_argument(message.str());
+        }
 
         getline(ss, token, ',');
-        s.room_number = token;
+        if (validateLocation(token,3)) {
+            s.room_number = token;
+        }
+        else {
+            ostringstream message;
+            message << "Found invalid Session,Room number must be from 1 - 999";
+            Logger::get().logError(message.str());
+            throw invalid_argument(message.str());
+
+        }
     } catch (const exception& e) {
         ostringstream message;
         message << "Error parsing session line: \"" << line << "\" — " << e.what();
         Logger::get().logError(message.str());
-
         throw;
     }
-
     return s;
 }
 
@@ -321,7 +367,6 @@ vector<Session> parseMultipleSessions(string line) {
         Logger::get().logWarning(message.str());
 
     }
-
     return sessions;
 }
 
@@ -339,4 +384,9 @@ bool isInteger(const std::string& s) {
     } catch (...) {
         return false;
     }
+}
+bool validateLocation(const string &location, int type) {
+    if (location.size()>type || location.size()<1) return false;
+    if (!isInteger(location)) return false;
+    return true;
 }

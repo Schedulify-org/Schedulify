@@ -41,7 +41,6 @@ void ScheduleBuilder::backtrack(int currentCourse,
             // Check for conflicts with the selections already made
             for (const auto& selected : currentCombination) {
                 if (hasConflict(option, selected)) {
-                    Logger::get().logInfo("Conflict detected between course selections during backtracking.");
                     conflict = true;
                     break;
                 }

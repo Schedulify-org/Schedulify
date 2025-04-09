@@ -25,7 +25,7 @@ struct CourseInfo {
 void exportSchedulesToJson(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses);
 
 // convert schedule to text file
-void exportSchedulesToText(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses);
+bool exportSchedulesToText(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses);
 
 // convert schedule item to text file
 string ScheduleItemToJson(const ScheduleItem& s);

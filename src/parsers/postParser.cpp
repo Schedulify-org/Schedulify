@@ -1,4 +1,5 @@
 #include "parsers/postParser.h"
+#include "logs/logger.h"
 
 string ScheduleItemToJson(const ScheduleItem& s) {
     stringstream ss;
@@ -89,20 +90,46 @@ void exportSchedulesToJson(const vector<Schedule>& schedules, const string& outp
     outFile.close();
 }
 
-void exportSchedulesToText(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses) {
+bool exportSchedulesToText(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses) {
+    vector<Schedule> validSchedules;
+
+    for (const auto& schedule : schedules) {
+        auto dayMap = buildDayMapForSchedule(schedule, courses);
+
+        bool hasItems = false;
+        for (const auto& [day, items] : dayMap) {
+            if (!items.empty()) {
+                hasItems = true;
+                break;
+            }
+        }
+
+        if (hasItems) {
+            validSchedules.push_back(schedule);
+        }
+    }
+
+    if (validSchedules.empty()) {
+        Logger::get().logError("there are no valid schedules, aborting...");
+        return false;
+    }
+
     ofstream outFile(outputPath);
     if (!outFile.is_open()) {
-        cerr << "Failed to open output file: " << outputPath << endl;
-        return;
+        ostringstream message;
+        message << "Cannot open file: " << outputPath << ", aborting...";
+        Logger::get().logError(message.str());
+        return false;
     }
 
-    for (size_t i = 0; i < schedules.size(); ++i) {
-        writeScheduleToFile(outFile, schedules[i], i, courses);
-        if (i + 1 < schedules.size())
+    for (size_t i = 0; i < validSchedules.size(); ++i) {
+        writeScheduleToFile(outFile, validSchedules[i], i, courses);
+        if (i + 1 < validSchedules.size())
             outFile << "\n";
     }
-
     outFile.close();
+
+    return true;
 }
 
 string dayToString(int day) {

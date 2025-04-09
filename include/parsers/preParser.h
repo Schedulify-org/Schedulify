@@ -48,4 +48,6 @@ bool isInteger(const std::string& s);
 
 bool validateID(const string& raw_id);
 
+bool validateLocation(const string &location, int type);
+
 #endif // PRE_PARSER_H
