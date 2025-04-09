@@ -21,11 +21,13 @@ int main_app(const string& inputPath, const string& modifiedOutputPath ,const st
 
     Logger::get().logInfo("schedules build successfully, generating output");
 
-    exportSchedulesToText(schedules, modifiedOutputPath, courses);
+    bool success = exportSchedulesToText(schedules, modifiedOutputPath, courses);
 
-    ostringstream message;
-    message << "output finish, can be seen in " << modifiedOutputPath;
-    Logger::get().logInfo(message.str());
+    if (success) {
+        ostringstream message;
+        message << "output finish, can be seen in " << modifiedOutputPath;
+        Logger::get().logInfo(message.str());
+    }
 
     return 0;
 }
