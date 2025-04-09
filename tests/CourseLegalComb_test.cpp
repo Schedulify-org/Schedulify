@@ -2,22 +2,21 @@
 #include "schedule_algorithm/CourseLegalComb.h"
 #include "schedule_algorithm/TimeUtils.h"
 
-// Optional: Enum for readable day values
 enum DayOfWeek { Mon = 0, Tue, Wed, Thu, Fri, Sat, Sun };
 
 class CourseLegalCombTest : public ::testing::Test {
 protected:
     CourseLegalComb comb;
 
-    Session makeSession(const string& start, const string& end, int day) {
+    Session makeSession(const std::string& start, const std::string& end, int day) {
         return Session{day, start, end, "", ""};
     }
 
     Course makeCourse(
             int id,
-            const vector<Session>& lectures,
-            const vector<Session>& tutorials = {},
-            const vector<Session>& labs = {}
+            const std::vector<Session>& lectures,
+            const std::vector<Session>& tutorials = {},
+            const std::vector<Session>& labs = {}
     ) {
         Course c;
         c.id = id;
@@ -28,6 +27,7 @@ protected:
     }
 };
 
+// Basic: Single lecture, no tutorial/lab
 TEST_F(CourseLegalCombTest, SingleLectureOnly) {
     Course c = makeCourse(1, { makeSession("10:00", "12:00", Mon) });
 
@@ -38,6 +38,7 @@ TEST_F(CourseLegalCombTest, SingleLectureOnly) {
     EXPECT_EQ(combinations[0].lab, nullptr);
 }
 
+// All 3 session types without conflicts
 TEST_F(CourseLegalCombTest, LectureWithTutorialAndLab) {
     Course c = makeCourse(
             2,
@@ -52,18 +53,20 @@ TEST_F(CourseLegalCombTest, LectureWithTutorialAndLab) {
     EXPECT_NE(combinations[0].lab, nullptr);
 }
 
+// Tutorial overlaps with lecture → should be excluded
 TEST_F(CourseLegalCombTest, OverlappingTutorialShouldBeSkipped) {
     Course c = makeCourse(
             3,
             { makeSession("09:00", "11:00", Tue) },
-            { makeSession("10:30", "11:30", Tue) }, // overlaps with lecture
+            { makeSession("10:30", "11:30", Tue) },
             { makeSession("11:30", "12:30", Tue) }
     );
 
     auto combinations = comb.generate(c);
-    ASSERT_EQ(combinations.size(), 0); // Tutorial overlaps, no valid combination
+    ASSERT_EQ(combinations.size(), 0);
 }
 
+// Two lectures with same valid tutorial/lab → 2 combinations
 TEST_F(CourseLegalCombTest, MultipleValidCombinations) {
     Course c = makeCourse(
             4,
@@ -76,18 +79,65 @@ TEST_F(CourseLegalCombTest, MultipleValidCombinations) {
     );
 
     auto combinations = comb.generate(c);
-    // 2 lectures × 1 tutorial × 1 lab = 2 valid combinations
     ASSERT_EQ(combinations.size(), 2);
 }
 
+// Tutorial and lab conflict → skip
 TEST_F(CourseLegalCombTest, TutorialAndLabOverlapShouldSkip) {
     Course c = makeCourse(
             5,
             { makeSession("08:00", "10:00", Thu) },
             { makeSession("10:00", "11:00", Thu) },
-            { makeSession("10:30", "11:30", Thu) } // overlaps with tutorial
+            { makeSession("10:30", "11:30", Thu) }
     );
 
     auto combinations = comb.generate(c);
-    ASSERT_EQ(combinations.size(), 0); // Lab conflicts with tutorial
+    ASSERT_EQ(combinations.size(), 0);
+}
+
+// Edge Case: Course with no sessions at all
+TEST_F(CourseLegalCombTest, EmptyCourseShouldReturnNothing) {
+    Course c = makeCourse(6, {});
+    auto combinations = comb.generate(c);
+    ASSERT_TRUE(combinations.empty());
+}
+
+// Edge Case: Only lab sessions, no lectures (invalid input case)
+TEST_F(CourseLegalCombTest, OnlyLabsShouldReturnNothing) {
+    Course c = makeCourse(7, {}, {}, { makeSession("10:00", "11:00", Fri) });
+    auto combinations = comb.generate(c);
+    ASSERT_TRUE(combinations.empty());
+}
+
+// Edge Case: Overlapping lecture and lab, but no tutorial
+TEST_F(CourseLegalCombTest, LectureLabOverlapNoTutorial) {
+    Course c = makeCourse(
+            8,
+            { makeSession("09:00", "11:00", Fri) },
+            {},  // no tutorial
+            { makeSession("10:30", "11:30", Fri) }  // overlaps with lecture
+    );
+    auto combinations = comb.generate(c);
+    ASSERT_EQ(combinations.size(), 0);
+}
+
+// Edge Case: Multiple tutorials and labs, only some valid
+TEST_F(CourseLegalCombTest, SomeCombinationsValidAmongMany) {
+    Course c = makeCourse(
+            9,
+            { makeSession("08:00", "09:30", Wed) },
+            {
+                    makeSession("09:30", "10:30", Wed),  // valid
+                    makeSession("08:30", "09:15", Wed)   // overlaps
+            },
+            {
+                    makeSession("10:30", "11:30", Wed),  // valid
+                    makeSession("09:00", "10:00", Wed)   // overlaps
+            }
+    );
+
+    auto combinations = comb.generate(c);
+    ASSERT_EQ(combinations.size(), 1);  // Only one fully non-overlapping combo
+    EXPECT_EQ(combinations[0].tutorial->start_time, "09:30");
+    EXPECT_EQ(combinations[0].lab->start_time, "10:30");
 }
