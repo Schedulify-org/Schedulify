@@ -1,6 +1,7 @@
 #include "schedule_algorithm/TimeUtils.h"
 #include "gtest/gtest.h"
 #include "test_helpers.h"  // Contains makeSession helper
+#include "parsers/postParser.h"
 
 using namespace std;
 
