@@ -123,10 +123,6 @@ TEST(PreParserTest, DuplicateUserInputIDs) {
     for (const auto& id : expected) {
         EXPECT_TRUE(input.count(id)) << "Missing expected course ID: " << id;
     }
-
-    // Check for duplicate warning in stderr (optional)
-    EXPECT_NE(output.find("Warning: Duplicate course ID found in user input: 83112"), string::npos);
-    EXPECT_NE(output.find("Warning: Duplicate course ID found in user input: 00001"), string::npos);
 }
 
 

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 project(sched_tests)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(USER_DB_PATH="../../data/V1.0CourseDB.txt")
@@ -24,6 +24,8 @@ add_executable(tests_executable
         preParser_test.cpp
         ScheduleBuilder_test.cpp
         ../src/main/main_app.cpp
+        ../src/logs/logger.cpp
+        ../src/logs/logManager.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp
         ../src/schedule_algorithm/CourseLegalComb.cpp
         ../src/parsers/preParser.cpp
