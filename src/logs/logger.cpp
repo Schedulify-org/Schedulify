@@ -23,10 +23,10 @@ void Logger::log(LogLevel level, const string& message) {
     std::string label;
     switch (level) {
         case LogLevel::INFO:
-            label = "[INFO  ] ";
+            label = "[INFO   ] ";
             break;
         case LogLevel::ERROR:
-            label = "[ERROR ] ";
+            label = "[ERROR  ] ";
             break;
         case LogLevel::WARNING:
             label = "[WARNING] ";
@@ -45,7 +45,7 @@ void Logger::logError(const string& message) {
 }
 
 void Logger::logWarning(const string &message) {
-    log(LogLevel::ERROR, message);
+    log(LogLevel::WARNING, message);
 }
 
 std::string Logger::getLogPath() const {

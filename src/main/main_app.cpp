@@ -9,6 +9,11 @@ int main_app(const string& inputPath, const string& modifiedOutputPath ,const st
 
     vector<Course> courses = parseCourseDB(inputPath, userInput);
 
+    if (courses.empty()) {
+        Logger::get().logError("Error while parsing input data. aborting process");
+        return 1;
+    }
+
     Logger::get().logInfo("initiate schedules builder");
 
     ScheduleBuilder builder;

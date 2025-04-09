@@ -1,0 +1,17 @@
+090425_18-07-10: [INFO  ] Input parsing started
+090425_18-07-10: [ERROR ] Found invalid Session,Room number must be from 1 - 999
+090425_18-07-10: [ERROR ] Error parsing session line: ",3,19:00,20:00,1100,4200" — Found invalid Session,Room number must be from 1 - 999
+090425_18-07-10: [ERROR ] Skipping malformed session part: ",3,19:00,20:00,1100,4200"
+090425_18-07-10: [INFO  ] Successfully parsed 3 courses.
+090425_18-07-10: [INFO  ] User selected 3 valid courses.
+090425_18-07-10: [INFO  ] initiate schedules builder
+090425_18-07-10: [INFO  ] Starting schedule generation for 3 courses.
+090425_18-07-10: [INFO  ] Generated 16 valid combinations for course ID 83112
+090425_18-07-10: [INFO  ] Generated 16 combinations for course ID 83112
+090425_18-07-10: [INFO  ] Generated 1 valid combinations for course ID 83533
+090425_18-07-10: [INFO  ] Generated 1 combinations for course ID 83533
+090425_18-07-10: [INFO  ] Generated 2 valid combinations for course ID 1
+090425_18-07-10: [INFO  ] Generated 2 combinations for course ID 1
+090425_18-07-10: [INFO  ] Finished schedule generation. Total valid schedules: 22
+090425_18-07-10: [INFO  ] schedules build successfully, generating output
+090425_18-07-10: [INFO  ] output finish, can be seen in ../data/V1.schedOutput.txt
