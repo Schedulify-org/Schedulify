@@ -15,10 +15,12 @@ FetchContent_Declare(googletest
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 add_executable(tests_executable
         main_tests.cpp
-        algorithm_test.cpp
         CourseLegalComb_test.cpp
         TimeUtils_test.cpp
         preParser_test.cpp
@@ -30,6 +32,8 @@ add_executable(tests_executable
         ../src/schedule_algorithm/TimeUtils.cpp
         ../src/parsers/postParser.cpp
         postParser_test.cpp
+        ../src/logs/logger.cpp
+        ../src/logs/logManager.cpp
 )
 
 target_link_libraries(tests_executable gtest_main)
