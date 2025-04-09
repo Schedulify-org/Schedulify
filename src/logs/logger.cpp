@@ -18,3 +18,36 @@ void Logger::log(const string& message) {
     std::lock_guard<std::mutex> lock(logMutex);
     appendToLogFile(logPath, message);
 }
+
+void Logger::log(LogLevel level, const string& message) {
+    std::string label;
+    switch (level) {
+        case LogLevel::INFO:
+            label = "[INFO  ] ";
+            break;
+        case LogLevel::ERROR:
+            label = "[ERROR ] ";
+            break;
+        case LogLevel::WARNING:
+            label = "[WARNING] ";
+            break;
+    }
+
+    log(label + message);
+}
+
+void Logger::logInfo(const string& message) {
+    log(LogLevel::INFO, message);
+}
+
+void Logger::logError(const string& message) {
+    log(LogLevel::ERROR, message);
+}
+
+void Logger::logWarning(const string &message) {
+    log(LogLevel::ERROR, message);
+}
+
+std::string Logger::getLogPath() const {
+    return logPath;
+}

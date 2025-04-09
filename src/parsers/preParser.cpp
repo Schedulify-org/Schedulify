@@ -1,5 +1,5 @@
 #include "parsers/preParser.h"
-
+#include "logs/logger.h"
 
 using namespace std;
 
@@ -24,7 +24,10 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
     unordered_set<string> seenIDs;
 
     if (!inputFile) {
-        cerr << "Could not open the file: " << filename << endl;
+        ostringstream message;
+        message << "Could not open the file: " << filename;
+        Logger::get().logError(message.str());
+
         return courseIDs;
     }
 
@@ -39,7 +42,10 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
 
             // Warn on duplicates
             if (seenIDs.find(token) != seenIDs.end()) {
-                cerr << "Warning: Duplicate course ID found in user input: " << token << endl;
+                ostringstream message;
+                message << "Duplicate course ID found in user input: " << token;
+                Logger::get().logWarning(message.str());
+
                 continue;
             }
 
@@ -49,7 +55,8 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
 
             // Enforce limit of 7 total valid courses
             if (courseIDs.size() > 7) {
-                cerr << "Error: More than 7 course IDs selected. Limit is 7." << endl;
+                Logger::get().logError("More than 7 course IDs selected. Limit is 7.");
+
                 courseIDs.clear(); // discard everything
                 inputFile.close();
                 return courseIDs;
@@ -69,7 +76,10 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
 vector<Course> parseCourseDB(const string& path, const string& userInput) {
     ifstream file(path);
     if (!file.is_open()) {
-        cerr << "Cannot open file: " << path << endl;
+        ostringstream message;
+        message << "Cannot open file: " << path;
+        Logger::get().logError(message.str());
+
         return {};
     }
 
@@ -89,7 +99,9 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
 
 // 2. Course ID
         if (!getline(file, line)) {
-            cerr << "Error: Missing course ID after name at line " << line_number << endl;
+            ostringstream message;
+            message << "Error: Missing course ID after name at line " << line_number;
+            Logger::get().logError(message.str());
 
             // Skip rest of malformed course
             while (getline(file, line)) {
@@ -102,7 +114,9 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
 
         line_number++;
         if (!validateID(line)) {
-            cerr << "Error: Invalid course ID at line " << line_number << ": " << line << endl;
+            ostringstream message;
+            message << "Error: Invalid course ID at line " << line_number << ": " << line;
+            Logger::get().logError(message.str());
 
             //  Skip everything until the next course marker ($$$$)
             while (getline(file, line)) {
@@ -119,13 +133,19 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
         }
 
         if (courseDB.find(c.id) != courseDB.end()) {
-            cerr << "Warning: Duplicate course ID " << c.id << " at line " << line_number << ". Skipping." << endl;
+            ostringstream message;
+            message << "Duplicate course ID " << c.id << " at line " << line_number << ". Skipping.";
+            Logger::get().logWarning(message.str());
+
             continue;
         }
 
         // 3. Teacher name
         if (!getline(file, line)) {
-            cerr << "Error: Missing teacher name at line " << line_number << " for course ID " << c.id << endl;
+            ostringstream message;
+            message << "Error: Missing teacher name at line " << line_number << " for course ID " << c.id;
+            Logger::get().logError(message.str());
+
             break;
         }
         line_number++;
@@ -147,10 +167,14 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
                     auto labs = parseMultipleSessions(line.substr(2));
                     c.labs.insert(c.labs.end(), labs.begin(), labs.end());
                 } else {
-                    cerr << "Warning: Unknown session format at line " << line_number << ": " << line << endl;
+                    ostringstream message;
+                    message << "Unknown session format at line " << line_number << ": " << line;
+                    Logger::get().logWarning(message.str());
                 }
             } catch (const exception& e) {
-                cerr << "Error parsing session line at line " << line_number << ": " << e.what() << endl;
+                ostringstream message;
+                message << "Error parsing session line at line " << line_number << ": " << e.what();
+                Logger::get().logError(message.str());
             }
         }
         if (validateID(c.raw_id)) {
@@ -161,9 +185,11 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
     }
 
     if (course_count == 0) {
-        cerr << "Warning: No valid courses found in the input." << endl;
+        Logger::get().logError("No valid courses found in the input.");
     } else {
-        cout << "Successfully parsed " << course_count << " courses." << endl;
+        ostringstream message;
+        message << "Successfully parsed " << course_count << " courses.";
+        Logger::get().logInfo(message.str());
     }
 
     unordered_set<string> rawIDs = readSelectedCourseIDs(userInput);
@@ -171,7 +197,10 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
 
     for (const auto& strID : rawIDs) {
         if (!validateID(strID)) {
-            cerr << "Invalid course ID in validUserInput.txt (not an int): " << strID << endl;
+            ostringstream message;
+            message << "Invalid course ID in validUserInput.txt (not an int): " << strID;
+            Logger::get().logError(message.str());
+
             continue;
         }
 
@@ -179,7 +208,10 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
 
         // Check if course exists in courseDB
         if (courseDB.find(id) == courseDB.end()) {
-            cerr << id << " this course does not exist" << endl;
+            ostringstream message;
+            message << id << " this course does not exist";
+            Logger::get().logError(message.str());
+
             continue;
         }
 
@@ -187,7 +219,8 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
     }
 
     if (userRequestedIDs.empty()) {
-        cerr << "Error: No valid user course IDs found in validUserInput.txt." << endl;
+        Logger::get().logError("No valid user course IDs found in validUserInput.txt.");
+
         return {};
     }
 
@@ -199,16 +232,23 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
     }
 
     if (userSelectedCourses.size() > 7) {
-        cerr << "Error: User selected more than 7 valid courses (" << userSelectedCourses.size() << "). Limit is 7." << endl;
+        ostringstream message;
+        message << "Error: User selected more than 7 valid courses (" << userSelectedCourses.size() << "). Limit is 7.";
+        Logger::get().logError(message.str());
+
         return {};
     }
 
     if (userSelectedCourses.empty()) {
-        cerr << "Error: No matching courses from user input exist in course database." << endl;
+        Logger::get().logError("No matching courses from user input exist in course database.");
+
         return {};
     }
 
-    cout << "User selected " << userSelectedCourses.size() << " valid courses." << endl;
+    ostringstream message;
+    message << "User selected " << userSelectedCourses.size() << " valid courses.";
+    Logger::get().logInfo(message.str());
+
     return userSelectedCourses;
 
 }
@@ -249,7 +289,10 @@ Session parseSingleSession(const string& line) {
         getline(ss, token, ',');
         s.room_number = token;
     } catch (const exception& e) {
-        cerr << "Error parsing session line: \"" << line << "\" — " << e.what() << endl;
+        ostringstream message;
+        message << "Error parsing session line: \"" << line << "\" — " << e.what();
+        Logger::get().logError(message.str());
+
         throw;
     }
 
@@ -267,7 +310,9 @@ vector<Session> parseMultipleSessions(string line) {
         try {
             sessions.push_back(parseSingleSession(part));
         } catch (...) {
-            cerr << "Skipping malformed session part: \"" << part << "\"" << endl;
+            ostringstream message;
+            message << "Skipping malformed session part: \"" << part << "\"";
+            Logger::get().logWarning(message.str());
         }
         line = "S," + line.substr(pos + 3);
     }
@@ -275,7 +320,10 @@ vector<Session> parseMultipleSessions(string line) {
     try {
         sessions.push_back(parseSingleSession(line));
     } catch (...) {
-        cerr << "Skipping malformed session part: \"" << line << "\"" << endl;
+        ostringstream message;
+        message << "Skipping malformed session part: \"" << line << "\"";
+        Logger::get().logWarning(message.str());
+
     }
 
     return sessions;

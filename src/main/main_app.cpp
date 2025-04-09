@@ -3,25 +3,24 @@
 
 int main_app(const string& inputPath, const string& modifiedOutputPath ,const string& userInput) {
 
-    Logger::get().initialize();  // Sets timestamped log path
+    Logger::get().initialize();
 
-    Logger::get().log("Input parsing started");
+    Logger::get().logInfo("Input parsing started");
 
     vector<Course> courses = parseCourseDB(inputPath, userInput);
 
-    Logger::get().log("initiate schedules builder");
+    Logger::get().logInfo("initiate schedules builder");
 
     ScheduleBuilder builder;
     vector<Schedule> schedules = builder.build(courses);
 
-    Logger::get().log("schedules build successfully, generating output");
+    Logger::get().logInfo("schedules build successfully, generating output");
 
     exportSchedulesToText(schedules, modifiedOutputPath, courses);
 
     ostringstream message;
     message << "output finish, can be seen in " << modifiedOutputPath;
-
-    Logger::get().log(message.str());
+    Logger::get().logInfo(message.str());
 
     return 0;
 }
