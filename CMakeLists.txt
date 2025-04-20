@@ -11,7 +11,7 @@ add_compile_definitions(COURSEDBINPUT="../data/V1.0CourseDB.txt")
 
 add_compile_definitions(OUTPUTPATH="../data/V1.schedOutput.txt")
 
-add_compile_definitions(OUTPUTCOURSEPATH="../data/V1.courseOutput.txt")
+add_compile_definitions(OUTPUTCOURSEPATH="../data/V1.courseOutput.json")
 
 add_compile_definitions(USERINPUT="../data/userInput.txt")
 
