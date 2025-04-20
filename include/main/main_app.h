@@ -12,6 +12,6 @@ using std::string;
 using std::cout;
 
 // main function to load data file, generate schedules and export as json
-int main_app(const string& inputPath, const string& modifiedOutputPath, const string& userInput);
+int main_app(const string& inputPath, const string& modifiedOutputPath, const string& courseOutput ,const string& userInput);
 
 #endif

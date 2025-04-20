@@ -2,10 +2,11 @@
 
 int main() {
     string inputPath = COURSEDBINPUT;
-    string modifiedOutputPath = UOTPUTPATH;
+    string modifiedOutputPath = OUTPUTPATH;
+    string courseOutput = OUTPUTCOURSEPATH;
     string userInput = USERINPUT;
 
-    main_app(inputPath, modifiedOutputPath, userInput);
+    main_app(inputPath, modifiedOutputPath, courseOutput, userInput);
 
     return 1;
 }
