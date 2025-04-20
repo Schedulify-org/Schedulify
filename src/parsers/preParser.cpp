@@ -182,7 +182,6 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
             courseDB[c.id] = c;
             course_count++;
         }
-
     }
 
     if (course_count == 0) {
@@ -198,7 +197,6 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
                 ostringstream message;
                 message << "Course: " << courseId << "Have no Sessions and therefore has been deleted";
                 Logger::get().logError(message.str());
-
             }
         }
         if (course_count == 0) {
@@ -210,65 +208,13 @@ vector<Course> parseCourseDB(const string& path, const string& userInput) {
         Logger::get().logInfo(message.str());
     }
 
-    unordered_set<string> rawIDs = readSelectedCourseIDs(userInput);
-    unordered_set<int> userRequestedIDs;
-
-    for (const auto& strID : rawIDs) {
-        if (!validateID(strID)) {
-            ostringstream message;
-            message << "Invalid course ID in validUserInput.txt (not an int): " << strID;
-            Logger::get().logError(message.str());
-
-            continue;
-        }
-
-        int id = stoi(strID);
-
-        // Check if course exists in courseDB
-        if (courseDB.find(id) == courseDB.end()) {
-            ostringstream message;
-            message << id << " this course does not exist";
-            Logger::get().logError(message.str());
-
-            continue;
-        }
-
-        userRequestedIDs.insert(id);
-    }
-
-    if (userRequestedIDs.empty()) {
-        Logger::get().logError("No valid user course IDs found in validUserInput.txt.");
-
-        return {};
-    }
-
-    vector<Course> userSelectedCourses;
+    // Convert courseDB map to vector (without filtering by user selection)
+    vector<Course> allCourses;
     for (const auto& [id, course] : courseDB) {
-        if (userRequestedIDs.find(id) != userRequestedIDs.end()) {
-            userSelectedCourses.push_back(course);
-        }
+        allCourses.push_back(course);
     }
 
-    if (userSelectedCourses.size() > 7) {
-        ostringstream message;
-        message << "Error: User selected more than 7 valid courses (" << userSelectedCourses.size() << "). Limit is 7.";
-        Logger::get().logError(message.str());
-
-        return {};
-    }
-
-    if (userSelectedCourses.empty()) {
-        Logger::get().logError("No matching courses from user input exist in course database.");
-
-        return {};
-    }
-
-    ostringstream message;
-    message << "User selected " << userSelectedCourses.size() << " valid courses.";
-    Logger::get().logInfo(message.str());
-
-    return userSelectedCourses;
-
+    return allCourses;
 }
 
 // Parses one session string "S,day,start,end,building,room"
@@ -385,6 +331,7 @@ bool isInteger(const std::string& s) {
         return false;
     }
 }
+
 bool validateLocation(const string &location, int type) {
     if (location.size()>type || location.size()<1) return false;
     if (!isInteger(location)) return false;

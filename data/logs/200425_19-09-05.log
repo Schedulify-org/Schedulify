@@ -1,0 +1,14 @@
+200425_19-09-05: [INFO   ] Input parsing started
+200425_19-09-05: [INFO   ] Successfully parsed 3 courses.
+200425_19-09-05: [INFO   ] User selected 3 valid courses.
+200425_19-09-05: [INFO   ] initiate schedules builder
+200425_19-09-05: [INFO   ] Starting schedule generation for 3 courses.
+200425_19-09-05: [INFO   ] Generated 16 valid combinations for course ID 83112
+200425_19-09-05: [INFO   ] Generated 16 combinations for course ID 83112
+200425_19-09-05: [INFO   ] Generated 1 valid combinations for course ID 83533
+200425_19-09-05: [INFO   ] Generated 1 combinations for course ID 83533
+200425_19-09-05: [INFO   ] Generated 4 valid combinations for course ID 1
+200425_19-09-05: [INFO   ] Generated 4 combinations for course ID 1
+200425_19-09-05: [INFO   ] Finished schedule generation. Total valid schedules: 44
+200425_19-09-05: [INFO   ] initiate output generation
+200425_19-09-05: [INFO   ] output finish, can be seen in ../data/V1.schedOutput.txt
