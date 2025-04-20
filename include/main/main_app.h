@@ -1,8 +1,8 @@
 #ifndef SCHED_MAIN_APP_H
 #define SCHED_MAIN_APP_H
 
-#include "parsers/preParser.h"
-#include "parsers/postParser.h"
+#include "fileHandlers/preParser.h"
+#include "fileHandlers/parseToJson.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
 
 #include <string>

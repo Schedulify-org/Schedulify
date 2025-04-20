@@ -26,7 +26,7 @@ int main_app(const string& inputPath, const string& modifiedOutputPath ,const st
 
     Logger::get().logInfo("initiate output generation");
 
-    bool success = exportSchedulesToText(schedules, modifiedOutputPath, courses);
+    bool success = exportSchedulesToJson(schedules, modifiedOutputPath, courses);
 
     if (success) {
         ostringstream message;

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <sstream>
-#include "parsers/postParser.h"
+#include "parsers/parseToJson.h"
 
 Course createCourse(int id, const string& raw_id, const string& name) {
     return Course{id, raw_id, name};
