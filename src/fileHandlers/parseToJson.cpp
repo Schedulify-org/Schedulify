@@ -10,26 +10,10 @@ bool exportSchedulesToJson(const vector<Schedule>& schedules, const string& outp
         return false;
     }
 
-    vector<Schedule> validSchedules;
-
-    for (const auto& schedule : schedules) {
-        auto dayMap = buildDayMapForSchedule(schedule, courses);
-
-        bool hasItems = false;
-        for (const auto& [day, items] : dayMap) {
-            if (!items.empty()) {
-                hasItems = true;
-                break;
-            }
-        }
-
-        if (hasItems) {
-            validSchedules.push_back(schedule);
-        }
-    }
+    vector<Schedule> validSchedules = filterValidSchedules(schedules, courses);
 
     if (validSchedules.empty()) {
-        Logger::get().logError("there are no valid schedules, aborting...");
+        Logger::get().logError("There are no valid schedules, aborting...");
         return false;
     }
 
@@ -48,30 +32,63 @@ bool exportSchedulesToJson(const vector<Schedule>& schedules, const string& outp
                 if (dayWritten) outFile << ",";
                 dayWritten = true;
 
-                // Sort schedule items by start time
-                vector<ScheduleItem>& items = dayMap[day];
-                sort(items.begin(), items.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
-                    return a.start < b.start;
-                });
-
-                // Writing the schedule for the current day to JSON
-                outFile << R"({"day":")" << dayToString(day) << R"(","schedule_items":[)";
-                for (size_t j = 0; j < items.size(); ++j) {
-                    outFile << ScheduleItemToJson(items[j]);
-                    if (j + 1 < items.size()) outFile << ",";
-                }
-                outFile << "]}";
+                // Write the day's schedule to JSON
+                writeDayScheduleToJson(outFile, dayMap, day);
             }
         }
 
         outFile << "]}";
-        if (i + 1 < schedules.size()) outFile << ",";
+        if (i + 1 < validSchedules.size()) outFile << ",";
     }
 
     outFile << "]";
     outFile.close();
 
     return true;
+}
+
+vector<Schedule> filterValidSchedules(const vector<Schedule>& schedules, const vector<Course>& courses) {
+    vector<Schedule> validSchedules;
+
+    for (const auto& schedule : schedules) {
+        auto dayMap = buildDayMapForSchedule(schedule, courses);
+
+        bool hasItems = false;
+        for (const auto& [day, items] : dayMap) {
+            if (!items.empty()) {
+                hasItems = true;
+                break;
+            }
+        }
+
+        if (hasItems) {
+            validSchedules.push_back(schedule);
+        }
+    }
+
+    return validSchedules;
+}
+
+void writeDayScheduleToJson(ostream& outFile, const unordered_map<int, vector<ScheduleItem>>& dayMap, int day) {
+    if (dayMap.count(day)) {
+        outFile << R"({"day":")" << dayToString(day) << R"(","schedule_items":[)";
+
+        // Create a non-const copy of the vector
+        vector<ScheduleItem> items = dayMap.at(day);
+
+        // Sort the copied vector
+        sort(items.begin(), items.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
+            return a.start < b.start;
+        });
+
+        // Write the sorted schedule items
+        for (size_t j = 0; j < items.size(); ++j) {
+            outFile << ScheduleItemToJson(items[j]);
+            if (j + 1 < items.size()) outFile << ",";
+        }
+
+        outFile << "]}";
+    }
 }
 
 string ScheduleItemToJson(const ScheduleItem& s) {
@@ -85,7 +102,6 @@ string ScheduleItemToJson(const ScheduleItem& s) {
        << R"(,"room":")" << s.room << "\"}";
     return ss.str();
 }
-
 
 void addSessionToDayMap(unordered_map<int, vector<ScheduleItem>>& dayMap, const Session* session, const string& type,
         const string& courseName, const string& raw_id) {

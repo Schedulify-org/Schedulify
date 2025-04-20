@@ -40,4 +40,8 @@ void addSessionToDayMap(unordered_map<int, vector<ScheduleItem>>& dayMap, const 
 // Builds a map from day index to list of scheduled items for a given schedule.
 unordered_map<int, vector<ScheduleItem>> buildDayMapForSchedule(const Schedule& schedule, const vector<Course>& courses);
 
+vector<Schedule> filterValidSchedules(const vector<Schedule>& schedules, const vector<Course>& courses);
+
+void writeDayScheduleToJson(ostream& outFile, const unordered_map<int, vector<ScheduleItem>>& dayMap, int day);
+
 #endif //POST_PARSER_H
