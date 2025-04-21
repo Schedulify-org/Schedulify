@@ -34,7 +34,7 @@ public:
 bool isValidTime(const string& time);
 
 // Parses full course DB from input stream - returns all courses without filtering
-vector<Course> parseCourseDB(const string& path, const string& userInput);
+vector<Course> parseCourseDB(const string& path);
 
 // This function is kept for backward compatibility but its results are not used for filtering
 unordered_set<string> readSelectedCourseIDs(const string& filename);

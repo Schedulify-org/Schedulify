@@ -69,7 +69,7 @@ unordered_set<string> readSelectedCourseIDs(const string& filename) {
 }
 
 // Parses full course DB from input stream
-vector<Course> parseCourseDB(const string& path, const string& userInput) {
+vector<Course> parseCourseDB(const string& path) {
     fstream file(path);
     if (!file.is_open()) {
         ostringstream message;

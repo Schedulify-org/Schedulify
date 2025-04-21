@@ -48,10 +48,9 @@ bool keyExistsInMap(const map<string, ICommand *>& commands, const std::string& 
 
 bool GenerateCourseFile::execute(string answer) {
     string inputPath = COURSEDBINPUT;
-    string userInput = USERINPUT;
     string courseOutput = OUTPUTCOURSEPATH;
 
-    vector<Course> courses = parseCourseDB(inputPath, userInput);
+    vector<Course> courses = parseCourseDB(inputPath);
 
     if (courses.empty()) {
         Logger::get().logError("Error while parsing input data. aborting process");
@@ -77,7 +76,7 @@ bool GenerateSchedFile::execute(string answer) {
     string inputPath = COURSEDBINPUT;
     string userInput = USERINPUT;
 
-    vector<Course> courses = parseCourseDB(inputPath, userInput);
+    vector<Course> courses = parseCourseDB(inputPath);
 
     ScheduleBuilder builder;
     vector<Schedule> schedules = builder.build(courses);
