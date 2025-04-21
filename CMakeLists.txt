@@ -13,20 +13,19 @@ add_compile_definitions(OUTPUTPATH="../data/V1.schedOutput.json")
 
 add_compile_definitions(OUTPUTCOURSEPATH="../data/V1.courseOutput.json")
 
-add_compile_definitions(USERINPUT="../data/userInput.txt")
+add_compile_definitions(USERINPUT="../data/V1.userChoiceInput.txt")
 
 # Source files
 set(SOURCES
         src/main/main.cpp
         src/main/main_app.cpp
-        src/parsers/parseTextToVector.cpp
+        src/parsers/parseCoursesToVector.cpp
         src/parsers/parseSchedToJson.cpp
         src/schedule_algorithm/ScheduleBuilder.cpp
         src/schedule_algorithm/CourseLegalComb.cpp
         src/schedule_algorithm/TimeUtils.cpp
         src/logs/logManager.cpp
         src/logs/logger.cpp
-        src/parsers/parseJsonToVector.cpp
         src/parsers/parseCoursesToJson.cpp
 )
 

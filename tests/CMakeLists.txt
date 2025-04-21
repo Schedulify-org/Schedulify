@@ -30,7 +30,7 @@ add_executable(tests_executable
         ../src/logs/logManager.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp
         ../src/schedule_algorithm/CourseLegalComb.cpp
-        ../src/parsers/parseTextToVector.cpp
+        ../src/parsers/parseCoursesToVector.cpp
         ../src/schedule_algorithm/TimeUtils.cpp
         ../src/parsers/parseSchedToJson.cpp
         postParser_test.cpp

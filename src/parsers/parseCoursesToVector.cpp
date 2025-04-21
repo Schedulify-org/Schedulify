@@ -1,4 +1,4 @@
-#include "parsers//parseTextToVector.h"
+#include "parsers//parseCoursesToVector.h"
 #include "logs/logger.h"
 
 using namespace std;
@@ -15,57 +15,6 @@ bool isValidTime(const string& time)  {
     } catch (...) {
         return false;
     }
-}
-
-// Reads user input ID's from file (e.g., student/course ID)
-unordered_set<string> readSelectedCourseIDs(const string& filename) {
-    ifstream inputFile(filename);
-    unordered_set<string> courseIDs;
-    unordered_set<string> seenIDs;
-
-    if (!inputFile) {
-        ostringstream message;
-        message << "Could not open the file: " << filename;
-        Logger::get().logError(message.str());
-
-        return {};
-    }
-
-    string line;
-    while (getline(inputFile, line)) {
-        istringstream iss(line);
-        string token;
-
-        while (iss >> token) {
-            // Validate ID format
-            if (!validateID(token)) continue;
-
-            // Warn on duplicates
-            if (seenIDs.find(token) != seenIDs.end()) {
-                ostringstream message;
-                message << "Duplicate course ID found in user input: " << token;
-                Logger::get().logWarning(message.str());
-
-                continue;
-            }
-
-            // Add to both sets
-            seenIDs.insert(token);
-            courseIDs.insert(token);
-
-            // Enforce limit of 7 total valid courses
-            if (courseIDs.size() > 7) {
-                Logger::get().logError("More than 7 course IDs selected. Limit is 7.");
-
-                courseIDs.clear(); // discard everything
-                inputFile.close();
-                return courseIDs;
-            }
-        }
-    }
-
-    inputFile.close();
-    return courseIDs;
 }
 
 // Parses full course DB from input stream
@@ -336,4 +285,92 @@ bool validateLocation(const string &location, int type) {
     if (location.size()>type || location.size()<1) return false;
     if (!isInteger(location)) return false;
     return true;
+}
+
+vector<Course> extractUserChoice(const string& path, const vector<Course>& courses) {
+    fstream file(path);
+    if (!file.is_open()) {
+        ostringstream message;
+        message << "Cannot open file: " << path;
+        Logger::get().logError(message.str());
+
+        return {};
+    }
+
+    unordered_set<string> userChoice = readSelectedCourseIDs(path);
+    vector<Course> filteredCourses;
+
+    if (userChoice.empty()) {
+        Logger::get().logError("No valid selection were found in user choice extraction");
+
+        file.close();
+        return {};
+    }
+
+    // Iterate through the userChoice set and find the corresponding courses in the courses vector
+    for (const auto& courseId : userChoice) {
+        // Find the matching course in the courses vector using raw_id or id
+        auto it = find_if(courses.begin(), courses.end(), [&](const Course& course) {
+            return course.raw_id == courseId || to_string(course.id) == courseId;
+        });
+
+        // If a matching course is found, add it to the filteredCourses vector
+        if (it != courses.end()) {
+            filteredCourses.push_back(*it);
+        }
+    }
+
+    return filteredCourses;
+}
+
+// Reads user input ID's from file (e.g., student/course ID)
+unordered_set<string> readSelectedCourseIDs(const string& filename) {
+    fstream file(filename);
+    if (!file.is_open()) {
+        ostringstream message;
+        message << "Cannot open file: " << filename;
+        Logger::get().logError(message.str());
+
+        return {};
+    }
+    unordered_set<string> courseIDs;
+
+    string line;
+    while (getline(file, line)) {
+        istringstream iss(line);
+        string token;
+
+        while (iss >> token) {
+            // Validate ID format
+            if (!validateID(token)) {
+                ostringstream message;
+                message << "Invalid course ID: " << token;
+                Logger::get().logWarning(message.str());
+
+                continue;
+            }
+
+            // Warn on duplicates
+            if (courseIDs.find(token) != courseIDs.end()) {
+                ostringstream message;
+                message << "Duplicate course ID found in user input: " << token;
+                Logger::get().logWarning(message.str());
+
+                continue;
+            }
+
+            courseIDs.insert(token);
+
+            if (courseIDs.size() > 7) {
+                Logger::get().logError("More than 7 course IDs selected. Limit is 7.");
+
+                courseIDs.clear(); // discard everything
+                file.close();
+                return courseIDs;
+            }
+        }
+    }
+
+    file.close();
+    return courseIDs;
 }

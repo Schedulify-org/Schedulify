@@ -1,7 +1,7 @@
 #ifndef SCHEDULEBUILDER_H
 #define SCHEDULEBUILDER_H
 #include <vector>
-#include "parsers/parseTextToVector.h"
+#include "parsers/parseCoursesToVector.h"
 #include "TimeUtils.h"
 #include "schedule_types.h"
 

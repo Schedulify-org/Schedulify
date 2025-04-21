@@ -1,7 +1,7 @@
 #ifndef TIMEUTILS_H
 #define TIMEUTILS_H
 #include <string>
-#include "parsers/parseTextToVector.h"
+#include "parsers/parseCoursesToVector.h"
 #include "schedule_types.h"
 
 

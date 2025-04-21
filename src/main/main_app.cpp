@@ -78,15 +78,17 @@ bool GenerateSchedFile::execute(string answer) {
 
     vector<Course> courses = parseCourseDB(inputPath);
 
+    vector<Course> filteredCourses = extractUserChoice(userInput, courses);
+
     ScheduleBuilder builder;
-    vector<Schedule> schedules = builder.build(courses);
+    vector<Schedule> schedules = builder.build(filteredCourses);
 
     if (schedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");
         return false;
     }
 
-    bool success = exportSchedulesToJson(schedules, modifiedOutputPath, courses);
+    bool success = exportSchedulesToJson(schedules, modifiedOutputPath, filteredCourses);
 
     if (success) {
         ostringstream message;
