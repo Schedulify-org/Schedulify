@@ -1,6 +1,6 @@
 #include "schedule_algorithm/CourseLegalComb.h"
 #include "schedule_algorithm/TimeUtils.h"
-#include "fileHandlers/preParser.h"
+#include "parsers/parseTextToVector.h"
 #include "logs/logger.h"
 
 // Generates all valid combinations of sessions (lecture, tutorial, lab) for a given course

@@ -19,13 +19,15 @@ add_compile_definitions(USERINPUT="../data/userInput.txt")
 set(SOURCES
         src/main/main.cpp
         src/main/main_app.cpp
-        src/fileHandlers/preParser.cpp
-        src/fileHandlers/parseToJson.cpp
+        src/parsers/parseTextToVector.cpp
+        src/parsers/parseSchedToJson.cpp
         src/schedule_algorithm/ScheduleBuilder.cpp
         src/schedule_algorithm/CourseLegalComb.cpp
         src/schedule_algorithm/TimeUtils.cpp
         src/logs/logManager.cpp
         src/logs/logger.cpp
+        src/parsers/parseJsonToVector.cpp
+        src/parsers/parseCoursesToJson.cpp
 )
 
 # Add executable target

@@ -1,5 +1,5 @@
-#ifndef POST_PARSER_H
-#define POST_PARSER_H
+#ifndef PARSE_SCHED_TO_JSON
+#define PARSE_SCHED_TO_JSON
 
 #include "schedule_algorithm/ScheduleBuilder.h"
 
@@ -45,10 +45,4 @@ vector<Schedule> filterValidSchedules(const vector<Schedule>& schedules, const v
 
 void writeDayScheduleToJson(ostream& outFile, const unordered_map<int, vector<ScheduleItem>>& dayMap, int day);
 
-// filter the valid courses out of the course vector
-vector<Course> filterValidCourses(const vector<Course>& courses);
-
-// convert course vector to json file
-bool exportCoursesToJson(const vector<Course>& courses, const string& outputPath);
-
-#endif //POST_PARSER_H
+#endif //PARSE_SCHED_TO_JSON

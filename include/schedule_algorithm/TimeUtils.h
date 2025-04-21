@@ -1,7 +1,7 @@
 #ifndef TIMEUTILS_H
 #define TIMEUTILS_H
 #include <string>
-#include "fileHandlers/preParser.h"
+#include "parsers/parseTextToVector.h"
 #include "schedule_types.h"
 
 
