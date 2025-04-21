@@ -1,12 +1,7 @@
 #include "main/main.h"
 
 int main() {
-    string inputPath = COURSEDBINPUT;
-    string modifiedOutputPath = OUTPUTPATH;
-    string courseOutput = OUTPUTCOURSEPATH;
-    string userInput = USERINPUT;
-
-    main_app(inputPath, modifiedOutputPath, courseOutput, userInput);
-
+    app_main("SCHEDULES");
+    app_main("COURSES");
     return 1;
 }

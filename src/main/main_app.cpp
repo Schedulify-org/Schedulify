@@ -1,13 +1,62 @@
 #include "main/main_app.h"
 #include "logs/logger.h"
 
-int main_app(const string& inputPath, const string& modifiedOutputPath, const string& courseOutput ,const string& userInput) {
+int app_main(const string& action_selected) {
 
     Logger::get().initialize();
 
-    Logger::get().logInfo("Input parsing started");
+    map<string, ICommand*> commands = initiate_main_menu();
+
+    if (!keyExistsInMap(commands, action_selected)) {
+        Logger::get().logInfo("Bad request, " + action_selected + " is not a valid commend");
+        return 1;
+    }
+
+    try {
+        bool status = commands[action_selected]->execute(action_selected);
+
+        if (status) Logger::get().logInfo(action_selected + " finished successfully");
+        else Logger::get().logInfo("Error, unable to complete " + action_selected);
+    } catch (...) {
+        Logger::get().logInfo("Error, unable to complete " + action_selected);
+        return 1;
+    }
+
+    return 0;
+}
+
+map<string, ICommand*> initiate_main_menu() {
+    map<string, ICommand*> commands;
+
+    ICommand* GenerateCourses = new GenerateCourseFile();
+    commands["COURSES"] = GenerateCourses;
+
+    ICommand* GenerateSchedules = new GenerateSchedFile();
+    commands["SCHEDULES"] = GenerateSchedules;
+
+    return commands;
+}
+
+bool keyExistsInMap(const map<string, ICommand *>& commands, const std::string& key) {
+    for (const auto& pair : commands) {
+        if (pair.first == key) {
+            return true; // Key found
+        }
+    }
+    return false; // Key not found
+}
+
+bool GenerateCourseFile::execute(string answer) {
+    string inputPath = COURSEDBINPUT;
+    string userInput = USERINPUT;
+    string courseOutput = OUTPUTCOURSEPATH;
 
     vector<Course> courses = parseCourseDB(inputPath, userInput);
+
+    if (courses.empty()) {
+        Logger::get().logError("Error while parsing input data. aborting process");
+        return false;
+    }
 
     bool cSuccess = exportCoursesToJson(courses, courseOutput);
 
@@ -15,24 +64,28 @@ int main_app(const string& inputPath, const string& modifiedOutputPath, const st
         ostringstream message;
         message << "output finish, can be seen in " << courseOutput;
         Logger::get().logInfo(message.str());
-    }
-
-    if (courses.empty()) {
+    } else {
         Logger::get().logError("Error while parsing input data. aborting process");
-        return 1;
+        return false;
     }
 
-    Logger::get().logInfo("initiate schedules builder");
+    return true;
+}
+
+bool GenerateSchedFile::execute(string answer) {
+    string modifiedOutputPath = OUTPUTPATH;
+    string inputPath = COURSEDBINPUT;
+    string userInput = USERINPUT;
+
+    vector<Course> courses = parseCourseDB(inputPath, userInput);
 
     ScheduleBuilder builder;
     vector<Schedule> schedules = builder.build(courses);
 
     if (schedules.empty()) {
-        Logger::get().logError("received empty result from algorithm, aborting process");
-        return 1;
+        Logger::get().logError("unable to generate schedules, aborting process");
+        return false;
     }
-
-    Logger::get().logInfo("initiate output generation");
 
     bool success = exportSchedulesToJson(schedules, modifiedOutputPath, courses);
 
@@ -40,8 +93,10 @@ int main_app(const string& inputPath, const string& modifiedOutputPath, const st
         ostringstream message;
         message << "output finish, can be seen in " << modifiedOutputPath;
         Logger::get().logInfo(message.str());
+    } else {
+        Logger::get().logError("unable to generate schedules, aborting process");
+        return false;
     }
 
-    return 0;
+    return true;
 }
-
