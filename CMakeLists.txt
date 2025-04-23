@@ -13,7 +13,7 @@ add_compile_definitions(OUTPUTPATH="../data/V1.schedOutput.json")
 
 add_compile_definitions(OUTPUTCOURSEPATH="../data/V1.courseOutput.json")
 
-add_compile_definitions(USERINPUT="../data/V1.userChoiceInput.txt")
+add_compile_definitions(USERINPUT="../data/userInput.txt")
 
 # Source files
 set(SOURCES

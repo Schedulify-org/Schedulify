@@ -80,6 +80,11 @@ bool GenerateSchedFile::execute(string answer) {
 
     vector<Course> filteredCourses = extractUserChoice(userInput, courses);
 
+    if (filteredCourses.empty()) {
+        Logger::get().logError("no valid choices were found, aborting...");
+        return false;
+    }
+
     ScheduleBuilder builder;
     vector<Schedule> schedules = builder.build(filteredCourses);
 
