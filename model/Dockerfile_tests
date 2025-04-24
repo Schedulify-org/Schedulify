@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y cmake build-essential
 WORKDIR /usr/src/app
 
 # Copy the entire project into the container
-COPY . .
+COPY .. .
 
 WORKDIR /usr/src/app/tests
 

@@ -1,5 +1,5 @@
 build/
-.idea/
+../.idea/
 .vscode/
 cmake-build-debug/
 tests/cmake-build-debug/

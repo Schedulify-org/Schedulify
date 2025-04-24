@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(USER_DB_PATH="../../data/V1.0CourseDB.txt")
 
-include_directories(../include ../src ..)
+include_directories(../include ../src ../..)
 
 include(FetchContent)
 FetchContent_Declare(googletest
