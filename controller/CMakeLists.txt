@@ -15,6 +15,8 @@ set(PROJECT_SOURCES
         main.cpp
         src/Controller.cpp
         include/Controller.h
+        src/CourseModel.cpp
+        include/CourseModel.h
 )
 
 qt_add_resources(RESOURCES ../view/qml.qrc)

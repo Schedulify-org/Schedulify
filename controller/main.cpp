@@ -11,11 +11,11 @@ int main(int argc, char *argv[])
     std::cout << "Starting application" << std::endl;
     QApplication app(argc, argv);
 
-    // Create the ButtonController instance
-    ButtonController buttonController;
-
     // Create the QQmlApplicationEngine
     QQmlApplicationEngine engine;
+
+    // Create the ButtonController instance and pass the engine
+    ButtonController buttonController(&engine);
 
     // Register the ButtonController with QML
     engine.rootContext()->setContextProperty("buttonController", &buttonController);

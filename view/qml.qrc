@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>inputScreen.qml</file>
+        <file>courseListScreen.qml</file>
     </qresource>
 </RCC>
