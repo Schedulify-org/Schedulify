@@ -1,4 +1,4 @@
-#include "../include/Controller.h"
+#include "../include/controller.h"
 #include <QQmlContext>
 
 ButtonController::ButtonController(QQmlApplicationEngine* engine, QObject *parent)
@@ -30,16 +30,22 @@ void ButtonController::handleBrowseFiles()
 
 void ButtonController::handleUploadAndContinue()
 {
-    std::cout << "Upload and Continue button clicked - processing file" << std::endl;
+    std::cout << "Upload and Continue button clicked - navigating to course list" << std::endl;
 
     // Navigate to course list screen
-    navigateToCourseList();
+    goToCourseListScreen();
 }
 
-void ButtonController::navigateToCourseList()
+void ButtonController::goToCourseListScreen()
 {
-    // Clear current objects and load course list screen
-    m_engine->clearComponentCache();
-    m_engine->load(QUrl(QStringLiteral("qrc:/courseListScreen.qml")));
+    // Emit signal to navigate to course list screen
+    emit navigateToScreen(QUrl(QStringLiteral("qrc:/courseListScreen.qml")));
     std::cout << "Navigated to course list screen" << std::endl;
+}
+
+void ButtonController::goBack()
+{
+    // Emit signal to go back to previous screen
+    emit navigateBack();
+    std::cout << "Navigated back to previous screen" << std::endl;
 }

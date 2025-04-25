@@ -18,14 +18,20 @@ public:
     // Getter for courseModel property
     CourseModel* courseModel() const { return m_courseModel; }
 
+signals:
+    // Navigation signals
+    void navigateToScreen(const QUrl &screenUrl);
+    void navigateBack();
+
 public slots:
     // Slots to handle button clicks
     Q_INVOKABLE void handleButtonClicked(const QString &buttonName);
     Q_INVOKABLE void handleBrowseFiles();
     Q_INVOKABLE void handleUploadAndContinue();
 
-    // Method to navigate between screens
-    Q_INVOKABLE void navigateToCourseList();
+    // Navigation methods
+    Q_INVOKABLE void goToCourseListScreen();
+    Q_INVOKABLE void goBack();
 
 private:
     QQmlApplicationEngine* m_engine;

@@ -1,80 +1,64 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtQuick.Layouts
-import QtQuick.Dialogs
+import QtQuick.Layouts 1.15
 
-Window {
-    visible: true
+Item {
+    id: inputScreen
     width: 1024
     height: 768
-    title: "Schedule Builder"
 
     Rectangle {
         id: root
-        width: 1024
-        height: 768
+        anchors.fill: parent
         color: "#f9fafb"
 
         // ==== Layout Container ====
         Rectangle {
             id: header
-            x: 0
-            y: 0
-            width: 1024
+            width: parent.width
             height: 80
             color: "#ffffff"
             border.color: "#e5e7eb"
+
+            // Title Label
+            Label {
+                id: titleLabel
+                x: 16
+                y: 28
+                text: "Schedule Builder"
+                font.pixelSize: 20
+                color: "#1f2937"
+            }
         }
 
+        // Upload Container
         Rectangle {
             id: uploadArea
-            x: 269
-            y: 240
+            anchors.centerIn: parent
             width: 500
             height: 300
             color: "#ffffff"
             border.width: 2
             border.color: "#d1d5db"
             radius: 10
-        }
 
-        Rectangle {
-            id: footer
-            x: 0
-            y: 708
-            width: 1024
-            height: 60
-            color: "#ffffff"
-            border.color: "#e5e7eb"
-        }
-
-        // Footer Text
-        Label {
-            id: footerText
-            x: 404
-            y: 722
-            anchors.centerIn: parent
-            text: "© 2025 Schedule Builder. All rights reserved."
-            color: "#6b7280"
-            font.pixelSize: 12
-        }
-
-        // Title Label
-        Label {
-            id: titleLabel
-            x: 16
-            y: 28
-            text: "Schedule Builder"
-            font.family: "FontAwesome"
-            font.pixelSize: 20
-            color: "#1f2937"
+            // Drag and Drop Prompt
+            Label {
+                id: dropPrompt
+                anchors.centerIn: parent
+                text: "Drag and drop your file here, or"
+                color: "#6b7280"
+            }
         }
 
         // Upload Title Label
         Label {
             id: uploadTitle
-            x: 269
-            y: 159
+            anchors {
+                bottom: uploadArea.top
+                left: uploadArea.left
+                bottomMargin: 16
+            }
             text: "Upload Your Course List"
             font.pixelSize: 24
             color: "#1f2937"
@@ -83,71 +67,98 @@ Window {
         // Upload Description
         Label {
             id: uploadDescription
-            x: 275
-            y: 207
+            anchors {
+                top: uploadTitle.bottom
+                left: uploadTitle.left
+                bottomMargin: 16
+            }
             text: "Upload your course file to start building your schedule"
             color: "#6b7280"
-        }
-
-        // Drag and Drop Prompt
-        Label {
-            id: dropPrompt
-            x: 430
-            y: 349
-            text: "Drag and drop your file here, or"
-            color: "#6b7280"
-        }
-
-        // Browse Button
-        Button {
-            id: browseButton
-            x: 475
-            y: 498
-            background: Rectangle {
-                color: "#1f2937"
-                radius: 4
-            }
-            font.bold: true
-            contentItem: Text {
-                text: qsTr("Browse Files")
-                color: "white"
-            }
-            onClicked: {
-                // Call the C++ controller method
-                buttonController.handleButtonClicked("Browse Files");
-                buttonController.handleBrowseFiles();
-            }
         }
 
         // Supported Formats Text
         Label {
             id: supportedFormats
-            x: 434
-            y: 476
+            anchors {
+                top: uploadArea.bottom
+                horizontalCenter: uploadArea.horizontalCenter
+                topMargin: 16
+            }
             text: "Supported formats: CSV, Excel"
             font.pixelSize: 12
             color: "#9ca3af"
         }
 
-        // Upload and Continue Button
+        // Browse Button
         Button {
-            id: uploadSubmitButton
-            x: 437
-            y: 645
-            width: 150
-            text: "Upload and Continue"
+            id: browseButton
+            anchors {
+                top: supportedFormats.bottom
+                horizontalCenter: supportedFormats.horizontalCenter
+                topMargin: 8
+            }
             background: Rectangle {
                 color: "#1f2937"
                 radius: 4
+                implicitWidth: 120
+                implicitHeight: 40
+            }
+            font.bold: true
+            contentItem: Text {
+                text: qsTr("Browse Files")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            onClicked: {
+                buttonController.handleButtonClicked("Browse Files");
+                buttonController.handleBrowseFiles();
+            }
+        }
+
+        // Upload and Continue Button
+        Button {
+            id: uploadSubmitButton
+            anchors {
+                top: browseButton.bottom
+                horizontalCenter: browseButton.horizontalCenter
+                topMargin: 16
+            }
+            background: Rectangle {
+                color: "#1f2937"
+                radius: 4
+                implicitWidth: 180
+                implicitHeight: 40
             }
             contentItem: Text {
                 text: qsTr("Upload and Continue")
                 color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
             }
             onClicked: {
-                // Call the C++ controller method
                 buttonController.handleButtonClicked("Upload and Continue");
                 buttonController.handleUploadAndContinue();
+            }
+        }
+
+        Rectangle {
+            id: footer
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+                right: parent.right
+            }
+            height: 60
+            color: "#ffffff"
+            border.color: "#e5e7eb"
+
+            // Footer Text
+            Label {
+                anchors.centerIn: parent
+                text: "© 2025 Schedule Builder. All rights reserved."
+                color: "#6b7280"
+                font.pixelSize: 12
             }
         }
     }

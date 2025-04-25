@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("buttonController", &buttonController);
 
     // Load the QML file from resources
-    engine.load(QUrl(QStringLiteral("qrc:/inputScreen.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
 
     // Check for errors
     if (engine.rootObjects().isEmpty()) {
