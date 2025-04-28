@@ -7,11 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include directory for headers
 include_directories(include)
 
-add_compile_definitions(COURSEDBINPUT="../data/V1.0CourseDB.txt")
+add_compile_definitions(COURSEDBINPUT="/data/V1.0CourseDB.txt")
 
-add_compile_definitions(UOTPUTPATH="../data/V1.schedOutput.txt")
+add_compile_definitions(UOTPUTPATH="/data/V1.schedOutput.txt")
 
-add_compile_definitions(USERINPUT="../data/userInput.txt")
+add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 # Source files
 set(SOURCES

@@ -4,6 +4,9 @@
 #include "main_app.h"
 
 #include <string>
+#include <dirent.h>
+
+#define MAX_PATH 1024
 
 using std::string;
 
