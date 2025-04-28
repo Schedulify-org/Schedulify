@@ -10,14 +10,14 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <dirent.h>
 
 using std::string;
 using std::cout;
 using std::vector;
 using std::map;
 
-// main function to load data file, generate schedules and export as json
-int main_app(const string& inputPath, const string& modifiedOutputPath, const string& courseOutput ,const string& userInput);
+#define MAX_PATH 1024
 
 int app_main(const string& action_selected);
 

@@ -12,10 +12,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Quick Qml)
 
 set(PROJECT_SOURCES
-        main.cpp
+        main_window.cpp
         src/Controller.cpp
-        include/Controller.h
         src/CourseModel.cpp
+        include/Controller.h
         include/CourseModel.h
 )
 

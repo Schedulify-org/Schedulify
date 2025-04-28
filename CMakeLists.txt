@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.24)
-project(Schedulify)
+cmake_minimum_required(VERSION 3.16)
+project(Schedulify VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,13 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include directory for headers
 include_directories(model/include)
 
-add_compile_definitions(COURSEDBINPUT="../data/V1.0CourseDB.txt")
+add_compile_definitions(COURSEDBINPUT="/data/V1.0CourseDB.txt")
 
-add_compile_definitions(OUTPUTPATH="../data/V1.schedOutput.json")
+add_compile_definitions(OUTPUTPATH="/data/V1.schedOutput.json")
 
-add_compile_definitions(OUTPUTCOURSEPATH="../data/V1.courseOutput.json")
+add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
 
-add_compile_definitions(USERINPUT="../data/userInput.txt")
+add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 # Source files
 set(SOURCES

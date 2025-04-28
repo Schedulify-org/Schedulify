@@ -47,8 +47,21 @@ bool keyExistsInMap(const map<string, ICommand *>& commands, const std::string& 
 }
 
 bool GenerateCourseFile::execute(string answer) {
-    string inputPath = COURSEDBINPUT;
-    string courseOutput = OUTPUTCOURSEPATH;
+    char cwdBuf[MAX_PATH];
+    if (!getcwd(cwdBuf, sizeof(cwdBuf))) {
+        perror("getcwd failed");
+        return false;
+    }
+
+    std::string cwd(cwdBuf);
+    auto pos = cwd.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        cwd.erase(pos);   // now cwd is one folder up
+    }
+
+    string inputPath = cwd + COURSEDBINPUT;;
+
+    string courseOutput = cwd + OUTPUTCOURSEPATH;
 
     vector<Course> courses = parseCourseDB(inputPath);
 
@@ -72,9 +85,21 @@ bool GenerateCourseFile::execute(string answer) {
 }
 
 bool GenerateSchedFile::execute(string answer) {
-    string modifiedOutputPath = OUTPUTPATH;
-    string inputPath = COURSEDBINPUT;
-    string userInput = USERINPUT;
+    char cwdBuf[MAX_PATH];
+    if (!getcwd(cwdBuf, sizeof(cwdBuf))) {
+        perror("getcwd failed");
+        return false;
+    }
+
+    std::string cwd(cwdBuf);
+    auto pos = cwd.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        cwd.erase(pos);   // now cwd is one folder up
+    }
+
+    string modifiedOutputPath = cwd + OUTPUTPATH;
+    string inputPath = cwd + COURSEDBINPUT;
+    string userInput = cwd + USERINPUT;
 
     vector<Course> courses = parseCourseDB(inputPath);
 
