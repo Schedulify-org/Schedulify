@@ -1,21 +1,13 @@
 #include "main/main.h"
 
 int main() {
-    char cwdBuf[MAX_PATH];
-    if (!getcwd(cwdBuf, sizeof(cwdBuf))) {
-        perror("getcwd failed");
-        return 1;
-    }
+    namespace fs = std::filesystem;
 
-    std::string cwd(cwdBuf);
-    auto pos = cwd.find_last_of("/\\");
-    if (pos != std::string::npos) {
-        cwd.erase(pos);
-    }
+    fs::path main_path = fs::current_path().parent_path();
 
-    string inputPath = cwd + COURSEDBINPUT;
-    string modifiedOutputPath = cwd + UOTPUTPATH;
-    string userInput = cwd + USERINPUT;
+    string inputPath = main_path.string() + COURSEDBINPUT;
+    string modifiedOutputPath = main_path.string() + UOTPUTPATH;
+    string userInput = main_path.string() + USERINPUT;
 
     main_app(inputPath, modifiedOutputPath, userInput);
 
