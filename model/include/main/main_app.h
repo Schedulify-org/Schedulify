@@ -10,20 +10,18 @@
 #include <map>
 #include <string>
 #include <iostream>
-#include <dirent.h>
 
 using std::string;
 using std::cout;
 using std::vector;
 using std::map;
 
-#define MAX_PATH 1024
 
 int app_main(const string& action_selected);
 
 class ICommand {
 public:
-    virtual bool execute(string answer) = 0;
+    virtual bool execute(string main_path) = 0;
 };
 
 //main menu initiate, connect function to commend
@@ -36,14 +34,14 @@ bool keyExistsInMap(const map<string, ICommand *>& commands, const string& key);
 class GenerateCourseFile : public ICommand {
 public:
     //run add function
-    bool execute(string answer) override;
+    bool execute(string main_path) override;
 };
 
 //Generate Schedules File class for main menu
 class GenerateSchedFile : public ICommand {
 public:
     //run add function
-    bool execute(string answer) override;
+    bool execute(string main_path) override;
 };
 
 

@@ -1,9 +1,15 @@
+#include <filesystem>
 #include "main/main_app.h"
 #include "logs/logger.h"
 
 int app_main(const string& action_selected) {
+    namespace fs = std::filesystem;
+
+    fs::path main_path = fs::current_path().parent_path().parent_path();
 
     Logger::get().initialize();
+
+    Logger::get().logInfo("directory: " + main_path.string());
 
     map<string, ICommand*> commands = initiate_main_menu();
 
@@ -13,7 +19,7 @@ int app_main(const string& action_selected) {
     }
 
     try {
-        bool status = commands[action_selected]->execute(action_selected);
+        bool status = commands[action_selected]->execute(main_path.string());
 
         if (status) Logger::get().logInfo(action_selected + " finished successfully");
         else Logger::get().logInfo("Error, unable to complete " + action_selected);
@@ -46,22 +52,11 @@ bool keyExistsInMap(const map<string, ICommand *>& commands, const std::string& 
     return false; // Key not found
 }
 
-bool GenerateCourseFile::execute(string answer) {
-    char cwdBuf[MAX_PATH];
-    if (!getcwd(cwdBuf, sizeof(cwdBuf))) {
-        perror("getcwd failed");
-        return false;
-    }
+bool GenerateCourseFile::execute(string main_path) {
 
-    std::string cwd(cwdBuf);
-    auto pos = cwd.find_last_of("/\\");
-    if (pos != std::string::npos) {
-        cwd.erase(pos);   // now cwd is one folder up
-    }
+    string inputPath = main_path + COURSEDBINPUT;;
 
-    string inputPath = cwd + COURSEDBINPUT;;
-
-    string courseOutput = cwd + OUTPUTCOURSEPATH;
+    string courseOutput = main_path + OUTPUTCOURSEPATH;
 
     vector<Course> courses = parseCourseDB(inputPath);
 
@@ -84,22 +79,11 @@ bool GenerateCourseFile::execute(string answer) {
     return true;
 }
 
-bool GenerateSchedFile::execute(string answer) {
-    char cwdBuf[MAX_PATH];
-    if (!getcwd(cwdBuf, sizeof(cwdBuf))) {
-        perror("getcwd failed");
-        return false;
-    }
+bool GenerateSchedFile::execute(string main_path) {
 
-    std::string cwd(cwdBuf);
-    auto pos = cwd.find_last_of("/\\");
-    if (pos != std::string::npos) {
-        cwd.erase(pos);   // now cwd is one folder up
-    }
-
-    string modifiedOutputPath = cwd + OUTPUTPATH;
-    string inputPath = cwd + COURSEDBINPUT;
-    string userInput = cwd + USERINPUT;
+    string modifiedOutputPath = main_path + OUTPUTPATH;
+    string inputPath = main_path + COURSEDBINPUT;
+    string userInput = main_path + USERINPUT;
 
     vector<Course> courses = parseCourseDB(inputPath);
 
