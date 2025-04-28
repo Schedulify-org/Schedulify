@@ -6,12 +6,12 @@
 #include <string>
 
 // Course structure definition
-struct Course {
+struct CourseM {
     QString id;
     QString name;
     QString teacherName;
 
-    Course(const QString& id, const QString& name, const QString& teacherName)
+    CourseM(const QString& id, const QString& name, const QString& teacherName)
             : id(id), name(name), teacherName(teacherName) {}
 };
 
@@ -38,7 +38,7 @@ public:
     void populateSampleData();
 
 private:
-    std::vector<Course> m_courses;
+    std::vector<CourseM> m_courses;
 };
 
 #endif // COURSEMODEL_H

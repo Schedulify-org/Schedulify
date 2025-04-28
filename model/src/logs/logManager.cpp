@@ -6,7 +6,7 @@ namespace fs = std::filesystem;
 
 string getTimestampedLogPath() {
     ostringstream oss;
-    fs::path main_path = fs::current_path().parent_path().parent_path();
+    fs::path main_path = fs::current_path().parent_path();
 
     oss << main_path.string() << "/data/logs/" << getTimeStamp() << ".log";
 
@@ -23,7 +23,7 @@ string getTimeStamp() {
 }
 
 void createLogFile(const string& path) {
-    fs::path main_path = fs::current_path().parent_path().parent_path();
+    fs::path main_path = fs::current_path().parent_path();
     fs::create_directories(main_path.string() + "/data/logs");
     ofstream out(path);
     out.close();

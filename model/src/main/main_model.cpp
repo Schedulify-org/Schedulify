@@ -1,11 +1,11 @@
 #include <filesystem>
-#include "main/main_app.h"
+#include "main/main_model.h"
 #include "logs/logger.h"
 
 int app_main(const string& action_selected) {
     namespace fs = std::filesystem;
 
-    fs::path main_path = fs::current_path().parent_path().parent_path();
+    fs::path main_path = fs::current_path().parent_path();
 
     Logger::get().initialize();
 

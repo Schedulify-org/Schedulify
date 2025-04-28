@@ -9,14 +9,36 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_definitions(COURSEDBINPUT="/data/V1.0CourseDB.txt")
+
+add_compile_definitions(OUTPUTPATH="/data/V1.schedOutput.json")
+
+add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
+
+add_compile_definitions(USERINPUT="/data/userInput.txt")
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets Quick Qml)
+
+include_directories(model/include controller/include)
 
 set(PROJECT_SOURCES
         main.cpp
+
         controller/src/main_controller.cpp
         controller/src/CourseModel.cpp
+
         controller/include/main_controller.h
         controller/include/CourseModel.h
+
+        model/src/main/main_model.cpp
+        model/src/logs/logger.cpp
+        model/src/logs/logManager.cpp
+        model/src/parsers/parseCoursesToJson.cpp
+        model/src/parsers/parseCoursesToVector.cpp
+        model/src/parsers/parseSchedToJson.cpp
+        model/src/schedule_algorithm/CourseLegalComb.cpp
+        model/src/schedule_algorithm/ScheduleBuilder.cpp
+        model/src/schedule_algorithm/TimeUtils.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

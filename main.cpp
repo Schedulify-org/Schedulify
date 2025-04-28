@@ -3,11 +3,14 @@
 #include <QQuickView>
 #include <QUrl>
 #include <QQmlContext>
-#include <iostream>
 #include "include/main_controller.h"
+#include "main/main_model.h"
 
 int main(int argc, char *argv[])
 {
+    app_main("COURSES");
+    app_main("SCHEDULES");
+
     QApplication app(argc, argv);
 
     // Create the QQmlApplicationEngine
@@ -24,10 +27,8 @@ int main(int argc, char *argv[])
 
     // Check for errors
     if (engine.rootObjects().isEmpty()) {
-        std::cerr << "Failed to load QML file!" << std::endl;
         return -1;
     }
 
-    std::cout << "QML loaded successfully" << std::endl;
     return app.exec();
 }
