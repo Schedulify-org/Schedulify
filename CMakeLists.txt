@@ -12,14 +12,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Quick Qml)
 
 set(PROJECT_SOURCES
-        main_window.cpp
-        src/Controller.cpp
-        src/CourseModel.cpp
-        include/Controller.h
-        include/CourseModel.h
+        main.cpp
+        controller/src/main_controller.cpp
+        controller/src/CourseModel.cpp
+        controller/include/main_controller.h
+        controller/include/CourseModel.h
 )
 
-qt_add_resources(RESOURCES ../view/qml.qrc)
+qt_add_resources(RESOURCES view/qml.qrc)
 
 qt_add_executable(SchedGUI
         MANUAL_FINALIZATION
@@ -27,7 +27,7 @@ qt_add_executable(SchedGUI
         ${RESOURCES}
 )
 
-target_include_directories(SchedGUI PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(SchedGUI PRIVATE controller)
 
 target_link_libraries(SchedGUI PRIVATE Qt6::Widgets Qt6::Quick Qt6::Qml)
 

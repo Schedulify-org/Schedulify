@@ -17,8 +17,7 @@ add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 # Source files
 set(SOURCES
-        src/main/main.cpp
-        src/main/main_app.cpp
+        src/main/main_model.cpp
         src/parsers/parseCoursesToVector.cpp
         src/parsers/parseSchedToJson.cpp
         src/schedule_algorithm/ScheduleBuilder.cpp

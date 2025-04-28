@@ -1,9 +1,7 @@
 #include "../include/CourseModel.h"
 
 CourseModel::CourseModel(QObject* parent)
-        : QAbstractListModel(parent)
-{
-}
+        : QAbstractListModel(parent){}
 
 int CourseModel::rowCount(const QModelIndex& parent) const
 {

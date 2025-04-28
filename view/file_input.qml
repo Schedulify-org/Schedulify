@@ -111,8 +111,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
             onClicked: {
-                buttonController.handleButtonClicked("Browse Files");
-                buttonController.handleBrowseFiles();
+                controller.handleUploadAndContinue();
             }
         }
 
@@ -137,8 +136,7 @@ Item {
                 verticalAlignment: Text.AlignVCenter
             }
             onClicked: {
-                buttonController.handleButtonClicked("Upload and Continue");
-                buttonController.handleUploadAndContinue();
+                controller.handleUploadAndContinue();
             }
         }
 

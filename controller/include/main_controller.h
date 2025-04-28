@@ -1,19 +1,19 @@
-#ifndef BUTTONCONTROLLER_H
-#define BUTTONCONTROLLER_H
+#ifndef MAIN_CONTROLLER_H
+#define MAIN_CONTROLLER_H
 
 #include <QObject>
 #include <iostream>
 #include <QQmlApplicationEngine>
 #include "CourseModel.h"
 
-class ButtonController : public QObject
+class MainController : public QObject
 {
 Q_OBJECT
     Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)
 
 public:
-    explicit ButtonController(QQmlApplicationEngine* engine, QObject *parent = nullptr);
-    virtual ~ButtonController();
+    explicit MainController(QQmlApplicationEngine* engine, QObject *parent = nullptr);
+    ~MainController() override = default;
 
     // Getter for courseModel property
     CourseModel* courseModel() const { return m_courseModel; }
@@ -25,17 +25,15 @@ signals:
 
 public slots:
     // Slots to handle button clicks
-    Q_INVOKABLE void handleButtonClicked(const QString &buttonName);
-    Q_INVOKABLE void handleBrowseFiles();
     Q_INVOKABLE void handleUploadAndContinue();
 
     // Navigation methods
-    Q_INVOKABLE void goToCourseListScreen();
     Q_INVOKABLE void goBack();
+    Q_INVOKABLE void goToScreen(const QUrl &screenUrl);
 
 private:
     QQmlApplicationEngine* m_engine;
     CourseModel* m_courseModel;
 };
 
-#endif // BUTTONCONTROLLER_H
+#endif // MAIN_CONTROLLER_H

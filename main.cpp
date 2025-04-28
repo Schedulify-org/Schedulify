@@ -4,21 +4,20 @@
 #include <QUrl>
 #include <QQmlContext>
 #include <iostream>
-#include "include/controller.h"
+#include "include/main_controller.h"
 
 int main(int argc, char *argv[])
 {
-    std::cout << "Starting application" << std::endl;
     QApplication app(argc, argv);
 
     // Create the QQmlApplicationEngine
     QQmlApplicationEngine engine;
 
     // Create the ButtonController instance and pass the engine
-    ButtonController buttonController(&engine);
+    MainController controller(&engine);
 
     // Register the ButtonController with QML
-    engine.rootContext()->setContextProperty("buttonController", &buttonController);
+    engine.rootContext()->setContextProperty("controller", &controller);
 
     // Load the QML file from resources
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));

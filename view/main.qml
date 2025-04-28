@@ -12,12 +12,12 @@ Window {
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: "qrc:/inputScreen.qml"
+        initialItem: "qrc:/file_input.qml"
     }
 
     // Connect to the controller's signals for navigation
     Connections {
-        target: buttonController
+        target: controller
 
         function onNavigateToScreen(screenUrl) {
             stackView.push(screenUrl);

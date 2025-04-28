@@ -48,7 +48,7 @@ Item {
                     }
 
                     onClicked: {
-                        buttonController.goBack();
+                        controller.goBack();
                     }
                 }
 
@@ -109,7 +109,7 @@ Item {
                     margins: 16
                 }
                 clip: true
-                model: buttonController.courseModel
+                model: controller.courseModel
                 spacing: 8
 
                 // Delegate for course items
