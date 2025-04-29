@@ -1,7 +1,10 @@
 #ifndef COURSE_MODEL_H
 #define COURSE_MODEL_H
 
+#include "main_include.h"
+
 #include <QAbstractListModel>
+#include <utility>
 #include <vector>
 #include <string>
 
@@ -11,8 +14,8 @@ struct CourseM {
     QString name;
     QString teacherName;
 
-    CourseM(const QString& id, const QString& name, const QString& teacherName)
-            : id(id), name(name), teacherName(teacherName) {}
+    CourseM(QString  id, QString  name, QString  teacherName)
+            : id(std::move(id)), name(std::move(name)), teacherName(std::move(teacherName)) {}
 };
 
 // Qt list model for courses
@@ -35,7 +38,7 @@ public:
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     // Method to populate the model with sample data
-    void populateSampleData();
+    void populateCoursesData(const vector<Course>& courses);
 
 private:
     std::vector<CourseM> m_courses;

@@ -20,7 +20,18 @@ Window {
         target: controller
 
         function onNavigateToScreen(screenUrl) {
-            stackView.push(screenUrl);
+            // Check which screen is being navigated to
+            if (screenUrl.toString() === "qrc:/course_selection.qml") {
+                // For course selection screen, add a callback
+                stackView.push(screenUrl, {
+                    "onActivated": function() {
+                        courseSelectionController.initialize()
+                    }
+                });
+            } else {
+                // For other screens, just push without callback
+                stackView.push(screenUrl);
+            }
         }
 
         function onNavigateBack() {

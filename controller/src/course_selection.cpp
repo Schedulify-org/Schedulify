@@ -4,8 +4,34 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         : BaseController(parent)
         , m_courseModel(new CourseModel(this))
 {
-    // Initialize the course model with sample data
-    m_courseModel->populateSampleData();
+}
+
+void CourseSelectionController::initialize() {
+    initiateCoursesData();
+}
+
+void CourseSelectionController::initiateCoursesData() {
+    Model model;
+
+    //get courses
+    auto* coursesPtr = static_cast<vector<Course>*>
+    (model.executeOperation(ModelOperation::GET_COURSES, nullptr, ""));
+
+    // Check if pointer is valid before dereferencing
+    if (!coursesPtr) {
+        goToScreen(QUrl(QStringLiteral("qrc:/file_input.qml")));
+        return;
+    }
+
+    vector<Course>& courses = *coursesPtr;
+
+    if (courses.empty()) {
+        // Navigate to course selection screen
+        goToScreen(QUrl(QStringLiteral("qrc:/file_input.qml")));
+    } else {
+        // Initialize the course model with the data
+        m_courseModel->populateCoursesData(courses);
+    }
 }
 
 void CourseSelectionController::generateSchedules() {

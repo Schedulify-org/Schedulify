@@ -7,6 +7,7 @@
 class CourseSelectionController : public BaseController {
 Q_OBJECT
     Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)
+    Q_INVOKABLE void initialize();
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
@@ -19,6 +20,7 @@ public slots:
 
 private:
     CourseModel* m_courseModel;
+    void initiateCoursesData();
 };
 
 #endif //COURSE_SELECTION_H
