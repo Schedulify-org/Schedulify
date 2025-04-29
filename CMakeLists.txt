@@ -23,7 +23,6 @@ include_directories(model/include controller/include)
 
 set(PROJECT_SOURCES
         main.cpp
-
         controller/main_controller.cpp
         controller/src/base_controller.cpp
         controller/src/CourseModel.cpp
@@ -31,9 +30,15 @@ set(PROJECT_SOURCES
         controller/src/course_selection.cpp
         controller/src/schedules_display.cpp
 
+        controller/include/main_controller.h
+        controller/include/base_controller.h
+        controller/include/CourseModel.h
+        controller/include/file_input.h
+        controller/include/course_selection.h
+        controller/include/schedules_display.h
+
         model/main_model_menu.cpp
         model/main_model.cpp
-
         model/src/logs/logger.cpp
         model/src/logs/logManager.cpp
         model/src/parsers/parseCoursesToJson.cpp

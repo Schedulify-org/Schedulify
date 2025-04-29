@@ -3,7 +3,7 @@
 #include <QQuickView>
 #include <QUrl>
 #include <QQmlContext>
-#include "include/main_controller.h"
+#include "main_controller.h"
 #include "main/main_model_menu.h"
 #include "logs/logger.h"
 

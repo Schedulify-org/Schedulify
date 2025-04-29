@@ -13,13 +13,8 @@ MainController::MainController(QQmlApplicationEngine* engine, QObject *parent)
     connectControllerSignals(m_schedulesDisplayController);
 }
 
-// Connect signals from sub-controllers to main controller signals
-void MainController::connectControllerSignals(BaseController* controller) {
-    // Connect the navigateToScreen signal
-    connect(controller, &BaseController::navigateToScreen,
-            this, &MainController::navigateToScreen);
-
-    // Connect the navigateBack signal
-    connect(controller, &BaseController::navigateBack,
-            this, &MainController::navigateBack);
+void MainController::connectControllerSignals(BaseController* controller) const {
+    // Forward navigation signals from sub-controllers to main controller
+    connect(controller, &BaseController::navigateToScreen, this, &MainController::navigateToScreen);
+    connect(controller, &BaseController::navigateBack, this, &MainController::navigateBack);
 }

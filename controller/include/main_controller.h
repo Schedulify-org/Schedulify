@@ -15,7 +15,6 @@ public:
     explicit MainController(QQmlApplicationEngine* engine, QObject *parent = nullptr);
     ~MainController() override = default;
 
-
     // Getter methods for sub-controllers
     [[nodiscard]] FileInputController* fileInputController() const { return m_fileInputController; }
     [[nodiscard]] CourseSelectionController* courseSelectionController() const { return m_courseSelectionController; }
@@ -34,7 +33,7 @@ private:
     SchedulesDisplayController* m_schedulesDisplayController;
 
     // Connect sub-controller signals to main controller signals
-    void connectControllerSignals(BaseController* controller);
+    void connectControllerSignals(BaseController* controller) const;
 };
 
 #endif // MAIN_CONTROLLER_H
