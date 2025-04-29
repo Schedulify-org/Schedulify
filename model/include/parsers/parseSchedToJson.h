@@ -1,6 +1,7 @@
 #ifndef PARSE_SCHED_TO_JSON
 #define PARSE_SCHED_TO_JSON
 
+#include "main_include.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
 
 #include <algorithm>

@@ -1,8 +1,4 @@
 #include "schedule_algorithm/ScheduleBuilder.h"
-#include "schedule_algorithm/CourseLegalComb.h"
-#include "schedule_algorithm/schedule_types.h"
-#include "schedule_algorithm/TimeUtils.h"
-#include "schedule_algorithm/getSession.h"
 #include "logs/logger.h"
 
 using namespace std;

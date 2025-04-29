@@ -1,10 +1,9 @@
 #ifndef COURSELEGALCOMB_H
 #define COURSELEGALCOMB_H
 
-#include <vector>
+#include "main_include.h"
 #include "parsers/parseCoursesToVector.h"
 #include "TimeUtils.h"
-#include "schedule_types.h"
 
 class CourseLegalComb {
 public:

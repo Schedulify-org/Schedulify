@@ -1,6 +1,8 @@
 #ifndef PRE_PARSER_H
 #define PRE_PARSER_H
 
+#include "main_include.h"
+
 #include <string>
 #include <vector>
 #include <sstream>
@@ -11,26 +13,6 @@
 #include <algorithm>
 
 using namespace std;
-
-class Session {
-public:
-    int day_of_week;
-    string start_time;
-    string end_time;
-    string building_number;
-    string room_number;
-};
-
-class Course {
-public:
-    int id;
-    string raw_id;
-    string name;
-    string teacher;
-    vector<Session> Lectures;
-    vector<Session> Tirgulim;
-    vector<Session> labs;
-};
 
 bool isValidTime(const string& time);
 

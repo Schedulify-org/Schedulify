@@ -1,9 +1,10 @@
 #ifndef TIMEUTILS_H
 #define TIMEUTILS_H
-#include <string>
-#include "parsers/parseCoursesToVector.h"
-#include "schedule_types.h"
 
+#include "main_include.h"
+#include "parsers/parseCoursesToVector.h"
+
+#include <string>
 
 class TimeUtils {
 public:

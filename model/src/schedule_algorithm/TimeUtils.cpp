@@ -1,5 +1,4 @@
 #include "schedule_algorithm/TimeUtils.h"
-#include "schedule_algorithm/schedule_types.h"
 #include "logs/logger.h"
 
 #include <string>

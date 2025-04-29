@@ -1,8 +1,10 @@
 #ifndef SCHED_TESTS_GETSESSION_H
 #define SCHED_TESTS_GETSESSION_H
 
+#include "main_include.h"
+
 #pragma once
-#include "schedule_types.h"
+
 #include <vector>
 
 inline std::vector<const Session*> getSessions(const CourseSelection& cs) {

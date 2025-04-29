@@ -1,9 +1,14 @@
-#ifndef SCHEDULEBUILDER_H
-#define SCHEDULEBUILDER_H
-#include <vector>
+#ifndef SCHEDULE_BUILDER_H
+#define SCHEDULE_BUILDER_H
+
+#include "main_include.h"
 #include "parsers/parseCoursesToVector.h"
 #include "TimeUtils.h"
-#include "schedule_types.h"
+#include "schedule_algorithm/CourseLegalComb.h"
+#include "schedule_algorithm/TimeUtils.h"
+#include "schedule_algorithm/getSession.h"
+
+#include <vector>
 
 class ScheduleBuilder {
 public:
@@ -18,4 +23,4 @@ private:
 
     bool hasConflict(const CourseSelection& a, const CourseSelection& b) const;
 };
-#endif
+#endif // SCHEDULE_BUILDER_H

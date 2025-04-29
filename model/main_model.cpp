@@ -70,6 +70,11 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             }
             // Handle error case where data is null
             break;
+        case ModelOperation::GET_COURSES:
+            if (!lastGeneratedCourses.empty()) {
+                return &lastGeneratedCourses;
+            }
+            break;
     }
     return nullptr;
 }
