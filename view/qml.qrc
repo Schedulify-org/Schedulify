@@ -3,5 +3,6 @@
         <file>main.qml</file>
         <file>file_input.qml</file>
         <file>course_selection.qml</file>
+        <file>schedules_display.qml</file>
     </qresource>
 </RCC>
