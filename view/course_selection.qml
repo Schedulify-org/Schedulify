@@ -7,14 +7,6 @@ Page {
     width: 1024
     height: 768
 
-    property var onActivated: null
-
-    Component.onCompleted: {
-        if (onActivated) {
-            onActivated();
-        }
-    }
-
     Rectangle {
         id: root
         anchors.fill: parent

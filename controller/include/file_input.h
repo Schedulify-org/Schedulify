@@ -4,6 +4,7 @@
 #include "base_controller.h"
 #include "main_include.h"
 #include "main/main_model.h"
+#include "course_selection.h"
 
 class FileInputController : public BaseController {
 Q_OBJECT

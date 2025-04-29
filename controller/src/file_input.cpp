@@ -13,10 +13,16 @@ void FileInputController::handleUploadAndContinue() {
     string filePath = main_path.string() + COURSEDBINPUT;
 
     //generate Courses vector
-    auto* courses = static_cast<vector<Course>*>
+    auto* coursesPtr = static_cast<vector<Course>*>
             (model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath));
-    if (!courses->empty()) {
-        // Navigate to course selection screen
-        goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
+
+    vector<Course>& courses = *coursesPtr;
+
+    // Navigate to course selection screen
+    goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
+
+    if (!courses.empty()) {
+        CourseSelectionController course_controller;
+        course_controller.initiateCoursesData(courses);
     }
 }
