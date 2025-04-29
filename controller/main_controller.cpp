@@ -1,28 +1,25 @@
 #include "main_controller.h"
-#include <QQmlContext>
 
 MainController::MainController(QQmlApplicationEngine* engine, QObject *parent)
         : QObject(parent)
         , m_engine(engine)
-        , m_courseModel(new CourseModel(this))
+        , m_fileInputController(new FileInputController(this))
+        , m_courseSelectionController(new CourseSelectionController(this))
+        , m_schedulesDisplayController(new SchedulesDisplayController(this))
 {
-    // Initialize the course model with sample data
-    m_courseModel->populateSampleData();
+    // Connect signals from sub-controllers to main controller
+    connectControllerSignals(m_fileInputController);
+    connectControllerSignals(m_courseSelectionController);
+    connectControllerSignals(m_schedulesDisplayController);
 }
 
-void MainController::handleUploadAndContinue(){
-    // Emit signal to navigate to course list screen
-    goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
-}
+// Connect signals from sub-controllers to main controller signals
+void MainController::connectControllerSignals(BaseController* controller) {
+    // Connect the navigateToScreen signal
+    connect(controller, &BaseController::navigateToScreen,
+            this, &MainController::navigateToScreen);
 
-void MainController::goBack()
-{
-    // Emit signal to go back to previous screen
-    emit navigateBack();
-}
-
-void MainController::goToScreen(const QUrl &screenUrl)
-{
-    // Emit signal to navigate to course list screen
-    emit navigateToScreen(screenUrl);
+    // Connect the navigateBack signal
+    connect(controller, &BaseController::navigateBack,
+            this, &MainController::navigateBack);
 }

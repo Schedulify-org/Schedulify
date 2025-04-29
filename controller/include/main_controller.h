@@ -2,38 +2,39 @@
 #define MAIN_CONTROLLER_H
 
 #include <QObject>
-#include <iostream>
 #include <QQmlApplicationEngine>
-#include "CourseModel.h"
+#include <QUrl>
+#include "file_input.h"
+#include "course_selection.h"
+#include "schedules_display.h"
 
-class MainController : public QObject
-{
+class MainController : public QObject {
 Q_OBJECT
-    Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)
 
 public:
     explicit MainController(QQmlApplicationEngine* engine, QObject *parent = nullptr);
     ~MainController() override = default;
 
-    // Getter for courseModel property
-    CourseModel* courseModel() const { return m_courseModel; }
+
+    // Getter methods for sub-controllers
+    [[nodiscard]] FileInputController* fileInputController() const { return m_fileInputController; }
+    [[nodiscard]] CourseSelectionController* courseSelectionController() const { return m_courseSelectionController; }
+    [[nodiscard]] SchedulesDisplayController* schedulesDisplayController() const { return m_schedulesDisplayController; }
 
 signals:
-    // Navigation signals
     void navigateToScreen(const QUrl &screenUrl);
     void navigateBack();
 
-public slots:
-    // Slots to handle button clicks
-    Q_INVOKABLE void handleUploadAndContinue();
-
-    // Navigation methods
-    Q_INVOKABLE void goBack();
-    Q_INVOKABLE void goToScreen(const QUrl &screenUrl);
-
 private:
     QQmlApplicationEngine* m_engine;
-    CourseModel* m_courseModel;
+
+    // Sub-controllers for each screen
+    FileInputController* m_fileInputController;
+    CourseSelectionController* m_courseSelectionController;
+    SchedulesDisplayController* m_schedulesDisplayController;
+
+    // Connect sub-controller signals to main controller signals
+    void connectControllerSignals(BaseController* controller);
 };
 
 #endif // MAIN_CONTROLLER_H

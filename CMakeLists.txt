@@ -17,7 +17,7 @@ add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
 
 add_compile_definitions(USERINPUT="/data/userInput.txt")
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Quick Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml)
 
 include_directories(model/include controller/include)
 
@@ -25,12 +25,15 @@ set(PROJECT_SOURCES
         main.cpp
 
         controller/main_controller.cpp
+        controller/src/base_controller.cpp
         controller/src/CourseModel.cpp
-
-        controller/include/main_controller.h
-        controller/include/CourseModel.h
+        controller/src/file_input.cpp
+        controller/src/course_selection.cpp
+        controller/src/schedules_display.cpp
 
         model/main_model_menu.cpp
+        model/main_model.cpp
+
         model/src/logs/logger.cpp
         model/src/logs/logManager.cpp
         model/src/parsers/parseCoursesToJson.cpp
@@ -41,10 +44,6 @@ set(PROJECT_SOURCES
         model/src/schedule_algorithm/TimeUtils.cpp
         model/src/parsers/parseToXlsx.cpp
         model/src/parsers/printSchedule.cpp
-        controller/src/file_input.cpp
-        controller/src/course_selection.cpp
-        controller/src/schedules_display.cpp
-        model/main_model.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -55,9 +54,22 @@ qt_add_executable(SchedGUI
         ${RESOURCES}
 )
 
-target_include_directories(SchedGUI PRIVATE controller)
+# Include directories
+target_include_directories(SchedGUI PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/model
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/include
+)
 
-target_link_libraries(SchedGUI PRIVATE Qt6::Widgets Qt6::Quick Qt6::Qml)
+# Link Qt libraries
+target_link_libraries(SchedGUI PRIVATE
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Widgets
+        Qt6::Quick
+)
 
 set_target_properties(SchedGUI PROPERTIES
         ${BUNDLE_ID_OPTION}

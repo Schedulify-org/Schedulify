@@ -1,4 +1,4 @@
-#include "include/CourseModel.h"
+#include "CourseModel.h"  // Changed from include/CourseModel.h to match the file path
 
 CourseModel::CourseModel(QObject* parent)
         : QAbstractListModel(parent){}
