@@ -2,8 +2,6 @@
 
 namespace fs = std::filesystem;
 
-namespace fs = std::filesystem;
-
 string getTimestampedLogPath() {
     ostringstream oss;
     fs::path main_path = fs::current_path().parent_path();
