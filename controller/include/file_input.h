@@ -8,7 +8,7 @@ Q_OBJECT
 
 public:
     explicit FileInputController(QObject *parent = nullptr);
-    ~FileInputController() = default;
+    ~FileInputController() override = default;
 
 
 public slots:

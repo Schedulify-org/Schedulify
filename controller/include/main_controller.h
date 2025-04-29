@@ -1,3 +1,4 @@
+// include/main_controller.h (updated)
 #ifndef MAIN_CONTROLLER_H
 #define MAIN_CONTROLLER_H
 
@@ -13,12 +14,11 @@ Q_OBJECT
 
 public:
     explicit MainController(QQmlApplicationEngine* engine, QObject *parent = nullptr);
-    ~MainController() override = default;
 
     // Getter methods for sub-controllers
-    [[nodiscard]] FileInputController* fileInputController() const { return m_fileInputController; }
-    [[nodiscard]] CourseSelectionController* courseSelectionController() const { return m_courseSelectionController; }
-    [[nodiscard]] SchedulesDisplayController* schedulesDisplayController() const { return m_schedulesDisplayController; }
+    FileInputController* fileInputController() const { return m_fileInputController; }
+    CourseSelectionController* courseSelectionController() const { return m_courseSelectionController; }
+    SchedulesDisplayController* schedulesDisplayController() const { return m_schedulesDisplayController; }
 
 signals:
     void navigateToScreen(const QUrl &screenUrl);
@@ -33,7 +33,7 @@ private:
     SchedulesDisplayController* m_schedulesDisplayController;
 
     // Connect sub-controller signals to main controller signals
-    void connectControllerSignals(BaseController* controller) const;
+    void connectControllerSignals(BaseController* controller);
 };
 
 #endif // MAIN_CONTROLLER_H
