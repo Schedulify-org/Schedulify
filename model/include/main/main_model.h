@@ -24,12 +24,6 @@ public:
     virtual bool execute(string main_path) = 0;
 };
 
-//main menu initiate, connect function to commend
-map<string, ICommand*> initiate_main_menu();
-
-//checks if a given commend is in commend menu
-bool keyExistsInMap(const map<string, ICommand *>& commands, const string& key);
-
 //Generate Course File class for main menu
 class GenerateCourseFile : public ICommand {
 public:
@@ -43,6 +37,12 @@ public:
     //run add function
     bool execute(string main_path) override;
 };
+
+//checks if a given commend is in commend menu
+bool keyExistsInMap(const map<string, ICommand *>& commands, const string& key);
+
+//main menu initiate, connect function to commend
+map<string, ICommand*> initiate_main_menu();
 
 
 #endif

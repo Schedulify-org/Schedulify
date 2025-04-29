@@ -1,4 +1,4 @@
-#include "../include/main_controller.h"
+#include "main_controller.h"
 #include <QQmlContext>
 
 MainController::MainController(QQmlApplicationEngine* engine, QObject *parent)

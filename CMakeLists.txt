@@ -24,13 +24,13 @@ include_directories(model/include controller/include)
 set(PROJECT_SOURCES
         main.cpp
 
-        controller/src/main_controller.cpp
+        controller/main_controller.cpp
         controller/src/CourseModel.cpp
 
         controller/include/main_controller.h
         controller/include/CourseModel.h
 
-        model/src/main/main_model.cpp
+        model/main_model.cpp
         model/src/logs/logger.cpp
         model/src/logs/logManager.cpp
         model/src/parsers/parseCoursesToJson.cpp
