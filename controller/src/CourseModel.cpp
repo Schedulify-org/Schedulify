@@ -1,4 +1,4 @@
-#include "../include/CourseModel.h"
+#include "include/CourseModel.h"
 
 CourseModel::CourseModel(QObject* parent)
         : QAbstractListModel(parent){}
@@ -13,7 +13,7 @@ int CourseModel::rowCount(const QModelIndex& parent) const
 QVariant CourseModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid() || index.row() >= static_cast<int>(m_courses.size()))
-        return QVariant();
+        return {};
 
     const CourseM& course = m_courses[index.row()];
 
@@ -25,7 +25,7 @@ QVariant CourseModel::data(const QModelIndex& index, int role) const
         case TeacherRole:
             return course.teacherName;
         default:
-            return QVariant();
+            return {};
     }
 }
 
@@ -45,7 +45,7 @@ void CourseModel::populateSampleData()
     m_courses.clear();
 
     // Add 20 sample courses
-    m_courses.push_back(CourseM("CS101", "Introduction to Computer Science", "Dr. Smith"));
+    m_courses.emplace_back("CS101", "Introduction to Computer Science", "Dr. Smith");
     m_courses.push_back(CourseM("CS201", "Data Structures", "Prof. Johnson"));
     m_courses.push_back(CourseM("MATH101", "Calculus I", "Dr. Williams"));
     m_courses.push_back(CourseM("PHYS201", "Physics for Scientists", "Prof. Garcia"));

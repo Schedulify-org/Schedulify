@@ -1,5 +1,5 @@
-#ifndef COURSEMODEL_H
-#define COURSEMODEL_H
+#ifndef COURSE_MODEL_H
+#define COURSE_MODEL_H
 
 #include <QAbstractListModel>
 #include <vector>
@@ -29,10 +29,10 @@ public:
 
     explicit CourseModel(QObject* parent = nullptr);
 
-    // Required QAbstractListModel overrides
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    QHash<int, QByteArray> roleNames() const override;
+    // Override methods from QAbstractListModel without default arguments
+    [[nodiscard]] int rowCount(const QModelIndex& parent) const override;
+    [[nodiscard]] QVariant data(const QModelIndex& index, int role) const override;
+    [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     // Method to populate the model with sample data
     void populateSampleData();
@@ -41,4 +41,4 @@ private:
     std::vector<CourseM> m_courses;
 };
 
-#endif // COURSEMODEL_H
+#endif // COURSE_MODEL_H
