@@ -25,7 +25,7 @@ add_executable(tests_executable
         TimeUtils_test.cpp
         preParser_test.cpp
         ScheduleBuilder_test.cpp
-        ../main_model.cpp
+        ../main_model_menu.cpp
         ../src/logs/logger.cpp
         ../src/logs/logManager.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp

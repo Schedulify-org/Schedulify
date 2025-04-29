@@ -1,48 +1,37 @@
-#ifndef SCHED_MAIN_APP_H
-#define SCHED_MAIN_APP_H
+#ifndef MAIN_MODEL_H
+#define MAIN_MODEL_H
 
 #include "parsers/parseCoursesToVector.h"
-#include "parsers/parseSchedToJson.h"
-#include "parsers/parseCoursesToJson.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
 
 #include <vector>
-#include <map>
 #include <string>
 #include <iostream>
 
 using std::string;
 using std::cout;
 using std::vector;
-using std::map;
 
-
-int app_main(const string& action_selected);
-
-class ICommand {
-public:
-    virtual bool execute(string main_path) = 0;
+// In your model header file
+enum class ModelOperation {
+    GENERATE_COURSES,
+    GENERATE_SCHEDULES,
+    SAVE_SCHEDULE,
+    PRINT_SCHEDULE
 };
 
-//Generate Course File class for main menu
-class GenerateCourseFile : public ICommand {
+class Model {
 public:
-    //run add function
-    bool execute(string main_path) override;
+    void* executeOperation(ModelOperation operation, const void* data, const string& path = "");
+
+private:
+    static vector<Course> generateCourses(const string& path);
+    static vector<Schedule> generateSchedules(const vector<Course>& userInput);
+    static void saveSchedule(const Schedule& schedule, const string& path);
+    static void printSchedule(const Schedule& schedule);
+
+    vector<Course> lastGeneratedCourses;
+    vector<Schedule> lastGeneratedSchedules;
 };
 
-//Generate Schedules File class for main menu
-class GenerateSchedFile : public ICommand {
-public:
-    //run add function
-    bool execute(string main_path) override;
-};
-
-//checks if a given commend is in commend menu
-bool keyExistsInMap(const map<string, ICommand *>& commands, const string& key);
-
-//main menu initiate, connect function to commend
-map<string, ICommand*> initiate_main_menu();
-
-
-#endif
+#endif //MAIN_MODEL_H

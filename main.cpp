@@ -4,10 +4,13 @@
 #include <QUrl>
 #include <QQmlContext>
 #include "include/main_controller.h"
-#include "main/main_model.h"
+#include "main/main_model_menu.h"
+#include "logs/logger.h"
 
 int main(int argc, char *argv[])
 {
+    Logger::get().initialize();
+
     app_main("COURSES");
     app_main("SCHEDULES");
 

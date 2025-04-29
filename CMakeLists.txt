@@ -30,7 +30,7 @@ set(PROJECT_SOURCES
         controller/include/main_controller.h
         controller/include/CourseModel.h
 
-        model/main_model.cpp
+        model/main_model_menu.cpp
         model/src/logs/logger.cpp
         model/src/logs/logManager.cpp
         model/src/parsers/parseCoursesToJson.cpp
@@ -44,6 +44,7 @@ set(PROJECT_SOURCES
         controller/src/file_input.cpp
         controller/src/course_selection.cpp
         controller/src/schedules_display.cpp
+        model/main_model.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

@@ -1,117 +1,75 @@
-#include <filesystem>
 #include "main/main_model.h"
 #include "logs/logger.h"
 
-int app_main(const string& action_selected) {
-    namespace fs = std::filesystem;
-
-    fs::path main_path = fs::current_path().parent_path();
-
-    Logger::get().initialize();
-
-    Logger::get().logInfo("directory: " + main_path.string());
-
-    map<string, ICommand*> commands = initiate_main_menu();
-
-    if (!keyExistsInMap(commands, action_selected)) {
-        Logger::get().logInfo("Bad request, " + action_selected + " is not a valid commend");
-        return 1;
-    }
-
-    try {
-        bool status = commands[action_selected]->execute(main_path.string());
-
-        if (status) Logger::get().logInfo(action_selected + " finished successfully");
-        else Logger::get().logInfo("Error, unable to complete " + action_selected);
-    } catch (...) {
-        Logger::get().logInfo("Error, unable to complete " + action_selected);
-        return 1;
-    }
-
-    return 0;
-}
-
-map<string, ICommand*> initiate_main_menu() {
-    map<string, ICommand*> commands;
-
-    ICommand* GenerateCourses = new GenerateCourseFile();
-    commands["COURSES"] = GenerateCourses;
-
-    ICommand* GenerateSchedules = new GenerateSchedFile();
-    commands["SCHEDULES"] = GenerateSchedules;
-
-    return commands;
-}
-
-bool keyExistsInMap(const map<string, ICommand *>& commands, const std::string& key) {
-    for (const auto& pair : commands) {
-        if (pair.first == key) {
-            return true; // Key found
-        }
-    }
-    return false; // Key not found
-}
-
-bool GenerateCourseFile::execute(string main_path) {
-
-    string inputPath = main_path + COURSEDBINPUT;;
-
-    string courseOutput = main_path + OUTPUTCOURSEPATH;
-
-    vector<Course> courses = parseCourseDB(inputPath);
+vector<Course> Model::generateCourses(const string& path) {
+    vector<Course> courses = parseCourseDB(path);
 
     if (courses.empty()) {
         Logger::get().logError("Error while parsing input data. aborting process");
-        return false;
     }
 
-    bool cSuccess = exportCoursesToJson(courses, courseOutput);
-
-    if (cSuccess) {
-        ostringstream message;
-        message << "output finish, can be seen in " << courseOutput;
-        Logger::get().logInfo(message.str());
-    } else {
-        Logger::get().logError("Error while parsing input data. aborting process");
-        return false;
-    }
-
-    return true;
+    return courses;
 }
 
-bool GenerateSchedFile::execute(string main_path) {
-
-    string modifiedOutputPath = main_path + OUTPUTPATH;
-    string inputPath = main_path + COURSEDBINPUT;
-    string userInput = main_path + USERINPUT;
-
-    vector<Course> courses = parseCourseDB(inputPath);
-
-    vector<Course> filteredCourses = extractUserChoice(userInput, courses);
-
-    if (filteredCourses.empty()) {
-        Logger::get().logError("no valid choices were found, aborting...");
-        return false;
+vector<Schedule> Model::generateSchedules(const vector<Course>& userInput) {
+    if (userInput.empty() || userInput.size() > 7) {
+        Logger::get().logError("invalid amount of courses, aborting...");
+        return {};
     }
 
     ScheduleBuilder builder;
-    vector<Schedule> schedules = builder.build(filteredCourses);
+    vector<Schedule> schedules = builder.build(userInput);
 
     if (schedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");
-        return false;
     }
 
-    bool success = exportSchedulesToJson(schedules, modifiedOutputPath, filteredCourses);
+    return schedules;
+}
 
-    if (success) {
-        ostringstream message;
-        message << "output finish, can be seen in " << modifiedOutputPath;
-        Logger::get().logInfo(message.str());
-    } else {
-        Logger::get().logError("unable to generate schedules, aborting process");
-        return false;
+void Model::saveSchedule(const Schedule& schedule, const string& path) {
+
+}
+
+void Model::printSchedule(const Schedule& schedule) {
+
+}
+
+void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
+    switch (operation) {
+        case ModelOperation::GENERATE_COURSES:
+            if (!path.empty()) {
+                lastGeneratedCourses = generateCourses(path);
+                return &lastGeneratedCourses;
+            }
+            // Handle error case where path is null
+            break;
+
+
+        case ModelOperation::GENERATE_SCHEDULES:
+            if (data) {
+                const auto* courses = static_cast<const vector<Course>*>(data);
+                lastGeneratedSchedules = generateSchedules(*courses);
+                return &lastGeneratedSchedules;
+            }
+            // Handle error case where data is null
+            break;
+
+        case ModelOperation::SAVE_SCHEDULE:
+            if (data && !path.empty()) {
+                const auto* schedule = static_cast<const Schedule*>(data);
+                saveSchedule(*schedule, path);
+            }
+            // Handle error case where data or path is null
+            break;
+
+        case ModelOperation::PRINT_SCHEDULE:
+            if (data) {
+                const auto* schedule = static_cast<const Schedule*>(data);
+                printSchedule(*schedule);
+            }
+            // Handle error case where data is null
+            break;
     }
-
-    return true;
+    return nullptr;
 }
