@@ -15,14 +15,13 @@ public:
     void initiateCoursesData(const vector<Course>& courses);
 
     [[nodiscard]] CourseModel* courseModel() const { return m_courseModel; }
-signals:
 
-    void dataUpdated();
 public slots:
     void generateSchedules();
 
 private:
     CourseModel* m_courseModel;
+    vector<Course> allCourses;
 };
 
 #endif //COURSE_SELECTION_H

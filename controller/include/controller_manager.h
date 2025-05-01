@@ -12,7 +12,7 @@ class ControllerManager : public QObject {
 Q_OBJECT  // This macro is required for any class using signals/slots
 
 protected:
-    static MainController* s_mainController; // Static reference to main controller
+    static MainController* s_mainController;
 
 public:
     explicit ControllerManager(QObject *parent = nullptr) : QObject(parent) {}
