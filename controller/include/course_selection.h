@@ -10,6 +10,9 @@ Q_OBJECT
     Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)
     Q_PROPERTY(CourseModel* selectedCoursesModel READ selectedCoursesModel CONSTANT)
 
+signals:
+    void selectionChanged(); // New signal to notify when selection changes
+
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
     ~CourseSelectionController() override = default;

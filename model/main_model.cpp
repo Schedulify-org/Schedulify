@@ -1,4 +1,5 @@
 #include "main/main_model.h"
+#include "parsers/parseSchedToJson.h"
 #include "logs/logger.h"
 
 vector<Course> Model::generateCourses(const string& path) {

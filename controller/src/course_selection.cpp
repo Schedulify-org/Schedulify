@@ -26,8 +26,6 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 void CourseSelectionController::generateSchedules() {
     Model model;
 
-    vector<Course> selectedCourses = allCourses;
-
     //generate Courses vector
     auto* schedulePtr = static_cast<vector<Course>*>
         (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
@@ -59,8 +57,8 @@ void CourseSelectionController::toggleCourseSelection(int index) {
     // Update the selected courses model
     m_selectedCoursesModel->populateCoursesData(selectedCourses);
 
-    // Notify QML that the selection state has changed
-    emit m_courseModel->dataChanged(m_courseModel->index(index), m_courseModel->index(index));
+    // Emit our custom signal to notify QML of selection change
+    emit selectionChanged();
 }
 
 void CourseSelectionController::deselectCourse(int index) {
@@ -79,8 +77,8 @@ void CourseSelectionController::deselectCourse(int index) {
     // Update the models
     m_selectedCoursesModel->populateCoursesData(selectedCourses);
 
-    // Notify QML that the selection state has changed
-    emit m_courseModel->dataChanged(m_courseModel->index(mainIndex), m_courseModel->index(mainIndex));
+    // Emit our custom signal to notify QML of selection change
+    emit selectionChanged();
 }
 
 bool CourseSelectionController::isCourseSelected(int index) {

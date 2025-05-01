@@ -83,7 +83,7 @@ Page {
                     right: parent.right
                     margins: 16
                 }
-                height: 80
+                height: 90
                 color: "#ffffff"
                 radius: 8
                 border.color: "#e5e7eb"
@@ -179,14 +179,21 @@ Page {
 
                 // Delegate for course items
                 delegate: Rectangle {
+                    id: courseDelegate
                     width: ListView.view.width
                     height: 80
-                    color: isSelected ? "#f0f9ff" : "#ffffff" // Highlight if selected
+                    color: courseSelectionController.isCourseSelected(index) ? "#f0f9ff" : "#ffffff" // Highlight if selected
                     radius: 8
-                    border.color: isSelected ? "#3b82f6" : "#e5e7eb"
+                    border.color: courseSelectionController.isCourseSelected(index) ? "#3b82f6" : "#e5e7eb"
 
-                    // Add property to track selection status
-                    property bool isSelected: courseSelectionController.isCourseSelected(index)
+                    // Using a connection to force update when selection changes
+                    Connections {
+                        target: courseSelectionController
+                        function onSelectionChanged() {
+                            courseDelegate.color = courseSelectionController.isCourseSelected(index) ? "#f0f9ff" : "#ffffff"
+                            courseDelegate.border.color = courseSelectionController.isCourseSelected(index) ? "#3b82f6" : "#e5e7eb"
+                        }
+                    }
 
                     RowLayout {
                         anchors {
@@ -197,16 +204,26 @@ Page {
 
                         // Course ID
                         Rectangle {
+                            id: courseIdBox
                             Layout.preferredWidth: 80
                             Layout.preferredHeight: 80 - 24
-                            color: isSelected ? "#dbeafe" : "#f3f4f6"
+                            color: courseSelectionController.isCourseSelected(index) ? "#dbeafe" : "#f3f4f6"
                             radius: 4
 
                             Label {
                                 anchors.centerIn: parent
                                 text: courseId
                                 font.bold: true
-                                color: isSelected ? "#2563eb" : "#4b5563"
+                                color: courseSelectionController.isCourseSelected(index) ? "#2563eb" : "#4b5563"
+                            }
+
+                            // Update color when selection changes
+                            Connections {
+                                target: courseSelectionController
+                                function onSelectionChanged() {
+                                    courseIdBox.color = courseSelectionController.isCourseSelected(index) ? "#dbeafe" : "#f3f4f6"
+                                    courseIdBox.children[0].color = courseSelectionController.isCourseSelected(index) ? "#2563eb" : "#4b5563"
+                                }
                             }
                         }
 
