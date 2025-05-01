@@ -10,7 +10,6 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
     if (courses.empty()) {
         // Navigate to course selection screen
         qWarning() << "Warning: Empty courses vector provided to initiateCoursesData";
-        navigateBack();
     } else {
         // Initialize the course model with the data
         m_courseModel->populateCoursesData(courses);

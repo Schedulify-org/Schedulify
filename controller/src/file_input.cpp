@@ -22,7 +22,7 @@ void FileInputController::handleUploadAndContinue() {
             qobject_cast<CourseSelectionController*>(findController("courseSelectionController"));
 
 
-    if (course_controller) {
+    if (course_controller && !courses.empty()) {
         // Initialize the course data first
         course_controller->initiateCoursesData(courses);
 
