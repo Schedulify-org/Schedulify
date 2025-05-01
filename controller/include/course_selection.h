@@ -11,7 +11,7 @@ Q_OBJECT
     Q_PROPERTY(CourseModel* selectedCoursesModel READ selectedCoursesModel CONSTANT)
 
 signals:
-    void selectionChanged(); // New signal to notify when selection changes
+    void selectionChanged();
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
