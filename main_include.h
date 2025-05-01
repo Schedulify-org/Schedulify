@@ -6,10 +6,8 @@
 
 using namespace std;
 
-// In your model header file
 enum class ModelOperation {
     GENERATE_COURSES,
-    GET_COURSES,
     GENERATE_SCHEDULES,
     SAVE_SCHEDULE,
     PRINT_SCHEDULE

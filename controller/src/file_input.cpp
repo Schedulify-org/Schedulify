@@ -2,7 +2,7 @@
 #include <filesystem>
 
 FileInputController::FileInputController(QObject *parent)
-        : BaseController(parent){}
+        : ControllerManager(parent){}
 
 void FileInputController::handleUploadAndContinue() {
     Model model;

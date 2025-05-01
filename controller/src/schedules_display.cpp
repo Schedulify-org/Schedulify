@@ -1,7 +1,7 @@
 #include "schedules_display.h"
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
-        : BaseController(parent)
+        : ControllerManager(parent)
 {
 }
 

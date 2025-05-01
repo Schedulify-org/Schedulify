@@ -1,10 +1,10 @@
 #ifndef COURSE_SELECTION_H
 #define COURSE_SELECTION_H
 
-#include "base_controller.h"
+#include "controller_manager.h"
 #include "CourseModel.h"
 
-class CourseSelectionController : public BaseController {
+class CourseSelectionController : public ControllerManager {
 Q_OBJECT
 
     Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)

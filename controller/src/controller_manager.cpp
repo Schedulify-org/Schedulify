@@ -1,15 +1,15 @@
-#include "base_controller.h"
+#include "controller_manager.h"
 #include "main_controller.h" // Include the main controller header
 
 // Initialize static member
-MainController* BaseController::s_mainController = nullptr;
+MainController* ControllerManager::s_mainController = nullptr;
 
-void BaseController::setMainController(MainController* controller) {
+void ControllerManager::setMainController(MainController* controller) {
     s_mainController = controller;
-    qDebug() << "Main controller set in BaseController";
+    qDebug() << "Main controller set in ControllerManager";
 }
 
-QObject* BaseController::findController(const QString& controllerName) {
+QObject* ControllerManager::findController(const QString& controllerName) {
     if (!s_mainController) {
         qWarning() << "MainController not set, cannot find controller" << controllerName;
         return nullptr;

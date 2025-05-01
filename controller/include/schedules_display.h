@@ -1,9 +1,9 @@
 #ifndef SCHEDULES_DISPLAY_H
 #define SCHEDULES_DISPLAY_H
 
-#include "base_controller.h"
+#include "controller_manager.h"
 
-class SchedulesDisplayController : public BaseController {
+class SchedulesDisplayController : public ControllerManager {
     Q_OBJECT
 
 public:

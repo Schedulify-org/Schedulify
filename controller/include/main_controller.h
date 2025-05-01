@@ -33,7 +33,7 @@ private:
     SchedulesDisplayController* m_schedulesDisplayController;
 
     // Connect sub-controller signals to main controller signals
-    void connectControllerSignals(BaseController* controller);
+    void connectControllerSignals(ControllerManager* controller);
 };
 
 #endif // MAIN_CONTROLLER_H

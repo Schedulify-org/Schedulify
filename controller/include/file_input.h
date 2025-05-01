@@ -1,12 +1,12 @@
 #ifndef FILE_INPUT_H
 #define FILE_INPUT_H
 
-#include "base_controller.h"
+#include "controller_manager.h"
 #include "main_include.h"
 #include "main/main_model.h"
 #include "course_selection.h"
 
-class FileInputController : public BaseController {
+class FileInputController : public ControllerManager {
 Q_OBJECT
 
 public:

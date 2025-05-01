@@ -12,7 +12,7 @@ Page {
         anchors.fill: parent
         color: "#f9fafb"
 
-        // ==== Layout Container ====
+        // header
         Rectangle {
             id: header
             width: parent.width
@@ -115,6 +115,7 @@ Page {
             }
         }
 
+        // bottom row
         Rectangle {
             id: footer
             anchors {
