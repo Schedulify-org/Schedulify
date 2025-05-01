@@ -22,6 +22,9 @@ int main(int argc, char *argv[])
     // Create the ButtonController instance and pass the engine
     MainController controller(&engine);
 
+    // Set the static reference to the main controller for all BaseController instances
+    BaseController::setMainController(&controller);
+
     // Register the ButtonController with QML
     engine.rootContext()->setContextProperty("controller", &controller);
 

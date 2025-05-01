@@ -10,10 +10,11 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
     if (courses.empty()) {
         // Navigate to course selection screen
+        qWarning() << "Warning: Empty courses vector provided to initiateCoursesData";
         goToScreen(QUrl(QStringLiteral("qrc:/file_input.qml")));
     } else {
         // Initialize the course model with the data
-        m_courseModel->populateCoursesData({});
+        m_courseModel->populateCoursesData(courses);
     }
 }
 

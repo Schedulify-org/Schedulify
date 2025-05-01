@@ -18,11 +18,17 @@ void FileInputController::handleUploadAndContinue() {
 
     vector<Course>& courses = *coursesPtr;
 
-    // Navigate to course selection screen
-    goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
+    auto* course_controller =
+            qobject_cast<CourseSelectionController*>(findController("courseSelectionController"));
 
-    if (!courses.empty()) {
-        CourseSelectionController course_controller;
-        course_controller.initiateCoursesData(courses);
+
+    if (course_controller) {
+        // Initialize the course data first
+        course_controller->initiateCoursesData(courses);
+
+        // Then navigate to course selection screen
+        goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
+    } else {
+        qWarning() << "Failed to find courseSelectionController!";
     }
 }
