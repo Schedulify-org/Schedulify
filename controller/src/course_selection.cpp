@@ -3,6 +3,7 @@
 CourseSelectionController::CourseSelectionController(QObject *parent)
         : ControllerManager(parent)
         , m_courseModel(new CourseModel(this))
+        , m_selectedCoursesModel(new CourseModel(this))
 {
 }
 
@@ -14,6 +15,11 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         // Initialize the course model with the data
         allCourses = courses;
         m_courseModel->populateCoursesData(courses);
+
+        // Clear any previous selections
+        selectedCourses.clear();
+        selectedIndices.clear();
+        m_selectedCoursesModel->populateCoursesData(selectedCourses);
     }
 }
 
@@ -28,4 +34,55 @@ void CourseSelectionController::generateSchedules() {
 
     // Navigate to schedules display screen
     goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+}
+
+void CourseSelectionController::toggleCourseSelection(int index) {
+    if (index < 0 || index >= static_cast<int>(allCourses.size())) {
+        qWarning() << "Invalid course index:" << index;
+        return;
+    }
+
+    // Check if the course is already selected
+    auto it = std::find(selectedIndices.begin(), selectedIndices.end(), index);
+
+    if (it != selectedIndices.end()) {
+        // Course is already selected, remove it
+        int selectedIndex = std::distance(selectedIndices.begin(), it);
+        selectedIndices.erase(it);
+        selectedCourses.erase(selectedCourses.begin() + selectedIndex);
+    } else {
+        // Course is not selected, add it
+        selectedIndices.push_back(index);
+        selectedCourses.push_back(allCourses[index]);
+    }
+
+    // Update the selected courses model
+    m_selectedCoursesModel->populateCoursesData(selectedCourses);
+
+    // Notify QML that the selection state has changed
+    emit m_courseModel->dataChanged(m_courseModel->index(index), m_courseModel->index(index));
+}
+
+void CourseSelectionController::deselectCourse(int index) {
+    if (index < 0 || index >= static_cast<int>(selectedCourses.size())) {
+        qWarning() << "Invalid selected course index:" << index;
+        return;
+    }
+
+    // Find the corresponding index in the main course list
+    int mainIndex = selectedIndices[index];
+
+    // Remove from selected courses
+    selectedCourses.erase(selectedCourses.begin() + index);
+    selectedIndices.erase(selectedIndices.begin() + index);
+
+    // Update the models
+    m_selectedCoursesModel->populateCoursesData(selectedCourses);
+
+    // Notify QML that the selection state has changed
+    emit m_courseModel->dataChanged(m_courseModel->index(mainIndex), m_courseModel->index(mainIndex));
+}
+
+bool CourseSelectionController::isCourseSelected(int index) {
+    return std::find(selectedIndices.begin(), selectedIndices.end(), index) != selectedIndices.end();
 }

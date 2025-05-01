@@ -1,4 +1,4 @@
-#include "CourseModel.h"
+#include "course_model.h"
 
 CourseModel::CourseModel(QObject* parent)
         : QAbstractListModel(parent){}
@@ -10,19 +10,19 @@ int CourseModel::rowCount(const QModelIndex& parent) const
     return static_cast<int>(m_courses.size());
 }
 
-QVariant CourseModel::data(const QModelIndex& index, int role) const
+QVariant CourseModel::data(const QModelIndex &index, int role) const
 {
     if (!index.isValid() || index.row() >= static_cast<int>(m_courses.size()))
         return {};
 
-    const CourseM& course = m_courses[index.row()];
+    const CourseM& course = m_courses.at(index.row());
 
     switch (role) {
-        case IdRole:
+        case CourseIdRole:
             return course.id;
-        case NameRole:
+        case CourseNameRole:
             return course.name;
-        case TeacherRole:
+        case TeacherNameRole:
             return course.teacherName;
         default:
             return {};
@@ -32,9 +32,10 @@ QVariant CourseModel::data(const QModelIndex& index, int role) const
 QHash<int, QByteArray> CourseModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[IdRole] = "courseId";
-    roles[NameRole] = "courseName";
-    roles[TeacherRole] = "teacherName";
+    roles[CourseIdRole] = "courseId";
+    roles[CourseNameRole] = "courseName";
+    roles[TeacherNameRole] = "teacherName";
+    roles[IsSelectedRole] = "isSelected";
     return roles;
 }
 

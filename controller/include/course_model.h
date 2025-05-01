@@ -25,23 +25,24 @@ Q_OBJECT
 public:
     // Define roles for the model
     enum CourseRoles {
-        IdRole = Qt::UserRole + 1,
-        NameRole,
-        TeacherRole
+        CourseIdRole = Qt::UserRole + 1,
+        CourseNameRole,
+        TeacherNameRole,
+        IsSelectedRole
     };
 
     explicit CourseModel(QObject* parent = nullptr);
 
     // Override methods from QAbstractListModel without default arguments
-    [[nodiscard]] int rowCount(const QModelIndex& parent) const override;
-    [[nodiscard]] QVariant data(const QModelIndex& index, int role) const override;
+    [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     // Method to populate the model with sample data
     void populateCoursesData(const vector<Course>& courses);
 
 private:
-    std::vector<CourseM> m_courses;
+    vector<CourseM> m_courses;
 };
 
 #endif // COURSE_MODEL_H

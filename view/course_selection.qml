@@ -74,10 +74,75 @@ Page {
             }
             color: "#f9fafb"
 
+            // Selected Courses Row
+            Rectangle {
+                id: selectedCoursesContainer
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                    margins: 16
+                }
+                height: 80
+                color: "#ffffff"
+                radius: 8
+                border.color: "#e5e7eb"
+
+                Column {
+                    anchors {
+                        fill: parent
+                        margins: 12
+                    }
+                    spacing: 8
+
+                    Label {
+                        text: "Selected Courses"
+                        font.pixelSize: 16
+                        font.bold: true
+                        color: "#1f2937"
+                    }
+
+                    Flow {
+                        id: selectedCoursesFlow
+                        width: parent.width
+                        spacing: 8
+                        height: 40
+
+                        // This will be populated dynamically with selected courses
+                        Repeater {
+                            id: selectedCoursesRepeater
+                            model: courseSelectionController.selectedCoursesModel
+
+                            Rectangle {
+                                width: courseIdText.width + 36
+                                height: 36
+                                radius: 4
+                                color: "#4f46e5"
+
+                                Label {
+                                    id: courseIdText
+                                    anchors.centerIn: parent
+                                    text: courseId
+                                    font.bold: true
+                                    color: "#ffffff"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    onClicked: {
+                                        courseSelectionController.deselectCourse(index)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Label {
                 id: courseListTitle
                 anchors {
-                    top: parent.top
+                    top: selectedCoursesContainer.bottom
                     left: parent.left
                     margins: 16
                 }
@@ -94,7 +159,7 @@ Page {
                     right: parent.right
                     margins: 16
                 }
-                text: "Below are the courses available for your schedule"
+                text: "Click on a course to select it for your schedule"
                 color: "#6b7280"
             }
 
@@ -116,9 +181,12 @@ Page {
                 delegate: Rectangle {
                     width: ListView.view.width
                     height: 80
-                    color: "#ffffff"
+                    color: isSelected ? "#f0f9ff" : "#ffffff" // Highlight if selected
                     radius: 8
-                    border.color: "#e5e7eb"
+                    border.color: isSelected ? "#3b82f6" : "#e5e7eb"
+
+                    // Add property to track selection status
+                    property bool isSelected: courseSelectionController.isCourseSelected(index)
 
                     RowLayout {
                         anchors {
@@ -131,14 +199,14 @@ Page {
                         Rectangle {
                             Layout.preferredWidth: 80
                             Layout.preferredHeight: 80 - 24
-                            color: "#f3f4f6"
+                            color: isSelected ? "#dbeafe" : "#f3f4f6"
                             radius: 4
 
                             Label {
                                 anchors.centerIn: parent
                                 text: courseId
                                 font.bold: true
-                                color: "#4b5563"
+                                color: isSelected ? "#2563eb" : "#4b5563"
                             }
                         }
 
@@ -161,6 +229,13 @@ Page {
                             }
                         }
                     }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            courseSelectionController.toggleCourseSelection(index)
+                        }
+                    }
                 }
 
                 // Scrollbar
@@ -170,20 +245,18 @@ Page {
             }
         }
 
-        // Browse Button
+        // Generate Schedules Button
         Button {
-            id: browseButton
-            x: 879
-            y: 20
+            id: generateButton
             anchors {
-                top: supportedFormats.bottom
-                horizontalCenter: supportedFormats.horizontalCenter
-                topMargin: 8
+                right: parent.right
+                bottom: footer.top
+                margins: 16
             }
             background: Rectangle {
                 color: "#1f2937"
                 radius: 4
-                implicitWidth: 120
+                implicitWidth: 180
                 implicitHeight: 40
             }
             font.bold: true
