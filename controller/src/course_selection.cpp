@@ -4,7 +4,6 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         : BaseController(parent)
         , m_courseModel(new CourseModel(this))
 {
-//    m_courseModel->populateCoursesData({});
 }
 
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
