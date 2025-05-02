@@ -152,56 +152,123 @@ Page {
             height: 300
             color: "#ffffff"
             border.width: 2
-            border.color: dndActive ? "#10b981" : "#e5e7eb"
+            border.color: "#e5e7eb"
             radius: 10
+            state: ""
 
-            property bool dndActive: false
+            // Add state transitions for smooth animation
+            transitions: [
+                Transition {
+                    to: "*"
+                    ColorAnimation {
+                        target: uploadArea
+                        property: "border.color"
+                        duration: 200
+                    }
+                }
+            ]
 
             DropArea {
+                id: dropArea
                 anchors.fill: parent
                 keys: ["text/uri-list"]
 
+                property bool isValidFile: false
+                property string fileName: ""
+
+                // Visual state properties
+                states: [
+                    State {
+                        name: "dropped"
+                        PropertyChanges { target: uploadArea; border.color: dropArea.isValidFile ? "#10b981" : "#ef4444" }
+                        PropertyChanges { target: dropIndicator; text: dropArea.isValidFile ?
+                            "File ready: " + dropArea.fileName :
+                            "Invalid file format.\nOnly .txt files are supported."
+                        }
+                        PropertyChanges { target: dropIndicator; color: dropArea.isValidFile ? "#10b981" : "#ef4444" }
+                    },
+                    State {
+                        name: "dragging"
+                        PropertyChanges { target: uploadArea; border.color: "#3b82f6" }
+                        PropertyChanges { target: dropIndicator; text: "Release to upload file" }
+                        PropertyChanges { target: dropIndicator; color: "#3b82f6" }
+                    }
+                ]
+
                 onEntered: {
-                    uploadArea.dndActive = true;
-                    console.log("Entered DropArea");
+                    uploadArea.state = "dragging"
+                    console.log("File dragged in")
                 }
+
                 onExited: {
-                    uploadArea.dndActive = false;
-                    console.log("Exited DropArea");
+                    uploadArea.state = ""
+                    console.log("File drag exited")
                 }
+
                 onDropped: {
-                    uploadArea.dndActive = false;
-                    console.log("File dropped!");
+                    console.log("File dropped!")
 
                     if (drop.hasUrls) {
-                        let fileUrl = drop.urls[0].toLocalFile();
-                        console.log("Dropped file path:", fileUrl);
+                        let fileUrl = drop.urls[0]
 
-                        if (fileUrl.endsWith(".txt")) {
-                            fileInputController.loadFile(fileUrl);
+                        // Convert URL to local file path
+                        let localFilePath = fileUrl.toLocalFile()
+                        console.log("Dropped file path:", localFilePath)
+
+                        // Extract just the filename for display
+                        fileName = localFilePath.substring(localFilePath.lastIndexOf('/') + 1)
+                        if (fileName.indexOf('\\') !== -1) {
+                            fileName = fileName.substring(fileName.lastIndexOf('\\') + 1)
+                        }
+
+                        // Check if it's a .txt file
+                        isValidFile = fileName.toLowerCase().endsWith(".txt")
+
+                        if (isValidFile) {
+                            uploadArea.state = "dropped"
+                            // Call the C++ function to process the file
+                            fileInputController.loadFile(localFilePath)
                         } else {
-                            console.warn("Only .txt files are supported.");
-                            showErrorMessage("Only .txt files are supported. Please upload a valid course list.");
+                            uploadArea.state = "dropped"
+                            showErrorMessage("Invalid file format. Please upload a .txt file.")
+                            console.warn("Invalid file format")
                         }
                     } else {
-                        console.log("Drop has no URLs");
+                        console.log("Drop has no URLs")
+                        uploadArea.state = ""
                     }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.NoButton
                 }
             }
 
-            // Prompt Text
-            Label {
+            // We're removing the MouseArea since we want drag-only functionality for this area
+
+            // Upload content column
+            Column {
+                id: dropContent
                 anchors.centerIn: parent
-                text: "Drag and drop your file here,\nor click 'Browse Files'"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                color: "#6b7280"
+                spacing: 12
+                width: parent.width - 40
+
+                // Upload icon (text fallback if image is missing)
+                Text {
+                    id: uploadIcon
+                    text: uploadArea.state === "dropped" && dropArea.isValidFile ? "✓" : "⬆️"
+                    font.pixelSize: 32
+                    color: uploadArea.state === "dropped" && dropArea.isValidFile ? "#10b981" : "#6b7280"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+
+                // Drop text indicator
+                Label {
+                    id: dropIndicator
+                    text: "Drag and drop your file here"
+                    font.pixelSize: 16
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    color: "#6b7280"
+                    width: parent.width
+                }
             }
         }
 
