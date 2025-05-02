@@ -30,25 +30,28 @@ Page {
             color: "#ffffff"
             border.color: "#e5e7eb"
 
-            Row {
+            Item {
                 anchors {
                     left: parent.left
+                    right: parent.right
                     verticalCenter: parent.verticalCenter
-                    leftMargin: 16
                 }
-                spacing: 16
+                height: backButton.height
 
                 // Back Button
                 Button {
                     id: backButton
                     width: 40
                     height: 40
-
+                    anchors {
+                        left: parent.left
+                        leftMargin: 16
+                        verticalCenter: parent.verticalCenter
+                    }
                     background: Rectangle {
                         color: "#f3f4f6"
                         radius: 4
                     }
-
                     contentItem: Text {
                         text: "←"
                         font.pixelSize: 18
@@ -56,7 +59,6 @@ Page {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-
                     onClicked: {
                         courseSelectionController.goBack()
                     }
@@ -68,7 +70,42 @@ Page {
                     text: "Available Courses"
                     font.pixelSize: 20
                     color: "#1f2937"
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors {
+                        left: backButton.right
+                        leftMargin: 16
+                        verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                // Generate Schedules Button - Only visible when at least 1 course is selected
+                Button {
+                    id: generateButton
+                    width: 180
+                    height: 40
+                    anchors {
+                        right: parent.right
+                        rightMargin: 16
+                        verticalCenter: parent.verticalCenter
+                    }
+                    visible: selectedCoursesRepeater.count > 0
+                    enabled: selectedCoursesRepeater.count > 0
+
+                    background: Rectangle {
+                        color: "#1f2937"
+                        radius: 4
+                        implicitWidth: 180
+                        implicitHeight: 40
+                    }
+                    font.bold: true
+                    contentItem: Text {
+                        text: qsTr("Generate Schedules")
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: {
+                        courseSelectionController.generateSchedules()
+                    }
                 }
             }
         }
@@ -130,24 +167,46 @@ Page {
                                 model: courseSelectionController.selectedCoursesModel
 
                                 Rectangle {
-                                    width: courseIdText.width + 36
+                                    id: courseRect
+                                    width: courseContainer.width + 24
                                     height: 36
                                     radius: 4
-                                    color: "#4f46e5"
+                                    color: courseMouseArea.containsMouse ? "#ef4444" : "#4f46e5"  // Red when hovering, default purple/indigo
 
-                                    Label {
-                                        id: courseIdText
+                                    // Container for the text and X symbol
+                                    Row {
+                                        id: courseContainer
                                         anchors.centerIn: parent
-                                        text: courseId
-                                        font.bold: true
-                                        color: "#ffffff"
+                                        spacing: 8
+
+                                        Label {
+                                            id: courseIdText
+                                            text: courseId
+                                            font.bold: true
+                                            color: "#ffffff"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        // X symbol - only visible on hover
+                                        Text {
+                                            id: removeIcon
+                                            text: "✕"
+                                            font.pixelSize: 14
+                                            color: "#ffffff"
+                                            visible: courseMouseArea.containsMouse
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
                                     }
 
                                     MouseArea {
+                                        id: courseMouseArea
                                         anchors.fill: parent
+                                        hoverEnabled: true
                                         onClicked: {
                                             courseSelectionController.deselectCourse(index)
                                         }
+                                        // Add cursor change on hover to indicate it's clickable
+                                        cursorShape: Qt.PointingHandCursor
                                     }
                                 }
                             }
@@ -401,35 +460,6 @@ Page {
                 ScrollBar.vertical: ScrollBar {
                     active: true
                 }
-            }
-        }
-
-        // Generate Schedules Button - Only visible when at least 1 course is selected
-        Button {
-            id: generateButton
-            anchors {
-                right: parent.right
-                bottom: footer.top
-                margins: 16
-            }
-            visible: selectedCoursesRepeater.count > 0
-            enabled: selectedCoursesRepeater.count > 0
-
-            background: Rectangle {
-                color: "#1f2937"
-                radius: 4
-                implicitWidth: 180
-                implicitHeight: 40
-            }
-            font.bold: true
-            contentItem: Text {
-                text: qsTr("Generate Schedules")
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-            onClicked: {
-                courseSelectionController.generateSchedules()
             }
         }
 
