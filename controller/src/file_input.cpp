@@ -1,20 +1,40 @@
 #include "file_input.h"
-#include <filesystem>
 
 FileInputController::FileInputController(QObject *parent)
-        : ControllerManager(parent){}
+        : ControllerManager(parent) {}
 
 void FileInputController::handleUploadAndContinue() {
-    Model model;
+    // Open file dialog to select .txt file, starting in Documents
+    QString fileName = QFileDialog::getOpenFileName(
+            nullptr,
+            "Select Course Input File",
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+            "Text Files (*.txt)"
+    );
 
-    //temp path for tests
-    namespace fs = std::filesystem;
-    fs::path main_path = fs::current_path().parent_path();
-    string filePath = main_path.string() + COURSEDBINPUT;
+    if (fileName.isEmpty()) {
+        qDebug() << "No file selected.";
+        return;
+    }
+
+    selectedFilePath = fileName;
+    handleFileSelected(fileName);
+}
+
+void FileInputController::loadFile() {
+    Model model;
+    string filePath;
+
+    if (!selectedFilePath.isEmpty()) {
+        filePath = selectedFilePath.toStdString();
+    } else {
+        qWarning() << "Failed to find courseSelectionController or courses are empty!";
+        return;
+    }
 
     //generate Courses vector
     auto* coursesPtr = static_cast<vector<Course>*>
-            (model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath));
+    (model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath));
 
     vector<Course>& courses = *coursesPtr;
 
@@ -29,6 +49,20 @@ void FileInputController::handleUploadAndContinue() {
         // Then navigate to course selection screen
         goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
     } else {
-        qWarning() << "Failed to find courseSelectionController!";
+        qWarning() << "Failed to find courseSelectionController or courses are empty!";
+        return;
+    }
+}
+
+void FileInputController::handleFileSelected(const QString &filePath) {
+    selectedFilePath = filePath;
+
+    // Emit signal that a file has been selected
+    emit fileSelected(!filePath.isEmpty());
+
+    // Extract just the filename from the path and emit it
+    if (!filePath.isEmpty()) {
+        QString fileName = filePath.split('/').last().split('\\').last();
+        emit fileNameChanged(fileName);
     }
 }
