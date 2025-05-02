@@ -4,8 +4,6 @@ import QtQuick.Layouts 1.15
 
 Page {
     id: inputScreen
-    width: 1024
-    height: 768
 
     Rectangle {
         id: root
@@ -115,7 +113,7 @@ Page {
             }
         }
 
-        // bottom row
+        // Footer
         Rectangle {
             id: footer
             anchors {
@@ -130,7 +128,7 @@ Page {
             // Footer Text
             Label {
                 anchors.centerIn: parent
-                text: "© 2025 Schedule Builder. All rights reserved."
+                text: "© 2025 Schedulify. All rights reserved."
                 color: "#6b7280"
                 font.pixelSize: 12
             }

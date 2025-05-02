@@ -4,8 +4,18 @@ import QtQuick.Layouts 1.15
 
 Page {
     id: courseListScreen
-    width: 1024
-    height: 768
+
+    // Property to store error message
+    property string errorMessage: ""
+
+    // Timer to clear error message
+    Timer {
+        id: errorMessageTimer
+        interval: 3000 // 3 seconds
+        onTriggered: {
+            errorMessage = ""
+        }
+    }
 
     Rectangle {
         id: root
@@ -88,61 +98,121 @@ Page {
                 radius: 8
                 border.color: "#e5e7eb"
 
-                Column {
+                Row {
                     anchors {
-                        fill: parent
+                        left: parent.left
+                        top: parent.top
+                        right: parent.right
                         margins: 12
                     }
                     spacing: 8
 
-                    Label {
-                        text: "Selected Courses"
-                        font.pixelSize: 16
-                        font.bold: true
-                        color: "#1f2937"
-                    }
-
-                    Flow {
-                        id: selectedCoursesFlow
-                        width: parent.width
+                    Column {
+                        width: parent.width - courseCounter.width - 8
                         spacing: 8
-                        height: 40
 
-                        // This will be populated dynamically with selected courses
-                        Repeater {
-                            id: selectedCoursesRepeater
-                            model: courseSelectionController.selectedCoursesModel
+                        Label {
+                            text: "Selected Courses"
+                            font.pixelSize: 16
+                            font.bold: true
+                            color: "#1f2937"
+                        }
 
-                            Rectangle {
-                                width: courseIdText.width + 36
-                                height: 36
-                                radius: 4
-                                color: "#4f46e5"
+                        Flow {
+                            id: selectedCoursesFlow
+                            width: parent.width
+                            spacing: 8
+                            height: 40
 
-                                Label {
-                                    id: courseIdText
-                                    anchors.centerIn: parent
-                                    text: courseId
-                                    font.bold: true
-                                    color: "#ffffff"
-                                }
+                            // This will be populated dynamically with selected courses
+                            Repeater {
+                                id: selectedCoursesRepeater
+                                model: courseSelectionController.selectedCoursesModel
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    onClicked: {
-                                        courseSelectionController.deselectCourse(index)
+                                Rectangle {
+                                    width: courseIdText.width + 36
+                                    height: 36
+                                    radius: 4
+                                    color: "#4f46e5"
+
+                                    Label {
+                                        id: courseIdText
+                                        anchors.centerIn: parent
+                                        text: courseId
+                                        font.bold: true
+                                        color: "#ffffff"
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: {
+                                            courseSelectionController.deselectCourse(index)
+                                        }
                                     }
                                 }
+                            }
+                        }
+                    }
+
+                    // Course Counter
+                    Rectangle {
+                        id: courseCounter
+                        width: 70
+                        height: 70
+                        radius: 8
+                        color: selectedCoursesRepeater.count === 7 ? "#fef2f2" : "#f3f4f6"
+                        border.color: selectedCoursesRepeater.count === 7 ? "#ef4444" : "#d1d5db"
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 4
+
+                            Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: selectedCoursesRepeater.count + "/7"
+                                font.pixelSize: 20
+                                font.bold: true
+                                color: selectedCoursesRepeater.count === 7 ? "#dc2626" : "#1f2937"
+                            }
+
+                            Label {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: "Courses"
+                                font.pixelSize: 12
+                                color: selectedCoursesRepeater.count === 7 ? "#dc2626" : "#6b7280"
                             }
                         }
                     }
                 }
             }
 
+            // Error message
+            Rectangle {
+                id: errorMessageContainer
+                anchors {
+                    top: selectedCoursesContainer.bottom
+                    left: parent.left
+                    right: parent.right
+                    margins: 16
+                }
+                height: errorMessage === "" ? 0 : 40
+                visible: errorMessage !== ""
+                color: "#fef2f2"
+                radius: 4
+                border.color: "#fecaca"
+
+                Label {
+                    anchors.centerIn: parent
+                    text: errorMessage
+                    color: "#dc2626"
+                    font.pixelSize: 14
+                }
+            }
+
             Label {
                 id: courseListTitle
                 anchors {
-                    top: selectedCoursesContainer.bottom
+                    top: errorMessageContainer.visible ? errorMessageContainer.bottom : selectedCoursesContainer.bottom
                     left: parent.left
                     margins: 16
                 }
@@ -180,18 +250,47 @@ Page {
                 // Delegate for course items
                 delegate: Rectangle {
                     id: courseDelegate
-                    width: ListView.view.width
+                    width: parent.width - 30
                     height: 80
-                    color: courseSelectionController.isCourseSelected(index) ? "#f0f9ff" : "#ffffff" // Highlight if selected
+                    color: {
+                        if (courseSelectionController.isCourseSelected(index)) {
+                            return "#f0f9ff" // Selected course
+                        } else if (selectedCoursesRepeater.count >= 7) {
+                            return "#e5e7eb" // Disabled (max courses selected)
+                        } else {
+                            return "#ffffff" // Normal state
+                        }
+                    }
                     radius: 8
-                    border.color: courseSelectionController.isCourseSelected(index) ? "#3b82f6" : "#e5e7eb"
+                    border.color: {
+                        if (courseSelectionController.isCourseSelected(index)) {
+                            return "#3b82f6" // Selected course
+                        } else if (selectedCoursesRepeater.count >= 7) {
+                            return "#d1d5db" // Disabled (max courses selected)
+                        } else {
+                            return "#e5e7eb" // Normal state
+                        }
+                    }
+                    opacity: selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index) ? 0.7 : 1
 
                     // Using a connection to force update when selection changes
                     Connections {
                         target: courseSelectionController
                         function onSelectionChanged() {
-                            courseDelegate.color = courseSelectionController.isCourseSelected(index) ? "#f0f9ff" : "#ffffff"
-                            courseDelegate.border.color = courseSelectionController.isCourseSelected(index) ? "#3b82f6" : "#e5e7eb"
+                            // Update color based on selection state and max courses limit
+                            if (courseSelectionController.isCourseSelected(index)) {
+                                courseDelegate.color = "#f0f9ff" // Selected course
+                                courseDelegate.border.color = "#3b82f6"
+                                courseDelegate.opacity = 1
+                            } else if (selectedCoursesRepeater.count >= 7) {
+                                courseDelegate.color = "#e5e7eb" // Disabled (max courses selected)
+                                courseDelegate.border.color = "#d1d5db"
+                                courseDelegate.opacity = 0.7
+                            } else {
+                                courseDelegate.color = "#ffffff" // Normal state
+                                courseDelegate.border.color = "#e5e7eb"
+                                courseDelegate.opacity = 1
+                            }
                         }
                     }
 
@@ -207,22 +306,47 @@ Page {
                             id: courseIdBox
                             Layout.preferredWidth: 80
                             Layout.preferredHeight: 80 - 24
-                            color: courseSelectionController.isCourseSelected(index) ? "#dbeafe" : "#f3f4f6"
+                            color: {
+                                if (courseSelectionController.isCourseSelected(index)) {
+                                    return "#dbeafe" // Selected
+                                } else if (selectedCoursesRepeater.count >= 7) {
+                                    return "#e5e7eb" // Disabled
+                                } else {
+                                    return "#f3f4f6" // Normal
+                                }
+                            }
                             radius: 4
 
                             Label {
                                 anchors.centerIn: parent
                                 text: courseId
                                 font.bold: true
-                                color: courseSelectionController.isCourseSelected(index) ? "#2563eb" : "#4b5563"
+                                color: {
+                                    if (courseSelectionController.isCourseSelected(index)) {
+                                        return "#2563eb" // Selected
+                                    } else if (selectedCoursesRepeater.count >= 7) {
+                                        return "#9ca3af" // Disabled
+                                    } else {
+                                        return "#4b5563" // Normal
+                                    }
+                                }
                             }
 
                             // Update color when selection changes
                             Connections {
                                 target: courseSelectionController
                                 function onSelectionChanged() {
-                                    courseIdBox.color = courseSelectionController.isCourseSelected(index) ? "#dbeafe" : "#f3f4f6"
-                                    courseIdBox.children[0].color = courseSelectionController.isCourseSelected(index) ? "#2563eb" : "#4b5563"
+                                    // Update course ID box styling based on selection state and max courses limit
+                                    if (courseSelectionController.isCourseSelected(index)) {
+                                        courseIdBox.color = "#dbeafe" // Selected
+                                        courseIdBox.children[0].color = "#2563eb"
+                                    } else if (selectedCoursesRepeater.count >= 7) {
+                                        courseIdBox.color = "#e5e7eb" // Disabled
+                                        courseIdBox.children[0].color = "#9ca3af"
+                                    } else {
+                                        courseIdBox.color = "#f3f4f6" // Normal
+                                        courseIdBox.children[0].color = "#4b5563"
+                                    }
                                 }
                             }
                         }
@@ -236,13 +360,25 @@ Page {
                                 text: courseName
                                 font.pixelSize: 16
                                 font.bold: true
-                                color: "#1f2937"
+                                color: {
+                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index)) {
+                                        return "#9ca3af" // Disabled
+                                    } else {
+                                        return "#1f2937" // Normal
+                                    }
+                                }
                             }
 
                             Label {
                                 text: "Instructor: " + teacherName
                                 font.pixelSize: 14
-                                color: "#6b7280"
+                                color: {
+                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index)) {
+                                        return "#9ca3af" // Disabled
+                                    } else {
+                                        return "#6b7280" // Normal
+                                    }
+                                }
                             }
                         }
                     }
@@ -250,7 +386,13 @@ Page {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            courseSelectionController.toggleCourseSelection(index)
+                            if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index)) {
+                                // Show error message if trying to select more than 7 courses
+                                errorMessage = "You have selected the maximum of 7 courses"
+                                errorMessageTimer.restart()
+                            } else {
+                                courseSelectionController.toggleCourseSelection(index)
+                            }
                         }
                     }
                 }
@@ -262,7 +404,7 @@ Page {
             }
         }
 
-        // Generate Schedules Button
+        // Generate Schedules Button - Only visible when at least 1 course is selected
         Button {
             id: generateButton
             anchors {
@@ -270,6 +412,9 @@ Page {
                 bottom: footer.top
                 margins: 16
             }
+            visible: selectedCoursesRepeater.count > 0
+            enabled: selectedCoursesRepeater.count > 0
+
             background: Rectangle {
                 color: "#1f2937"
                 radius: 4
@@ -299,7 +444,7 @@ Page {
 
             Label {
                 anchors.centerIn: parent
-                text: "© 2025 Schedule Builder. All rights reserved."
+                text: "© 2025 Schedulify. All rights reserved."
                 color: "#6b7280"
                 font.pixelSize: 12
             }

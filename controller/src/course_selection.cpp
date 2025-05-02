@@ -26,6 +26,10 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 void CourseSelectionController::generateSchedules() {
     Model model;
 
+    if (selectedCourses.empty()) {
+        return;
+    }
+
     //generate Courses vector
     auto* schedulePtr = static_cast<vector<Course>*>
         (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
