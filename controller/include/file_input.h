@@ -13,9 +13,11 @@ public:
     explicit FileInputController(QObject *parent = nullptr);
     ~FileInputController() override = default;
 
-
 public slots:
     void handleUploadAndContinue();
+
+public:
+    Q_INVOKABLE void loadFile(const QString &filePath);
 };
 
-#endif //FILE_INPUT_H
+#endif // FILE_INPUT_H

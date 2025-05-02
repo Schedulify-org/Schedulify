@@ -39,17 +39,48 @@ Page {
             height: 300
             color: "#ffffff"
             border.width: 2
-            border.color: "#d1d5db"
+            border.color: dndActive ? "#10b981" : "#d1d5db"
             radius: 10
 
-            // Drag and Drop Prompt
+            property bool dndActive: false
+
+            DropArea {
+                anchors.fill: parent
+
+                onEntered: {
+                    uploadArea.dndActive = true;
+                    console.log("Entered DropArea");
+                }
+                onExited: {
+                    uploadArea.dndActive = false;
+                    console.log("Exited DropArea");
+                }
+                onDropped: {
+                    console.log("File dropped!");
+                    uploadArea.dndActive = false;
+
+                    if (drop.hasUrls) {
+                        let fileUrl = drop.urls[0].toLocalFile();
+                        console.log("Dropped file path:", fileUrl);
+                    } else {
+                        console.log("Drop has no URLs");
+                    }
+                }
+            }
+
+
+
+            // Prompt Text
             Label {
-                id: dropPrompt
                 anchors.centerIn: parent
-                text: "Drag and drop your file here, or"
+                text: "Drag and drop your file here,\nor click 'Browse Files'"
+                font.pixelSize: 16
+                horizontalAlignment: Text.AlignHCenter
+                wrapMode: Text.WordWrap
                 color: "#6b7280"
             }
         }
+
 
         // Upload Title Label
         Label {

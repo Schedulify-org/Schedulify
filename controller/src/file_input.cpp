@@ -1,34 +1,61 @@
 #include "file_input.h"
-#include <filesystem>
+#include <QFileDialog>
+#include <QStandardPaths>
+#include <QDebug>
+#include "../../model/include/main/main_model.h"
+#include "../include/course_selection.h" // include CourseSelectionController header
 
 FileInputController::FileInputController(QObject *parent)
-        : ControllerManager(parent){}
+        : ControllerManager(parent) {}
 
 void FileInputController::handleUploadAndContinue() {
+    // Open file dialog to select .txt file, starting in Documents
+    QString fileName = QFileDialog::getOpenFileName(
+            nullptr,
+            "Select Course Input File",
+            QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+            "Text Files (*.txt)"
+    );
+
+    if (fileName.isEmpty()) {
+        qDebug() << "No file selected.";
+        return;
+    }
+
+    // Proceed to load the selected file
+    loadFile(fileName);
+}
+
+void FileInputController::loadFile(const QString &filePath) {
+    qDebug() << "[C++] loadFile called with path:" << filePath;
+
     Model model;
 
-    //temp path for tests
-    namespace fs = std::filesystem;
-    fs::path main_path = fs::current_path().parent_path();
-    string filePath = main_path.string() + COURSEDBINPUT;
+    auto* coursesPtr = static_cast<std::vector<Course>*>(
+            model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath.toStdString())
+    );
 
-    //generate Courses vector
-    auto* coursesPtr = static_cast<vector<Course>*>
-            (model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath));
+    if (!coursesPtr) {
+        qWarning() << "[C++] coursesPtr is nullptr!";
+        return;
+    }
 
-    vector<Course>& courses = *coursesPtr;
+    std::vector<Course> &courses = *coursesPtr;
+    qDebug() << "[C++] Parsed course count:" << static_cast<int>(courses.size());
 
     auto* course_controller =
             qobject_cast<CourseSelectionController*>(findController("courseSelectionController"));
 
+    if (!course_controller) {
+        qWarning() << "[C++] CourseSelectionController not found!";
+        return;
+    }
 
-    if (course_controller && !courses.empty()) {
-        // Initialize the course data first
+    if (!courses.empty()) {
+        qDebug() << "[C++] Initiating courses and switching screen...";
         course_controller->initiateCoursesData(courses);
-
-        // Then navigate to course selection screen
         goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
     } else {
-        qWarning() << "Failed to find courseSelectionController!";
+        qWarning() << "[C++] No courses loaded from file!";
     }
 }
