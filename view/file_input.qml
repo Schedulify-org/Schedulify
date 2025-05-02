@@ -11,6 +11,18 @@ Page {
         function onInvalidFileFormat() {
             showErrorMessage("Invalid file format. Please upload a valid course list.");
         }
+
+        // Connection for fileSelected signal
+        function onFileSelected(hasFile) {
+            continueButton.visible = hasFile;
+        }
+
+        // Connection for fileNameChanged signal
+        function onFileNameChanged(fileName) {
+            fileNameText.text = fileName;
+            fileNameText.visible = true;
+            dropPrompt.visible = false;
+        }
     }
 
     width: 1024
@@ -152,123 +164,77 @@ Page {
             height: 300
             color: "#ffffff"
             border.width: 2
-            border.color: "#e5e7eb"
+            border.color: "#d1d5db"
             radius: 10
-            state: ""
 
-            // Add state transitions for smooth animation
-            transitions: [
-                Transition {
-                    to: "*"
-                    ColorAnimation {
-                        target: uploadArea
-                        property: "border.color"
-                        duration: 200
-                    }
-                }
-            ]
-
+            // Add DropArea to handle file drops
             DropArea {
                 id: dropArea
                 anchors.fill: parent
-                keys: ["text/uri-list"]
 
-                property bool isValidFile: false
-                property string fileName: ""
-
-                // Visual state properties
-                states: [
-                    State {
-                        name: "dropped"
-                        PropertyChanges { target: uploadArea; border.color: dropArea.isValidFile ? "#10b981" : "#ef4444" }
-                        PropertyChanges { target: dropIndicator; text: dropArea.isValidFile ?
-                            "File ready: " + dropArea.fileName :
-                            "Invalid file format.\nOnly .txt files are supported."
-                        }
-                        PropertyChanges { target: dropIndicator; color: dropArea.isValidFile ? "#10b981" : "#ef4444" }
-                    },
-                    State {
-                        name: "dragging"
-                        PropertyChanges { target: uploadArea; border.color: "#3b82f6" }
-                        PropertyChanges { target: dropIndicator; text: "Release to upload file" }
-                        PropertyChanges { target: dropIndicator; color: "#3b82f6" }
-                    }
-                ]
-
+                // Visual feedback when dragging over the area
                 onEntered: {
-                    uploadArea.state = "dragging"
-                    console.log("File dragged in")
+                    uploadArea.border.color = "#4f46e5" // Change border color when dragging over
+                    uploadArea.border.width = 3
                 }
 
                 onExited: {
-                    uploadArea.state = ""
-                    console.log("File drag exited")
+                    uploadArea.border.color = "#d1d5db" // Restore border color
+                    uploadArea.border.width = 2
                 }
 
                 onDropped: {
-                    console.log("File dropped!")
+                    uploadArea.border.color = "#d1d5db"
+                    uploadArea.border.width = 2
 
+                    // Check if the drop has URLs
                     if (drop.hasUrls) {
-                        let fileUrl = drop.urls[0]
+                        // Get the first file URL
+                        var fileUrl = drop.urls[0]
+                        // Remove the "file:///" prefix to get the file path
+                        var filePath = fileUrl.toString().replace(/^(file:\/{3})/, "")
 
-                        // Convert URL to local file path
-                        let localFilePath = fileUrl.toLocalFile()
-                        console.log("Dropped file path:", localFilePath)
-
-                        // Extract just the filename for display
-                        fileName = localFilePath.substring(localFilePath.lastIndexOf('/') + 1)
-                        if (fileName.indexOf('\\') !== -1) {
-                            fileName = fileName.substring(fileName.lastIndexOf('\\') + 1)
-                        }
-
-                        // Check if it's a .txt file
-                        isValidFile = fileName.toLowerCase().endsWith(".txt")
-
-                        if (isValidFile) {
-                            uploadArea.state = "dropped"
-                            // Call the C++ function to process the file
-                            fileInputController.loadFile(localFilePath)
-                        } else {
-                            uploadArea.state = "dropped"
-                            showErrorMessage("Invalid file format. Please upload a .txt file.")
-                            console.warn("Invalid file format")
-                        }
-                    } else {
-                        console.log("Drop has no URLs")
-                        uploadArea.state = ""
+                        // Call the controller with the file path - UI will be updated via signals
+                        fileInputController.handleFileSelected(filePath)
                     }
                 }
             }
 
-            // We're removing the MouseArea since we want drag-only functionality for this area
+            // Upload icon
+            Rectangle {
+                id: uploadIcon
+                width: 64
+                height: 64
+                color: "transparent"
+                anchors {
+                    bottom: dropPrompt.top
+                    horizontalCenter: parent.horizontalCenter
+                    bottomMargin: 16
+                }
 
-            // Upload content column
-            Column {
-                id: dropContent
-                anchors.centerIn: parent
-                spacing: 12
-                width: parent.width - 40
-
-                // Upload icon (text fallback if image is missing)
                 Text {
-                    id: uploadIcon
-                    text: uploadArea.state === "dropped" && dropArea.isValidFile ? "✓" : "⬆️"
-                    font.pixelSize: 32
-                    color: uploadArea.state === "dropped" && dropArea.isValidFile ? "#10b981" : "#6b7280"
-                    horizontalAlignment: Text.AlignHCenter
-                    width: parent.width
+                    anchors.centerIn: parent
+                    text: "📁"
+                    font.pixelSize: 48
+                    color: "#9ca3af"
                 }
+            }
 
-                // Drop text indicator
-                Label {
-                    id: dropIndicator
-                    text: "Drag and drop your file here"
-                    font.pixelSize: 16
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    color: "#6b7280"
-                    width: parent.width
-                }
+            // Drag and Drop Prompt
+            Label {
+                id: dropPrompt
+                anchors.centerIn: parent
+                text: "Drag and drop your file here, or"
+                color: "#6b7280"
+            }
+
+            // File name display (initially hidden)
+            Label {
+                id: fileNameText
+                anchors.centerIn: parent
+                color: "#4f46e5"
+                font.bold: true
+                visible: false
             }
         }
 
@@ -333,6 +299,35 @@ Page {
             }
             onClicked: {
                 fileInputController.handleUploadAndContinue()
+            }
+        }
+
+        // Upload Button - Initially hidden
+        Button {
+            id: continueButton
+            width: 194
+            height: 40
+            visible: false  // Initially hidden until a file is selected
+            anchors {
+                top: browseButton.bottom
+                horizontalCenter: supportedFormats.horizontalCenter
+                topMargin: 8
+            }
+            background: Rectangle {
+                color: "#1f2937"
+                radius: 4
+                implicitWidth: 120
+                implicitHeight: 40
+            }
+            font.bold: true
+            contentItem: Text {
+                text: qsTr("Upload Course's List →")
+                color: "white"
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+            onClicked: {
+                fileInputController.loadFile()
             }
         }
 
