@@ -168,7 +168,7 @@ Page {
 
                                 Rectangle {
                                     id: courseRect
-                                    width: courseContainer.width + 24
+                                    width: courseContainer.width + 30
                                     height: 36
                                     radius: 4
                                     color: courseMouseArea.containsMouse ? "#ef4444" : "#4f46e5"  // Red when hovering, default purple/indigo
@@ -184,16 +184,6 @@ Page {
                                             text: courseId
                                             font.bold: true
                                             color: "#ffffff"
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-
-                                        // X symbol - only visible on hover
-                                        Text {
-                                            id: removeIcon
-                                            text: "✕"
-                                            font.pixelSize: 14
-                                            color: "#ffffff"
-                                            visible: courseMouseArea.containsMouse
                                             anchors.verticalCenter: parent.verticalCenter
                                         }
                                     }
