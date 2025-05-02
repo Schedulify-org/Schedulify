@@ -37,6 +37,7 @@ void FileInputController::loadFile(const QString &filePath) {
 
     if (!coursesPtr) {
         qWarning() << "[C++] coursesPtr is nullptr!";
+        emit invalidFileFormat();  // 🔔 Notify QML
         return;
     }
 
@@ -48,6 +49,7 @@ void FileInputController::loadFile(const QString &filePath) {
 
     if (!course_controller) {
         qWarning() << "[C++] CourseSelectionController not found!";
+        emit invalidFileFormat();  // 🔔 Notify QML
         return;
     }
 
@@ -57,5 +59,6 @@ void FileInputController::loadFile(const QString &filePath) {
         goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
     } else {
         qWarning() << "[C++] No courses loaded from file!";
+        emit invalidFileFormat();  // 🔔 Notify QML
     }
 }

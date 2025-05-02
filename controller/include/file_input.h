@@ -16,6 +16,9 @@ public:
 public slots:
     void handleUploadAndContinue();
 
+signals:
+    void invalidFileFormat();  // 🔔 Emits when parsing or validation fails
+
 public:
     Q_INVOKABLE void loadFile(const QString &filePath);
 };
