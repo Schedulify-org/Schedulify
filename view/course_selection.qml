@@ -160,8 +160,8 @@ Page {
                         width: 70
                         height: 70
                         radius: 8
-                        color: selectedCoursesRepeater.count === 7 ? "#fef2f2" : "#f3f4f6"
-                        border.color: selectedCoursesRepeater.count === 7 ? "#ef4444" : "#d1d5db"
+                        color: "#f3f4f6"
+                        border.color: "#d1d5db"
 
                         Column {
                             anchors.centerIn: parent
@@ -172,14 +172,14 @@ Page {
                                 text: selectedCoursesRepeater.count + "/7"
                                 font.pixelSize: 20
                                 font.bold: true
-                                color: selectedCoursesRepeater.count === 7 ? "#dc2626" : "#1f2937"
+                                color: "#1f2937"
                             }
 
                             Label {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 text: "Courses"
                                 font.pixelSize: 12
-                                color: selectedCoursesRepeater.count === 7 ? "#dc2626" : "#6b7280"
+                                color: "#6b7280"
                             }
                         }
                     }
