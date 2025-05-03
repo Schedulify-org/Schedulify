@@ -28,7 +28,8 @@ public:
         CourseIdRole = Qt::UserRole + 1,
         CourseNameRole,
         TeacherNameRole,
-        IsSelectedRole
+        IsSelectedRole,
+        OriginalIndexRole
     };
 
     explicit CourseModel(QObject* parent = nullptr);
@@ -39,10 +40,11 @@ public:
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     // Method to populate the model with sample data
-    void populateCoursesData(const vector<Course>& courses);
+    void populateCoursesData(const vector<Course>& courses, const vector<int>& originalIndices = {});
 
 private:
     vector<CourseM> m_courses;
+    vector<int> m_originalIndices;
 };
 
 #endif // COURSE_MODEL_H

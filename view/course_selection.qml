@@ -7,6 +7,8 @@ Page {
 
     // Property to store error message
     property string errorMessage: ""
+    // Property to store search text
+    property string searchText: ""
 
     // Timer to clear error message
     Timer {
@@ -270,13 +272,93 @@ Page {
                 color: "#1f2937"
             }
 
-            Label {
-                id: courseListDescription
+            Row {
+                id: courseListHeader
                 anchors {
                     top: courseListTitle.bottom
                     left: parent.left
                     right: parent.right
                     margins: 16
+                }
+                spacing: 16
+                height: 60
+
+                // Search bar
+                Rectangle {
+                    id: searchBar
+                    width: parent.width
+                    height: 50
+                    radius: 8
+                    color: "#ffffff"
+                    border.color: "#e5e7eb"
+
+                    Row {
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            verticalCenter: parent.verticalCenter
+                            leftMargin: 16
+                            rightMargin: 16
+                        }
+                        spacing: 8
+
+                        // Search icon
+
+                        // Search input field
+                        TextField {
+                            id: searchField
+                            width: parent.width - 32
+                            placeholderText: "Search by course ID, name, or instructor..."
+                            font.pixelSize: 14
+                            color: "#1f2937"
+                            selectByMouse: true
+                            background: Rectangle {
+                                color: "transparent"
+                            }
+
+                            onTextChanged: {
+                                searchText = text
+                                courseSelectionController.filterCourses(text)
+                            }
+                        }
+
+                        // Clear icon
+                        Button {
+                            visible: searchField.text !== ""
+                            width: 30
+                            height: 24
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            background: Rectangle {
+                                color: "transparent"
+                            }
+
+                            contentItem: Text {
+                                text: "⨂"
+                                font.pixelSize: 25
+                                color: "#ee0000"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            onClicked: {
+                                searchField.text = ""
+                                searchText = ""
+                                courseSelectionController.resetFilter()
+                            }
+                        }
+                    }
+                }
+            }
+
+            Label {
+                id: courseListDescription
+                anchors {
+                    top: courseListHeader.bottom
+                    left: parent.left
+                    right: parent.right
+                    leftMargin: 16
+                    rightMargin: 16
                 }
                 text: "Click on a course to select it for your schedule"
                 color: "#6b7280"
@@ -293,7 +375,7 @@ Page {
                     margins: 16
                 }
                 clip: true
-                model: courseSelectionController.courseModel
+                model: courseSelectionController.filteredCourseModel
                 spacing: 8
 
                 // Delegate for course items
@@ -302,7 +384,7 @@ Page {
                     width: parent.width - 30
                     height: 80
                     color: {
-                        if (courseSelectionController.isCourseSelected(index)) {
+                        if (courseSelectionController.isCourseSelected(originalIndex)) {
                             return "#f0f9ff" // Selected course
                         } else if (selectedCoursesRepeater.count >= 7) {
                             return "#e5e7eb" // Disabled (max courses selected)
@@ -312,7 +394,7 @@ Page {
                     }
                     radius: 8
                     border.color: {
-                        if (courseSelectionController.isCourseSelected(index)) {
+                        if (courseSelectionController.isCourseSelected(originalIndex)) {
                             return "#3b82f6" // Selected course
                         } else if (selectedCoursesRepeater.count >= 7) {
                             return "#d1d5db" // Disabled (max courses selected)
@@ -320,14 +402,14 @@ Page {
                             return "#e5e7eb" // Normal state
                         }
                     }
-                    opacity: selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index) ? 0.7 : 1
+                    opacity: selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex) ? 0.7 : 1
 
                     // Using a connection to force update when selection changes
                     Connections {
                         target: courseSelectionController
                         function onSelectionChanged() {
                             // Update color based on selection state and max courses limit
-                            if (courseSelectionController.isCourseSelected(index)) {
+                            if (courseSelectionController.isCourseSelected(originalIndex)) {
                                 courseDelegate.color = "#f0f9ff" // Selected course
                                 courseDelegate.border.color = "#3b82f6"
                                 courseDelegate.opacity = 1
@@ -356,7 +438,7 @@ Page {
                             Layout.preferredWidth: 80
                             Layout.preferredHeight: 80 - 24
                             color: {
-                                if (courseSelectionController.isCourseSelected(index)) {
+                                if (courseSelectionController.isCourseSelected(originalIndex)) {
                                     return "#dbeafe" // Selected
                                 } else if (selectedCoursesRepeater.count >= 7) {
                                     return "#e5e7eb" // Disabled
@@ -371,7 +453,7 @@ Page {
                                 text: courseId
                                 font.bold: true
                                 color: {
-                                    if (courseSelectionController.isCourseSelected(index)) {
+                                    if (courseSelectionController.isCourseSelected(originalIndex)) {
                                         return "#2563eb" // Selected
                                     } else if (selectedCoursesRepeater.count >= 7) {
                                         return "#9ca3af" // Disabled
@@ -386,7 +468,7 @@ Page {
                                 target: courseSelectionController
                                 function onSelectionChanged() {
                                     // Update course ID box styling based on selection state and max courses limit
-                                    if (courseSelectionController.isCourseSelected(index)) {
+                                    if (courseSelectionController.isCourseSelected(originalIndex)) {
                                         courseIdBox.color = "#dbeafe" // Selected
                                         courseIdBox.children[0].color = "#2563eb"
                                     } else if (selectedCoursesRepeater.count >= 7) {
@@ -410,7 +492,7 @@ Page {
                                 font.pixelSize: 16
                                 font.bold: true
                                 color: {
-                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index)) {
+                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
                                         return "#9ca3af" // Disabled
                                     } else {
                                         return "#1f2937" // Normal
@@ -422,7 +504,7 @@ Page {
                                 text: "Instructor: " + teacherName
                                 font.pixelSize: 14
                                 color: {
-                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index)) {
+                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
                                         return "#9ca3af" // Disabled
                                     } else {
                                         return "#6b7280" // Normal
@@ -435,13 +517,48 @@ Page {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(index)) {
+                            if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
                                 // Show error message if trying to select more than 7 courses
                                 errorMessage = "You have selected the maximum of 7 courses"
                                 errorMessageTimer.restart()
                             } else {
-                                courseSelectionController.toggleCourseSelection(index)
+                                courseSelectionController.toggleCourseSelection(originalIndex)
                             }
+                        }
+                    }
+                }
+
+                // Empty state message when no courses match the search
+                Item {
+                    anchors.centerIn: parent
+                    width: parent.width * 0.8
+                    height: 100
+                    visible: courseListView.count === 0
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "🔍"
+                            font.pixelSize: 24
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "No courses found"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#4b5563"
+                        }
+
+                        Text {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            text: "Try a different search term"
+                            font.pixelSize: 14
+                            color: "#6b7280"
+                            horizontalAlignment: Text.AlignHCenter
                         }
                     }
                 }

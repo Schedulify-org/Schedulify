@@ -24,6 +24,13 @@ QVariant CourseModel::data(const QModelIndex &index, int role) const
             return course.name;
         case TeacherNameRole:
             return course.teacherName;
+        case OriginalIndexRole:
+            // If we have original indices, return them; otherwise, return the current index
+            if (!m_originalIndices.empty()) {
+                return m_originalIndices.at(index.row());
+            } else {
+                return index.row();
+            }
         default:
             return {};
     }
@@ -36,12 +43,12 @@ QHash<int, QByteArray> CourseModel::roleNames() const
     roles[CourseNameRole] = "courseName";
     roles[TeacherNameRole] = "teacherName";
     roles[IsSelectedRole] = "isSelected";
+    roles[OriginalIndexRole] = "originalIndex";
     return roles;
 }
 
-void CourseModel::populateCoursesData(const vector<Course>& courses)
+void CourseModel::populateCoursesData(const vector<Course>& courses, const vector<int>& originalIndices)
 {
-    // Clear existing data
     beginResetModel();
     m_courses.clear();
 
@@ -52,5 +59,17 @@ void CourseModel::populateCoursesData(const vector<Course>& courses)
                 QString::fromStdString(course.teacher)
         );
     }
+
+    // If originalIndices is provided and has the same size as courses, use it
+    if (!originalIndices.empty() && originalIndices.size() == courses.size()) {
+        m_originalIndices = originalIndices;
+    } else {
+        // Otherwise, create a default mapping (index -> index)
+        m_originalIndices.clear();
+        for (size_t i = 0; i < courses.size(); ++i) {
+            m_originalIndices.push_back(static_cast<int>(i));
+        }
+    }
+
     endResetModel();
 }

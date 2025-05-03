@@ -1,9 +1,13 @@
 #include "course_selection.h"
+#include <algorithm>
+#include <QDebug>
+#include <QUrl>
 
 CourseSelectionController::CourseSelectionController(QObject *parent)
         : ControllerManager(parent)
         , m_courseModel(new CourseModel(this))
         , m_selectedCoursesModel(new CourseModel(this))
+        , m_filteredCourseModel(new CourseModel(this))
 {
 }
 
@@ -15,6 +19,14 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         // Initialize the course model with the data
         allCourses = courses;
         m_courseModel->populateCoursesData(courses);
+
+        // Initialize filtered courses with all courses
+        filteredCourses = courses;
+        filteredIndicesMap.clear();
+        for (size_t i = 0; i < courses.size(); ++i) {
+            filteredIndicesMap.push_back(i);
+        }
+        m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
 
         // Clear any previous selections
         selectedCourses.clear();
@@ -32,7 +44,7 @@ void CourseSelectionController::generateSchedules() {
 
     //generate Courses vector
     auto* schedulePtr = static_cast<vector<Course>*>
-        (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
+    (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
 
     // Navigate to schedules display screen
     goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
@@ -87,4 +99,52 @@ void CourseSelectionController::deselectCourse(int index) {
 
 bool CourseSelectionController::isCourseSelected(int index) {
     return std::find(selectedIndices.begin(), selectedIndices.end(), index) != selectedIndices.end();
+}
+
+void CourseSelectionController::filterCourses(const QString& searchText) {
+    if (searchText.isEmpty()) {
+        resetFilter();
+        return;
+    }
+
+    // Convert searchText to lowercase for case-insensitive search
+    QString searchLower = searchText.toLower();
+
+    // Clear previous filtered results
+    filteredCourses.clear();
+    filteredIndicesMap.clear();
+
+    // Filter courses based on search text
+    for (size_t i = 0; i < allCourses.size(); ++i) {
+        const Course& course = allCourses[i];
+        QString courseId = QString::fromStdString(course.raw_id).toLower();
+        QString courseName = QString::fromStdString(course.name).toLower();
+        QString teacherName = QString::fromStdString(course.teacher).toLower();
+
+        // Check if search text is contained in any of the fields
+        if (courseId.contains(searchLower) ||
+            courseName.contains(searchLower) ||
+            teacherName.contains(searchLower))
+        {
+            filteredCourses.push_back(course);
+            filteredIndicesMap.push_back(i); // Store the original index
+        }
+    }
+
+    // Update the filtered model
+    m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
+}
+
+void CourseSelectionController::resetFilter() {
+    // Reset filtered courses to show all
+    filteredCourses = allCourses;
+    filteredIndicesMap.clear();
+
+    // Rebuild the index map
+    for (size_t i = 0; i < allCourses.size(); ++i) {
+        filteredIndicesMap.push_back(i);
+    }
+
+    // Update the filtered model
+    m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
 }

@@ -346,7 +346,7 @@ Page {
             // Footer Text
             Label {
                 anchors.centerIn: parent
-                text: "© 2025 Schedule Builder. All rights reserved."
+                text: "© 2025 Schedulify. All rights reserved."
                 color: "#6b7280"
                 font.pixelSize: 12
             }
