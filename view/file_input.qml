@@ -25,9 +25,6 @@ Page {
         }
     }
 
-    width: 1024
-    height: 768
-
     property string errorDialogText: ""
 
     Dialog {
