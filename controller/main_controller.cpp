@@ -19,7 +19,7 @@ MainController::MainController(QQmlApplicationEngine* engine, QObject *parent)
     engine->rootContext()->setContextProperty("schedulesDisplayController", m_schedulesDisplayController);
 }
 
-void MainController::connectControllerSignals(ControllerManager* controller) {
+void MainController::connectControllerSignals(const ControllerManager* controller) const {
     // Forward navigation signals from sub-controllers to main controller
     connect(controller, &ControllerManager::navigateToScreen, this, &MainController::navigateToScreen);
     connect(controller, &ControllerManager::navigateBack, this, &MainController::navigateBack);

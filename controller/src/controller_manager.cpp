@@ -6,7 +6,6 @@ MainController* ControllerManager::s_mainController = nullptr;
 
 void ControllerManager::setMainController(MainController* controller) {
     s_mainController = controller;
-    qDebug() << "Main controller set in ControllerManager";
 }
 
 QObject* ControllerManager::findController(const QString& controllerName) {

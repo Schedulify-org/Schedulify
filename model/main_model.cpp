@@ -1,5 +1,16 @@
 #include "main/main_model.h"
+#include "parsers/parseSchedToJson.h"
+#include <filesystem>
 #include "logs/logger.h"
+
+// this is the main model to run schedulify 2.0
+
+void testSched(const vector<Course>& lastGeneratedCourses, const vector<Schedule>& lastGeneratedSchedules) {
+    namespace fs = std::filesystem;
+    fs::path main_path = fs::current_path().parent_path();
+    string modifiedOutputPath = main_path.string() + OUTPUTPATH + "new.json";
+    bool success = exportSchedulesToJson(lastGeneratedSchedules, modifiedOutputPath, lastGeneratedCourses);
+}
 
 vector<Course> Model::generateCourses(const string& path) {
     vector<Course> courses = parseCourseDB(path);
@@ -50,6 +61,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
                 lastGeneratedSchedules = generateSchedules(*courses);
+                testSched(lastGeneratedCourses, lastGeneratedSchedules);
                 return &lastGeneratedSchedules;
             }
             // Handle error case where data is null

@@ -25,14 +25,14 @@ set(PROJECT_SOURCES
         main.cpp
         controller/main_controller.cpp
         controller/src/controller_manager.cpp
-        controller/src/CourseModel.cpp
+        controller/src/course_model.cpp
         controller/src/file_input.cpp
         controller/src/course_selection.cpp
         controller/src/schedules_display.cpp
 
         controller/include/main_controller.h
         controller/include/controller_manager.h
-        controller/include/CourseModel.h
+        controller/include/course_model.h
         controller/include/file_input.h
         controller/include/course_selection.h
         controller/include/schedules_display.h
