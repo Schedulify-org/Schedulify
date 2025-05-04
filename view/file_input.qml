@@ -186,7 +186,23 @@ Page {
 
                     if (drop.hasUrls) {
                         let fileUrl = drop.urls[0];
-                        let filePath = fileUrl.toString().replace("file:///", "");
+                        let filePath;
+
+                        // Handle platform differences in file URLs
+                        if (fileUrl.toString().startsWith("file:///")) {
+                            // For Windows: file:///C:/path/to/file.txt -> C:/path/to/file.txt
+                            // For Linux: file:///home/user/file.txt -> /home/user/file.txt
+                            if (fileUrl.toString().match(/^file:\/\/\/[A-Za-z]:/)) {
+                                // Windows path with drive letter
+                                filePath = fileUrl.toString().replace("file:///", "");
+                            } else {
+                                // Linux/Unix path - keep the leading slash
+                                filePath = fileUrl.toString().replace("file://", "");
+                            }
+                        } else {
+                            // Fallback for other formats
+                            filePath = fileUrl.toString();
+                        }
 
                         if (filePath.endsWith(".txt")) {
                             fileInputController.handleFileSelected(filePath);

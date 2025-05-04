@@ -57,7 +57,6 @@ void FileInputController::loadFile() {
     }
 }
 
-
 void FileInputController::handleFileSelected(const QString &filePath) {
     selectedFilePath = filePath;
 
