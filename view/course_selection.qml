@@ -166,7 +166,7 @@ Page {
                             // This will be populated dynamically with selected courses
                             Repeater {
                                 id: selectedCoursesRepeater
-                                model: courseSelectionController.selectedCoursesModel
+                                model: courseSelectionController ? courseSelectionController.selectedCoursesModel : null
 
                                 Rectangle {
                                     id: courseRect
@@ -197,7 +197,6 @@ Page {
                                         onClicked: {
                                             courseSelectionController.deselectCourse(index)
                                         }
-                                        // Add cursor change on hover to indicate it's clickable
                                         cursorShape: Qt.PointingHandCursor
                                     }
                                 }
@@ -375,7 +374,7 @@ Page {
                     margins: 16
                 }
                 clip: true
-                model: courseSelectionController.filteredCourseModel
+                model: courseSelectionController ? courseSelectionController.filteredCourseModel : null
                 spacing: 8
 
                 // Delegate for course items
