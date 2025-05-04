@@ -157,8 +157,8 @@ Page {
         Rectangle {
             id: uploadArea
             anchors.centerIn: parent
-            width: 500
-            height: 300
+            width: root ? root.width - 100 : 500
+            height: root ? root.height - 400 : 300
             color: "#ffffff"
             border.width: 2
             border.color: "#d1d5db"
@@ -222,6 +222,7 @@ Page {
                 anchors {
                     bottom: dropPrompt.top
                     horizontalCenter: parent.horizontalCenter
+                    verticalCenter: parent.verticalCenter
                     bottomMargin: 16
                 }
 
@@ -229,91 +230,73 @@ Page {
                     anchors.centerIn: parent
                     text: "📁"
                     font.pixelSize: 48
+                    anchors.verticalCenterOffset: -20
+                    anchors.horizontalCenterOffset: 0
+                    color: "#9ca3af"
+                }
+
+                // Drag and Drop Prompt
+                Label {
+                    id: dropPrompt
+                    anchors.centerIn: parent
+                    text: "Drag and drop your file here, or click here"
+                    anchors.verticalCenterOffset: 40
+                    anchors.horizontalCenterOffset: 0
+                    color: "#6b7280"
+                }
+
+                // File name display (initially hidden)
+                Label {
+                    id: fileNameText
+                    anchors.centerIn: parent
+                    color: "#4f46e5"
+                    anchors.verticalCenterOffset: 40
+                    anchors.horizontalCenterOffset: 0
+                    font.bold: true
+                    visible: false
+                }
+
+                // Browse Button
+                Button {
+                    id: browseButton
+                    anchors {
+                        top: fileNameText ? fileNameText.bottom : dropPrompt
+                        horizontalCenter: fileNameText ? fileNameText.horizontalCenter : dropPrompt
+                        topMargin: 20
+                    }
+                    background: Rectangle {
+                        color: "#1f2937"
+                        radius: 4
+                        implicitWidth: 120
+                        implicitHeight: 40
+                    }
+                    font.bold: true
+                    contentItem: Text {
+                        text: qsTr("Browse Files")
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    onClicked: {
+                        fileInputController.handleUploadAndContinue()
+                    }
+                }
+
+                // Supported Formats Text
+                Label {
+                    id: supportedFormats
+                    anchors {
+                        top: browseButton.bottom
+                        horizontalCenter: browseButton.horizontalCenter
+                        topMargin: 16
+                    }
+                    text: "Supported formats: TXT"
+                    font.pixelSize: 12
                     color: "#9ca3af"
                 }
             }
-
-            // Drag and Drop Prompt
-            Label {
-                id: dropPrompt
-                anchors.centerIn: parent
-                text: "Drag and drop your file here, or"
-                color: "#6b7280"
-            }
-
-            // File name display (initially hidden)
-            Label {
-                id: fileNameText
-                anchors.centerIn: parent
-                color: "#4f46e5"
-                font.bold: true
-                visible: false
-            }
         }
 
-        // Upload Title Label
-        Label {
-            id: uploadTitle
-            anchors {
-                bottom: uploadArea.top
-                left: uploadArea.left
-                bottomMargin: 16
-            }
-            text: "Upload Your Course List"
-            font.pixelSize: 24
-            color: "#1f2937"
-        }
-
-        // Upload Description
-        Label {
-            id: uploadDescription
-            anchors {
-                top: uploadTitle.bottom
-                left: uploadTitle.left
-                bottomMargin: 16
-            }
-            text: "Upload your course file to start building your schedule"
-            color: "#6b7280"
-        }
-
-        // Supported Formats Text
-        Label {
-            id: supportedFormats
-            anchors {
-                top: uploadArea.bottom
-                horizontalCenter: uploadArea.horizontalCenter
-                topMargin: 16
-            }
-            text: "Supported formats: TXT"
-            font.pixelSize: 12
-            color: "#9ca3af"
-        }
-
-        // Browse Button
-        Button {
-            id: browseButton
-            anchors {
-                top: supportedFormats.bottom
-                horizontalCenter: supportedFormats.horizontalCenter
-                topMargin: 8
-            }
-            background: Rectangle {
-                color: "#1f2937"
-                radius: 4
-                implicitWidth: 120
-                implicitHeight: 40
-            }
-            font.bold: true
-            contentItem: Text {
-                text: qsTr("Browse Files")
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-            onClicked: {
-                fileInputController.handleUploadAndContinue()
-            }
-        }
 
         // Upload Button - Initially hidden
         Button {
@@ -322,8 +305,8 @@ Page {
             height: 40
             visible: false  // Initially hidden until a file is selected
             anchors {
-                top: browseButton.bottom
-                horizontalCenter: supportedFormats.horizontalCenter
+                top: uploadArea.bottom
+                horizontalCenter: uploadArea.horizontalCenter
                 topMargin: 8
             }
             background: Rectangle {
@@ -342,6 +325,35 @@ Page {
             onClicked: {
                 fileInputController.loadFile()
             }
+        }
+
+        // Upload Title Label
+        Label {
+            id: uploadTitle
+            y: 239
+            anchors {
+                bottom: uploadArea.top
+                left: uploadArea.left
+                bottomMargin: 29
+            }
+            text: "Upload Your Course List"
+            anchors.leftMargin: 0
+            font.pixelSize: 24
+            color: "#1f2937"
+        }
+
+        // Upload Description
+        Label {
+            id: uploadDescription
+            x: 50
+            y: 177
+            anchors {
+                top: uploadTitle.bottom
+                left: uploadTitle.left
+                bottomMargin: 16
+            }
+            text: "Upload your course file to start building your schedule"
+            color: "#6b7280"
         }
 
         // bottom row
