@@ -6,6 +6,8 @@ Window {
     visible: true
     width: 1024
     height: 768
+    minimumWidth: 1024
+    minimumHeight: 768
     title: "Schedule Builder"
 
     // StackView to handle screen transitions
