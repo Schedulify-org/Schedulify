@@ -9,7 +9,7 @@
 class MainController; // Forward declaration
 
 class ControllerManager : public QObject {
-Q_OBJECT  // This macro is required for any class using signals/slots
+Q_OBJECT
 
 protected:
     static MainController* s_mainController;

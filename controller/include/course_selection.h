@@ -5,15 +5,12 @@
 #include "course_model.h"
 #include <QStringList>
 
-class CourseSelectionController : public ControllerManager {
+class CourseSelectionController final : public ControllerManager {
 Q_OBJECT
 
     Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)
     Q_PROPERTY(CourseModel* selectedCoursesModel READ selectedCoursesModel CONSTANT)
     Q_PROPERTY(CourseModel* filteredCourseModel READ filteredCourseModel CONSTANT)
-
-signals:
-    void selectionChanged();
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
@@ -25,14 +22,15 @@ public:
 
     void initiateCoursesData(const vector<Course>& courses);
 
+    Q_INVOKABLE bool isCourseSelected(int index);
+    Q_INVOKABLE void toggleCourseSelection(int index);
+    Q_INVOKABLE void filterCourses(const QString &text);
+    Q_INVOKABLE void resetFilter();
+    Q_INVOKABLE void generateSchedules();
+    Q_INVOKABLE void deselectCourse(int index);
 
-public slots:
-    void generateSchedules();
-    void toggleCourseSelection(int index);
-    void deselectCourse(int index);
-    bool isCourseSelected(int index);
-    void filterCourses(const QString& searchText);
-    void resetFilter();
+signals:
+    void selectionChanged();
 
 private:
     CourseModel* m_courseModel;

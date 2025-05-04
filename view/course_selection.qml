@@ -381,7 +381,7 @@ Page {
                 // Delegate for course items
                 delegate: Rectangle {
                     id: courseDelegate
-                    width: parent.width - 30
+                    width: courseListView ? courseListView.width : 120
                     height: 80
                     color: {
                         if (courseSelectionController.isCourseSelected(originalIndex)) {
@@ -404,7 +404,6 @@ Page {
                     }
                     opacity: selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex) ? 0.7 : 1
 
-                    // Using a connection to force update when selection changes
                     Connections {
                         target: courseSelectionController
                         function onSelectionChanged() {
