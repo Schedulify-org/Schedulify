@@ -28,31 +28,35 @@ void FileInputController::loadFile() {
     if (!selectedFilePath.isEmpty()) {
         filePath = selectedFilePath.toStdString();
     } else {
-        qWarning() << "Failed to find courseSelectionController or courses are empty!";
+        qWarning() << "No file path available";
+        emit invalidFileFormat();  // ❗ Emit error
         return;
     }
 
-    //generate Courses vector
-    auto* coursesPtr = static_cast<vector<Course>*>
-    (model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath));
+    auto* coursesPtr = static_cast<vector<Course>*>(
+            model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath)
+    );
+
+    if (!coursesPtr) {
+        qWarning() << "coursesPtr is null";
+        emit invalidFileFormat();  // ❗ Emit error
+        return;
+    }
 
     vector<Course>& courses = *coursesPtr;
 
     auto* course_controller =
             qobject_cast<CourseSelectionController*>(findController("courseSelectionController"));
 
-
     if (course_controller && !courses.empty()) {
-        // Initialize the course data first
         course_controller->initiateCoursesData(courses);
-
-        // Then navigate to course selection screen
         goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
     } else {
-        qWarning() << "Failed to find courseSelectionController or courses are empty!";
-        return;
+        qWarning() << "Courses empty or controller missing";
+        emit invalidFileFormat();  // ❗ Emit error
     }
 }
+
 
 void FileInputController::handleFileSelected(const QString &filePath) {
     selectedFilePath = filePath;

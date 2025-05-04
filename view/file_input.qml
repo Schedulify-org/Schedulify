@@ -184,17 +184,21 @@ Page {
                     uploadArea.border.color = "#d1d5db"
                     uploadArea.border.width = 2
 
-                    // Check if the drop has URLs
                     if (drop.hasUrls) {
-                        // Get the first file URL
-                        var fileUrl = drop.urls[0]
-                        // Remove the "file:///" prefix to get the file path
-                        var filePath = fileUrl.toString().replace(/^(file:\/{3})/, "")
+                        let fileUrl = drop.urls[0];
+                        let filePath = fileUrl.toString().replace("file:///", "");
 
-                        // Call the controller with the file path - UI will be updated via signals
-                        fileInputController.handleFileSelected(filePath)
+                        if (filePath.endsWith(".txt")) {
+                            fileInputController.handleFileSelected(filePath);
+                        } else {
+                            // Show error if not a .txt file
+                            showErrorMessage("Only .txt files are supported. Please upload a valid list.");
+                        }
+                    } else {
+                        showErrorMessage("No valid file was dropped.");
                     }
                 }
+
             }
 
             // Upload icon
