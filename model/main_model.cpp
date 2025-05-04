@@ -3,6 +3,8 @@
 #include <filesystem>
 #include "logs/logger.h"
 
+// this is the main model to run schedulify 2.0
+
 void testSched(const vector<Course>& lastGeneratedCourses, const vector<Schedule>& lastGeneratedSchedules) {
     namespace fs = std::filesystem;
     fs::path main_path = fs::current_path().parent_path();

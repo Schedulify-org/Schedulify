@@ -5,11 +5,13 @@
 #include "parsers/parseSchedToJson.h"
 #include "parsers/parseCoursesToJson.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
+#include "logs/logger.h"
 
 #include <vector>
 #include <map>
 #include <string>
 #include <iostream>
+#include <filesystem>
 
 using std::string;
 using std::cout;

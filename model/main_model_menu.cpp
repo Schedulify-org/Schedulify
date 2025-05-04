@@ -1,6 +1,6 @@
-#include <filesystem>
 #include "main/main_model_menu.h"
-#include "logs/logger.h"
+
+// this is the main model to run schedulify 1.0
 
 int app_main(const string& action_selected) {
     namespace fs = std::filesystem;
