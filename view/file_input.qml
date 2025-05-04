@@ -169,18 +169,17 @@ Page {
                 id: dropArea
                 anchors.fill: parent
 
-                // Visual feedback when dragging over the area
-                onEntered: {
-                    uploadArea.border.color = "#4f46e5" // Change border color when dragging over
+                onEntered: function(drag) {
+                    uploadArea.border.color = "#4f46e5"
                     uploadArea.border.width = 3
                 }
 
-                onExited: {
-                    uploadArea.border.color = "#d1d5db" // Restore border color
+                onExited: function() {
+                    uploadArea.border.color = "#d1d5db"
                     uploadArea.border.width = 2
                 }
 
-                onDropped: {
+                onDropped: function(drop) {
                     uploadArea.border.color = "#d1d5db"
                     uploadArea.border.width = 2
 
@@ -190,13 +189,11 @@ Page {
 
                         // Handle platform differences in file URLs
                         if (fileUrl.toString().startsWith("file:///")) {
-                            // For Windows: file:///C:/path/to/file.txt -> C:/path/to/file.txt
-                            // For Linux: file:///home/user/file.txt -> /home/user/file.txt
                             if (fileUrl.toString().match(/^file:\/\/\/[A-Za-z]:/)) {
-                                // Windows path with drive letter
+                                // Windows path
                                 filePath = fileUrl.toString().replace("file:///", "");
                             } else {
-                                // Linux/Unix path - keep the leading slash
+                                // Linux/Unix path
                                 filePath = fileUrl.toString().replace("file://", "");
                             }
                         } else {
@@ -214,7 +211,6 @@ Page {
                         showErrorMessage("No valid file was dropped.");
                     }
                 }
-
             }
 
             // Upload icon
