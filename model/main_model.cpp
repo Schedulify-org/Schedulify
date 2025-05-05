@@ -1,16 +1,7 @@
 #include "main/main_model.h"
-#include "parsers/parseSchedToJson.h"
-#include <filesystem>
 #include "logs/logger.h"
 
-// this is the main model to run schedulify 2.0
-
-void testSched(const vector<Course>& lastGeneratedCourses, const vector<Schedule>& lastGeneratedSchedules) {
-    namespace fs = std::filesystem;
-    fs::path main_path = fs::current_path().parent_path();
-    string modifiedOutputPath = main_path.string() + OUTPUTPATH + "new.json";
-    bool success = exportSchedulesToJson(lastGeneratedSchedules, modifiedOutputPath, lastGeneratedCourses);
-}
+// this is the main model to run Schedulify 2.0
 
 vector<Course> Model::generateCourses(const string& path) {
     vector<Course> courses = parseCourseDB(path);
@@ -22,7 +13,7 @@ vector<Course> Model::generateCourses(const string& path) {
     return courses;
 }
 
-vector<Schedule> Model::generateSchedules(const vector<Course>& userInput) {
+vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userInput, const vector<Course>& allCourses) {
     if (userInput.empty() || userInput.size() > 7) {
         Logger::get().logError("invalid amount of courses, aborting...");
         return {};
@@ -35,7 +26,17 @@ vector<Schedule> Model::generateSchedules(const vector<Course>& userInput) {
         Logger::get().logError("unable to generate schedules, aborting process");
     }
 
-    return schedules;
+    vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(schedules, userInput);
+
+    printInformativeSchedules(informativeSchedules);
+
+    if (informativeSchedules.empty()) {
+        Logger::get().logError("unable to generate schedules, aborting process");
+    }
+
+    std::cout << "About to print schedules" << std::endl;
+
+    return informativeSchedules;
 }
 
 void Model::saveSchedule(const Schedule& schedule, const string& path) {
@@ -60,11 +61,10 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         case ModelOperation::GENERATE_SCHEDULES:
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
-                lastGeneratedSchedules = generateSchedules(*courses);
-                testSched(lastGeneratedCourses, lastGeneratedSchedules);
+                lastGeneratedSchedules = generateSchedules(*courses, lastGeneratedCourses);
                 return &lastGeneratedSchedules;
             }
-            // Handle error case where data is null
+            Logger::get().logError("unable to generate schedules, aborting process");
             break;
 
         case ModelOperation::SAVE_SCHEDULE:

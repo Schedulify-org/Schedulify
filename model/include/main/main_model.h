@@ -4,6 +4,7 @@
 #include "main_include.h"
 #include "parsers/parseCoursesToVector.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
+#include "parsers/ScheduleEnrichment.h"
 
 #include <vector>
 #include <string>
