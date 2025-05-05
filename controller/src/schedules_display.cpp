@@ -2,17 +2,16 @@
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
         : ControllerManager(parent)
+        , m_scheduleModel(new ScheduleModel(this))
 {
 }
 
-void SchedulesDisplayController::saveSchedule(int scheduleIndex) {
-    // Logic for saving the selected schedule
-    // ...
+// Add this function to load schedule data
+void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule>& schedules)
+{
+    // Call the populate method on the model
+    m_scheduleModel->populateSchedulesData(schedules);
 
-}
-
-void SchedulesDisplayController::printSchedule(int scheduleIndex) {
-    // Logic for printing the selected schedule
-    // ...
-
+    // Emit signal that data is loaded (optional)
+    emit scheduleDataLoaded();
 }

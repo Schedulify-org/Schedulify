@@ -39,7 +39,7 @@ Page {
                     right: parent.right
                     verticalCenter: parent.verticalCenter
                 }
-                height: backButton.height
+                height: coursesBackButton.height
 
                 // Back Button
                 Button {

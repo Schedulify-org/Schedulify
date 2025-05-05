@@ -2,7 +2,11 @@
 #define COURSE_SELECTION_H
 
 #include "controller_manager.h"
-#include "course_model.h"
+#include "controller/models/course_model.h"
+#include "schedules_display.h"
+
+#include <algorithm>
+#include <QUrl>
 #include <QStringList>
 
 class CourseSelectionController final : public ControllerManager {
