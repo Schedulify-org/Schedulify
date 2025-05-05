@@ -17,7 +17,7 @@ add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
 
 add_compile_definitions(USERINPUT="/data/userInput.txt")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts)
 
 include_directories(model/include controller/include)
 
@@ -75,6 +75,8 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::Gui
         Qt6::Widgets
         Qt6::Quick
+        Qt6::Qml
+        Qt6::QuickLayouts
 )
 
 set_target_properties(SchedGUI PROPERTIES
