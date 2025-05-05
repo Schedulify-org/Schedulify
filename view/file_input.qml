@@ -220,7 +220,6 @@ Page {
                 height: 64
                 color: "transparent"
                 anchors {
-                    bottom: dropPrompt.top
                     horizontalCenter: parent.horizontalCenter
                     verticalCenter: parent.verticalCenter
                     bottomMargin: 16

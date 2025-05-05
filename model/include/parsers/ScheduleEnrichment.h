@@ -4,8 +4,8 @@
 #include "main_include.h"
 #include <vector>
 #include <string>
-#include <algorithm>
 #include <unordered_map>
+#include <algorithm>
 #include <iostream>
 
 using std::string;
@@ -33,6 +33,10 @@ CourseInfo getCourseInfoById(const vector<Course>& courses, int courseId, export
 unordered_map<int, vector<ScheduleItem>> buildDayMapForSchedule(const Schedule& schedule, const vector<Course>& courses,
                                                                 exportType type);
 
+// Converts a day number (1-7) to its lowercase string name (Sunday = 1).
+string dayToString(int day);
+
+// Print to console a vector of informative schedules
 void printInformativeSchedules(const vector<InformativeSchedule>& schedules);
 
 

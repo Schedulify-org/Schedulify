@@ -1,7 +1,5 @@
 #include "parsers/ScheduleEnrichment.h"
 #include "logs/logger.h"
-#include <QDebug>
-#include <iostream>
 
 vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& schedules, const vector<Course>& courses) {
     vector<InformativeSchedule> result;
@@ -24,10 +22,11 @@ vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& sch
         auto dayMap = buildDayMapForSchedule(schedule, courses, exportType::VECTOR);
 
         // Create ScheduleDay objects for each day
-        for (int day = 0; day < 7; ++day) {
-            if (dayMap.count(day)) {
-                ScheduleDay scheduleDay;
+        for (int day = 1; day <= 7; ++day) {
+            ScheduleDay scheduleDay;
+            scheduleDay.day = dayToString(day);
 
+            if (dayMap.count(day)) {
                 // Create a non-const copy of the vector for sorting
                 vector<ScheduleItem> items = dayMap.at(day);
 
@@ -37,11 +36,13 @@ vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& sch
                 });
 
                 // Add the sorted items to the scheduleDay
-                scheduleDay.day = items;
-
-                // Add this day to the week
-                informativeSchedule.week.push_back(scheduleDay);
+                scheduleDay.day_items = items;
+            } else
+            {
+                scheduleDay.day_items = {};
             }
+            // Add this day to the week
+            informativeSchedule.week.push_back(scheduleDay);
         }
 
         // Add this schedule to the result
@@ -123,12 +124,33 @@ unordered_map<int, vector<ScheduleItem>> buildDayMapForSchedule(const Schedule& 
     return dayMap;
 }
 
-void printInformativeSchedules(const vector<InformativeSchedule>& schedules) {
-    std::cout << "Function was called with " << schedules.size() << " schedules" << std::endl;
+string dayToString(const int day) {
+    static const string days[] = {
+        "sunday", "monday", "tuesday", "wednesday",
+        "thursday", "friday", "saturday"
+    };
+    return (day >= 1 && day <= 7) ? days[day - 1] : "unknown";
+}
 
-    for (InformativeSchedule sched : schedules) {
-        qDebug() << "This is a debug message";
-        std::cout << "Schedule #" << sched.index << std::endl << std::flush;
-        printf("Schedule #%d\n", sched.index);
+void printInformativeSchedules(const vector<InformativeSchedule>& schedules) {
+    for (const auto& [index, week] : schedules)
+        {
+        cout << "----------------------" << endl;
+        cout << "Schedule: " + to_string(index) << endl;
+        for (const auto& [day, day_items] : week)
+            {
+            cout << day << endl;
+            for (const auto& [courseName, raw_id, type, start, end, building, room] : day_items)
+            {
+                cout << "   courseName: " + courseName << endl;
+                cout << "   raw_id: " + raw_id << endl;
+                cout << "   type: " + type << endl;
+                cout << "   start: " + start << endl;
+                cout << "   end: " + end << endl;
+                cout << "   building: " + building << endl;
+                cout << "   room: " + room << endl;
+                cout << "" << endl;
+            }
+        }
     }
 }

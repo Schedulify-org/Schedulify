@@ -34,8 +34,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
         Logger::get().logError("unable to generate schedules, aborting process");
     }
 
-    std::cout << "About to print schedules" << std::endl;
-
     return informativeSchedules;
 }
 

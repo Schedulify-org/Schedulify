@@ -60,7 +60,8 @@ struct ScheduleItem {
 };
 
 struct ScheduleDay {
-    vector<ScheduleItem> day;
+    string day;
+    vector<ScheduleItem> day_items;
 };
 
 struct InformativeSchedule {

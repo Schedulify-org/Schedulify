@@ -11,8 +11,6 @@ int main(int argc, char *argv[])
 {
     Logger::get().initialize();
 
-    std::cout << "Finished printing schedules" << std::endl;
-
     app_main("COURSES");
     app_main("SCHEDULES");
 

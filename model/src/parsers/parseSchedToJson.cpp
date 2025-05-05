@@ -81,11 +81,3 @@ string ScheduleItemToJson(const ScheduleItem& s) {
        << R"(,"room":")" << s.room << "\"}";
     return ss.str();
 }
-
-string dayToString(int day) {
-    static const string days[] = {
-            "sunday", "monday", "tuesday", "wednesday",
-            "thursday", "friday", "saturday"
-    };
-    return (day >= 1 && day <= 7) ? days[day - 1] : "unknown";
-}
