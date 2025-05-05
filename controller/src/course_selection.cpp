@@ -1,6 +1,5 @@
 #include "course_selection.h"
 #include <algorithm>
-#include <QDebug>
 #include <QUrl>
 
 CourseSelectionController::CourseSelectionController(QObject *parent)
@@ -42,8 +41,8 @@ void CourseSelectionController::generateSchedules() {
         return;
     }
 
-    //generate Courses vector
-    auto* schedulePtr = static_cast<vector<Course>*>
+    //generate Schedule vector
+    auto* schedulePtr = static_cast<vector<InformativeSchedule>*>
     (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
 
     // Navigate to schedules display screen

@@ -1,6 +1,7 @@
 import QtQuick 2.15
-import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Controls 2.15
+import QtQuick.Controls.Basic
 
 Page {
     id: inputScreen
@@ -109,7 +110,7 @@ Page {
                 }
 
                 contentItem: Text {
-                    text: "אישור"  // Hebrew for "OK/Confirm"
+                    text: "OK"
                     color: "#ffffff"
                     font.pixelSize: 14
                     font.bold: true
@@ -220,7 +221,6 @@ Page {
                 height: 64
                 color: "transparent"
                 anchors {
-                    bottom: dropPrompt.top
                     horizontalCenter: parent.horizontalCenter
                     verticalCenter: parent.verticalCenter
                     bottomMargin: 16
