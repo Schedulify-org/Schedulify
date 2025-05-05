@@ -1,12 +1,13 @@
 import QtQuick 2.15
-import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.qmlmodels 1.0
+import QtQuick.Controls 2.15
+import QtQuick.Controls.Basic
 
 Page {
     id: schedulesDisplayPage
 
-    // Header (כמו שכבר בנית)
+    // Header
     Rectangle {
         id: header
         width: parent.width
@@ -26,10 +27,12 @@ Page {
                 id: backButton
                 width: 40
                 height: 40
+
                 background: Rectangle {
                     color: "#f3f4f6"
                     radius: 4
                 }
+
                 contentItem: Text {
                     text: "←"
                     font.pixelSize: 18
@@ -37,11 +40,13 @@ Page {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
+
                 onClicked: {
                     schedulesDisplayController.goBack()
                 }
             }
 
+            // Screen Title
             Label {
                 id: titleLabel
                 text: "Generated schedules"

@@ -50,6 +50,7 @@ set(PROJECT_SOURCES
         model/src/parsers/parseToXlsx.cpp
         model/src/parsers/printSchedule.cpp
         main_include.h
+        model/src/parsers/ScheduleEnrichment.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

@@ -53,7 +53,7 @@ void FileInputController::loadFile() {
         goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
     } else {
         qWarning() << "Courses empty or controller missing";
-        emit invalidFileFormat();  // ❗ Emit error
+        emit invalidFileFormat();
     }
 }
 

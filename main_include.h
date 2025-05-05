@@ -44,18 +44,43 @@ struct Schedule {
     vector<CourseSelection> selections;
 };
 
+struct CourseInfo {
+    string raw_id;
+    string name;
+};
+
+struct ScheduleItem {
+    string courseName;
+    string raw_id;
+    string type;
+    string start;
+    string end;
+    string building;
+    string room;
+};
+
+struct ScheduleDay {
+    string day;
+    vector<ScheduleItem> day_items;
+};
+
+struct InformativeSchedule {
+    int index;
+    vector<ScheduleDay> week;
+};
+
 class Model {
 public:
     void* executeOperation(ModelOperation operation, const void* data, const string& path = "");
 
 private:
     static vector<Course> generateCourses(const string& path);
-    static vector<Schedule> generateSchedules(const vector<Course>& userInput);
+    static vector<InformativeSchedule> generateSchedules(const vector<Course>& userInput, const vector<Course>& allCourses);
     static void saveSchedule(const Schedule& schedule, const string& path);
     static void printSchedule(const Schedule& schedule);
 
     vector<Course> lastGeneratedCourses;
-    vector<Schedule> lastGeneratedSchedules;
+    vector<InformativeSchedule> lastGeneratedSchedules;
 };
 
 #endif //MAIN_INCLUDE_H
