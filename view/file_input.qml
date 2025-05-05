@@ -265,20 +265,24 @@ Page {
                         topMargin: 20
                     }
                     background: Rectangle {
-                        color: "#1f2937"
+                        color: browseMouseArea.containsMouse ? "#35455c" : "#1f2937"
                         radius: 4
                         implicitWidth: 120
                         implicitHeight: 40
                     }
                     font.bold: true
                     contentItem: Text {
-                        text: qsTr("Browse Files")
+                        text: "Browse Files"
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    onClicked: {
-                        fileInputController.handleUploadAndContinue()
+                    MouseArea {
+                        id: browseMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: fileInputController.handleUploadAndContinue()
+                        cursorShape: Qt.PointingHandCursor
                     }
                 }
 
@@ -297,7 +301,6 @@ Page {
             }
         }
 
-
         // Upload Button - Initially hidden
         Button {
             id: continueButton
@@ -310,20 +313,24 @@ Page {
                 topMargin: 8
             }
             background: Rectangle {
-                color: "#1f2937"
+                color: generateCoursesMouseArea.containsMouse ? "#35455c" : "#1f2937"
                 radius: 4
                 implicitWidth: 120
                 implicitHeight: 40
             }
             font.bold: true
             contentItem: Text {
-                text: qsTr("Upload Course's List →")
+                text: "Upload Course's List →"
                 color: "white"
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
-            onClicked: {
-                fileInputController.loadFile()
+            MouseArea {
+                id: generateCoursesMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: fileInputController.loadFile()
+                cursorShape: Qt.PointingHandCursor
             }
         }
 
@@ -356,7 +363,7 @@ Page {
             color: "#6b7280"
         }
 
-        // bottom row
+        // footer
         Rectangle {
             id: footer
             anchors {

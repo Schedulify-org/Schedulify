@@ -43,7 +43,7 @@ Page {
 
                 // Back Button
                 Button {
-                    id: backButton
+                    id: coursesBackButton
                     width: 40
                     height: 40
                     anchors {
@@ -52,7 +52,7 @@ Page {
                         verticalCenter: parent.verticalCenter
                     }
                     background: Rectangle {
-                        color: "#f3f4f6"
+                        color: coursesBackMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
                         radius: 4
                     }
                     contentItem: Text {
@@ -62,8 +62,12 @@ Page {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    onClicked: {
-                        courseSelectionController.goBack()
+                    MouseArea {
+                        id: coursesBackMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: courseSelectionController.goBack()
+                        cursorShape: Qt.PointingHandCursor
                     }
                 }
 
@@ -74,7 +78,7 @@ Page {
                     font.pixelSize: 20
                     color: "#1f2937"
                     anchors {
-                        left: backButton.right
+                        left: coursesBackButton.right
                         leftMargin: 16
                         verticalCenter: parent.verticalCenter
                     }
@@ -94,20 +98,25 @@ Page {
                     enabled: selectedCoursesRepeater.count > 0
 
                     background: Rectangle {
-                        color: "#1f2937"
+                        color: generateMouseArea.containsMouse ? "#35455c" : "#1f2937"
                         radius: 4
                         implicitWidth: 180
                         implicitHeight: 40
                     }
                     font.bold: true
                     contentItem: Text {
-                        text: qsTr("Generate Schedules")
+                        text: "Generate Schedules →"
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
-                    onClicked: {
-                        courseSelectionController.generateSchedules()
+
+                    MouseArea {
+                        id: generateMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: courseSelectionController.generateSchedules()
+                        cursorShape: Qt.PointingHandCursor
                     }
                 }
             }
@@ -174,7 +183,7 @@ Page {
                                     width: courseContainer.width + 30
                                     height: 36
                                     radius: 4
-                                    color: courseMouseArea.containsMouse ? "#ef4444" : "#4f46e5"  // Red when hovering, default purple/indigo
+                                    color: courseMouseArea.containsMouse ? "#ef4444" : "#4f46e5"
 
                                     // Container for the text and X symbol
                                     Row {
@@ -195,9 +204,7 @@ Page {
                                         id: courseMouseArea
                                         anchors.fill: parent
                                         hoverEnabled: true
-                                        onClicked: {
-                                            courseSelectionController.deselectCourse(index)
-                                        }
+                                        onClicked: courseSelectionController.deselectCourse(index)
                                         cursorShape: Qt.PointingHandCursor
                                     }
                                 }
@@ -334,9 +341,9 @@ Page {
                             }
 
                             contentItem: Text {
-                                text: "⨂"
+                                text: "X"
                                 font.pixelSize: 25
-                                color: "#ee0000"
+                                color: "#000000"
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
                             }
@@ -458,24 +465,6 @@ Page {
                                         return "#9ca3af" // Disabled
                                     } else {
                                         return "#4b5563" // Normal
-                                    }
-                                }
-                            }
-
-                            // Update color when selection changes
-                            Connections {
-                                target: courseSelectionController
-                                function onSelectionChanged() {
-                                    // Update course ID box styling based on selection state and max courses limit
-                                    if (courseSelectionController.isCourseSelected(originalIndex)) {
-                                        courseIdBox.color = "#dbeafe" // Selected
-                                        courseIdBox.children[0].color = "#2563eb"
-                                    } else if (selectedCoursesRepeater.count >= 7) {
-                                        courseIdBox.color = "#e5e7eb" // Disabled
-                                        courseIdBox.children[0].color = "#9ca3af"
-                                    } else {
-                                        courseIdBox.color = "#f3f4f6" // Normal
-                                        courseIdBox.children[0].color = "#4b5563"
                                     }
                                 }
                             }
