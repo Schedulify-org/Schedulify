@@ -190,7 +190,7 @@ Page {
                 enabled: currentIndex > 0
                 onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
                 background: Rectangle {
-                    color: enabled ? "#1f2937" : "#9ca3af" 
+                    color: enabled ? "#1f2937" : "#9ca3af"
                     radius: 6
                 }
             }

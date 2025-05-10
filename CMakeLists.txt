@@ -29,9 +29,7 @@ set(PROJECT_SOURCES
         controller/src/file_input.cpp
         controller/src/course_selection.cpp
         controller/src/schedules_display.cpp
-        controller/models/schedule_model.cpp
 
-        controller/models/schedule_model.h
         controller/include/main_controller.h
         controller/include/controller_manager.h
         controller/models/course_model.h

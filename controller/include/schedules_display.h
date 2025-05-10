@@ -2,7 +2,6 @@
 #define SCHEDULES_DISPLAY_H
 
 #include "controller_manager.h"
-#include "controller/models/schedule_model.h"
 #include <QObject>
 #include <QVariant>
 #include "main_include.h"
