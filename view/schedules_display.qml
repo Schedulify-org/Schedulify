@@ -1,8 +1,7 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.qmlmodels 1.0
-import QtQuick.Controls 2.15
-import QtQuick.Controls.Basic
 
 Page {
     id: schedulesDisplayPage
@@ -11,371 +10,136 @@ Page {
     property int currentIndex: controller.currentScheduleIndex
     property int totalSchedules: controller.getScheduleCount()
 
-    Rectangle {
-        id: root
+    ColumnLayout {
         anchors.fill: parent
-        color: "#f9fafb"
+        spacing: 16
+        anchors.margins: 24
 
-        // Header
-        Rectangle {
-            id: header
-            width: parent.width
-            height: 80
-            color: "#ffffff"
-            border.color: "#e5e7eb"
-
-            Row {
-                anchors {
-                    left: parent.left
-                    verticalCenter: parent.verticalCenter
-                    leftMargin: 16
-                }
-                spacing: 16
-
-                // Back Button
-                Button {
-                    id: schedulesBackButton
-                    width: 40
-                    height: 40
-                    background: Rectangle {
-                        color: schedulesBackMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
-                        radius: 4
-                    }
-                    contentItem: Text {
-                        text: "←"
-                        font.pixelSize: 18
-                        color: "#1f2937"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    MouseArea {
-                        id: schedulesBackMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: controller.goBack()
-                        cursorShape: Qt.PointingHandCursor
-                    }
-                }
-
-                // Screen Title
-                Label {
-                    id: titleLabel
-                    text: "מערכות שעות שנוצרו"
-                    font.pixelSize: 20
-                    color: "#1f2937"
-                    anchors {
-                        left: schedulesBackButton.right
-                        leftMargin: 16
-                        verticalCenter: parent.verticalCenter
-                    }
-                }
-            }
+        Label {
+            text: "מערכת נוכחית: " + (currentIndex + 1) + " / " + totalSchedules
+            font.pixelSize: 20
+            color: "#a1c5ff"
         }
 
-        // Layout for content
-        ColumnLayout {
-            anchors {
-                top: header.bottom
-                left: parent.left
-                right: parent.right
-                bottom: footer.top
-                margins: 24
-            }
-            spacing: 16
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            radius: 8
+            border.color: "#d1d5db"
+            color: "white"
 
-            // Schedule index indicator
-            Label {
-                text: "מערכת שעות " + (currentIndex + 1) + " מתוך " + totalSchedules
-                font.pixelSize: 16
-                color: "#4b5563"
-            }
 
-            // Schedule view area
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                color: "#ffffff"
-                radius: 8
-                border.color: "#d1d5db"
+            TableView {
+                id: scheduleTable
+                anchors.fill: parent
+                clip: true
+                rowSpacing: 1
+                columnSpacing: 1
 
-                // כותרות עמודות
-                Row {
-                    id: headerRow
-                    anchors {
-                        top: parent.top
-                        left: parent.left
-                        right: parent.right
-                        margins: 10
-                    }
-                    height: 30
+                property var timeSlots: [
+                    "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
+                    "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00",
+                    "17:00-18:00", "18:00-19:00", "19:00-20:00"
+                ]
 
-                    Rectangle { width: 70; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "שעה"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "ראשון"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "שני"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "שלישי"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "רביעי"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "חמישי"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "שישי"; font.bold: true; color: "#1f2937" } }
-                    Rectangle { width: 150; height: parent.height; color: "#f3f4f6"; border.color: "#e5e7eb"; border.width: 1; Text { anchors.centerIn: parent; text: "שבת"; font.bold: true; color: "#1f2937" } }
+                columnWidthProvider: function(col) {
+                    return col === 0 ? 70 : 150;
                 }
 
-                // Schedule Grid
-                TableView {
-                    id: scheduleTableView
-                    anchors {
-                        top: headerRow.bottom
-                        left: parent.left
-                        right: parent.right
-                        bottom: parent.bottom
-                        margins: 10
-                        topMargin: 0
-                    }
-                    clip: true
-                    rowSpacing: 1
-                    columnSpacing: 1
+                model: TableModel {
+                    TableModelColumn { display: "timeSlot" }
+                    TableModelColumn { display: "sunday" }
+                    TableModelColumn { display: "monday" }
+                    TableModelColumn { display: "tuesday" }
+                    TableModelColumn { display: "wednesday" }
+                    TableModelColumn { display: "thursday" }
+                    TableModelColumn { display: "friday" }
+                    TableModelColumn { display: "saturday" }
 
-                    property var timeSlots: [
-                        "8:00", "9:00", "10:00", "11:00", "12:00",
-                        "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
-                    ]
+                    rows: {
+                        let rows = [];
+                        const timeSlots = scheduleTable.timeSlots;
+                        const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
-                    // מגדיר את הרוחב של העמודות
-                    columnWidthProvider: function(column) {
-                        return column === 0 ? 70 : 150;
-                    }
+                        for (let i = 0; i < timeSlots.length; i++) {
+                            let row = { timeSlot: timeSlots[i] };
+                            for (let day of days) row[day] = "";
+                            rows.push(row);
+                        }
 
-                    // כותרות עמודות מחוץ לטבלה (מכיוון ש-header אינו נתמך)
-                    topMargin: 31 // שומר מקום לכותרות
+                        if (totalSchedules > 0) {
+                            for (let d = 0; d < 7; d++) {
+                                let dayName = days[d];
+                                let items = controller.getDayItems(currentIndex, d);
 
-                    model: TableModel {
-                        TableModelColumn { display: "timeSlot" }
-                        TableModelColumn { display: "sunday" }
-                        TableModelColumn { display: "monday" }
-                        TableModelColumn { display: "tuesday" }
-                        TableModelColumn { display: "wednesday" }
-                        TableModelColumn { display: "thursday" }
-                        TableModelColumn { display: "friday" }
-                        TableModelColumn { display: "saturday" }
+                                for (let item of items) {
+                                    let start = parseInt(item.start.split(":")[0]);
+                                    let end = parseInt(item.end.split(":")[0]);
 
-                        rows: {
-                            let scheduleData = [];
+                                    for (let hour = start; hour < end; hour++) {
+                                        for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
+                                            let slot = timeSlots[rowIndex];
+                                            let slotStart = parseInt(slot.split("-")[0].split(":")[0]);
+                                            let slotEnd = parseInt(slot.split("-")[1].split(":")[0]);
 
-                            for (let i = 0; i < scheduleTableView.timeSlots.length; i++) {
-                                let row = {
-                                    timeSlot: scheduleTableView.timeSlots[i],
-                                    sunday: null,
-                                    monday: null,
-                                    tuesday: null,
-                                    wednesday: null,
-                                    thursday: null,
-                                    friday: null,
-                                    saturday: null
-                                };
-                                scheduleData.push(row);
-                            }
-
-                            if (totalSchedules > 0 && currentIndex >= 0) {
-                                for (let day = 0; day < 7; day++) {
-                                    let dayItems = controller.getDayItems(controller.currentScheduleIndex, day);
-                                    let dayName = "";
-
-                                    switch (day) {
-                                        case 0: dayName = "sunday"; break;
-                                        case 1: dayName = "monday"; break;
-                                        case 2: dayName = "tuesday"; break;
-                                        case 3: dayName = "wednesday"; break;
-                                        case 4: dayName = "thursday"; break;
-                                        case 5: dayName = "friday"; break;
-                                        case 6: dayName = "saturday"; break; // הוסף את זה
-                                    }
-
-                                    for (let i = 0; i < dayItems.length; i++) {
-                                        let item = dayItems[i];
-                                        let startTime = item.start.split(':');
-                                        let startHour = parseInt(startTime[0]);
-                                        let startMinute = parseInt(startTime[1]);
-
-                                        let rowIndex = scheduleTableView.timeSlots.findIndex(
-                                                slot => {
-                                                let slotHour = parseInt(slot.split(':')[0]);
-                                                return slotHour === startHour;
+                                            if (hour >= slotStart && hour < slotEnd) {
+                                                rows[rowIndex][dayName] +=
+                                                    (rows[rowIndex][dayName] ? "\n\n" : "") +
+                                                    item.courseName + "\n" +
+                                                    item.raw_id + " - " + item.type + "\n" +
+                                                    item.start + " - " + item.end + "\n" +
+                                                    "בניין: " + item.building + ", חדר: " + item.room;
                                             }
-                                        );
-
-                                        if (rowIndex >= 0) {
-                                            scheduleData[rowIndex][dayName] = {
-                                                courseName: item.courseName,
-                                                rawId: item.raw_id,
-                                                type: item.type,
-                                                startTime: item.start,
-                                                endTime: item.end,
-                                                building: item.building,
-                                                room: item.room
-                                            };
                                         }
                                     }
                                 }
                             }
-
-                            return scheduleData;
-                        }
-                    }
-
-                    delegate: Rectangle {
-                        // רוחב מוגדר על ידי columnWidthProvider
-                        implicitHeight: 80
-                        border.width: 1
-                        border.color: "#e5e7eb"
-                        color: model.column === 0 ? "#f3f4f6" : "#ffffff"
-
-                        // Time column
-                        Text {
-                            visible: model.column === 0
-                            anchors.centerIn: parent
-                            text: model.display
-                            font.pixelSize: 14
-                            color: "#4b5563"
                         }
 
-                        // Course cells
-                        Rectangle {
-                            visible: model.column > 0 && model.display !== null
-                            anchors.fill: parent
-                            anchors.margins: 2
-                            color: "#e7f2fd"
-                            radius: 4
-
-                            Column {
-                                anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: 2
-
-                                Text {
-                                    width: parent.width
-                                    text: model.display ? model.display.courseName : ""
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    elide: Text.ElideRight
-                                    color: "#1f2937"
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    text: model.display ? model.display.rawId + " - " + model.display.type : ""
-                                    font.pixelSize: 11
-                                    elide: Text.ElideRight
-                                    color: "#4b5563"
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    text: model.display ? model.display.startTime + " - " + model.display.endTime : ""
-                                    font.pixelSize: 10
-                                    color: "#6b7280"
-                                }
-
-                                Text {
-                                    width: parent.width
-                                    text: model.display ? "בניין: " + model.display.building + ", חדר: " + model.display.room : ""
-                                    font.pixelSize: 10
-                                    elide: Text.ElideRight
-                                    color: "#6b7280"
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        z: -1
-                        anchors.fill: parent
-                        color: "transparent"
-                        border.color: "#d1d5db"
-                    }
-                }
-            }
-
-            // Navigation buttons row
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 16
-
-                Button {
-                    id: prevButton
-                    width: 180
-                    height: 40
-                    enabled: currentIndex > 0
-                    background: Rectangle {
-                        color: enabled ? (prevMouseArea.containsMouse ? "#35455c" : "#1f2937") : "#9ca3af"
-                        radius: 4
-                        implicitWidth: 180
-                        implicitHeight: 40
-                    }
-                    font.bold: true
-                    contentItem: Text {
-                        text: "← הקודם"
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    MouseArea {
-                        id: prevMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        enabled: parent.enabled
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
-                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        return rows;
                     }
                 }
 
-                Button {
-                    id: nextButton
-                    width: 180
-                    height: 40
-                    enabled: currentIndex < totalSchedules - 1
-                    background: Rectangle {
-                        color: enabled ? (forwardMouseArea.containsMouse ? "#35455c" : "#1f2937") : "#9ca3af"
-                        radius: 4
-                        implicitWidth: 180
-                        implicitHeight: 40
-                    }
-                    font.bold: true
-                    contentItem: Text {
-                        text: "הבא →"
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    MouseArea {
-                        id: forwardMouseArea
+                delegate: Rectangle {
+                    implicitHeight: 80
+                    border.width: 1
+                    border.color: "#e0e0e0"
+                    radius: 4
+
+                    color: model.column === 0
+                        ? "#f3f4f6"
+                        : (model.display && String(model.display).trim().length > 0
+                            ? "#94a0b0"
+                            : "#ffffff")
+
+                    Text {
                         anchors.fill: parent
-                        hoverEnabled: true
-                        enabled: parent.enabled
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
-                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        wrapMode: Text.WordWrap
+                        verticalAlignment: Text.AlignVCenter
+                        horizontalAlignment: Text.AlignLeft
+                        padding: 6
+                        font.pixelSize: 11
+                        text: model.display ? String(model.display) : ""
+                        color: "#2e2e2e"
                     }
                 }
             }
         }
 
-        // Footer
-        Rectangle {
-            id: footer
-            anchors {
-                bottom: parent.bottom
-                left: parent.left
-                right: parent.right
-            }
-            height: 60
-            width: parent.width
-            color: "#ffffff"
-            border.color: "#e5e7eb"
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 24
 
-            // Footer Text
-            Label {
-                anchors.centerIn: parent
-                text: "© 2025 Schedulify. כל הזכויות שמורות."
-                color: "#6b7280"
-                font.pixelSize: 12
+            Button {
+                text: "← הקודם"
+                enabled: currentIndex > 0
+                onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
+            }
+
+            Button {
+                text: "הבא →"
+                enabled: currentIndex < totalSchedules - 1
+                onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
             }
         }
     }
