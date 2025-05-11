@@ -10,6 +10,10 @@ Page {
     property var controller: schedulesDisplayController
     property int currentIndex: controller.currentScheduleIndex
     property int totalSchedules: controller.getScheduleCount()
+    // מספר הימים ורוחב כל עמודה
+    property int numDays: 7
+    property real dayColumnWidth: Math.max(135, (width - timeColumnWidth) / numDays)
+    property real timeColumnWidth: 70
 
     ColumnLayout {
         anchors.fill: parent
@@ -18,7 +22,7 @@ Page {
         // --- Header ---
         Rectangle {
             id: header
-            width: parent.width
+            Layout.fillWidth: true
             height: 80
             color: "#ffffff"
             border.color: "#e5e7eb"
@@ -54,7 +58,6 @@ Page {
             }
         }
 
-        // --- Index label ---
         Label {
             text: "מערכת נוכחית: " + (currentIndex + 1) + " / " + totalSchedules
             font.pixelSize: 20
@@ -63,19 +66,18 @@ Page {
             padding: 12
         }
 
-        // --- Main Table + Day Headers (synced scroll) ---
         Flickable {
             id: scrollArea
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            contentWidth: scheduleTable.width
+            contentWidth: timeColumnWidth + (numDays * dayColumnWidth)
             contentHeight: dayHeaderRow.height + scheduleTable.height
             flickableDirection: Flickable.HorizontalAndVerticalFlick
 
             Column {
                 id: tableContent
-                width: scheduleTable.width
+                width: scrollArea.contentWidth
 
                 // Days row
                 Row {
@@ -83,7 +85,7 @@ Page {
                     height: 40
 
                     Rectangle {
-                        width: 70
+                        width: timeColumnWidth
                         height: 40
                         color: "#e5e7eb"
                         border.color: "#d1d5db"
@@ -101,7 +103,7 @@ Page {
                         model: ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"]
 
                         Rectangle {
-                            width: 135
+                            width: dayColumnWidth
                             height: 40
                             color: "#e5e7eb"
                             border.color: "#d1d5db"
@@ -120,7 +122,7 @@ Page {
                 // Table
                 TableView {
                     id: scheduleTable
-                    width: 70 + (7 * 135)
+                    width: scrollArea.contentWidth
                     height: timeSlots.length * 80
                     clip: true
                     rowSpacing: 1
@@ -134,7 +136,7 @@ Page {
                     ]
 
                     columnWidthProvider: function(col) {
-                        return col === 0 ? 70 : 135;
+                        return col === 0 ? timeColumnWidth : dayColumnWidth;
                     }
 
                     model: TableModel {
@@ -215,6 +217,11 @@ Page {
                             color: "#2e2e2e"
                         }
                     }
+
+                    // לאפס את רוחב העמודות כאשר גודל המסך משתנה
+                    onWidthChanged: {
+                        forceLayout();
+                    }
                 }
             }
 
@@ -230,7 +237,6 @@ Page {
             }
         }
 
-        // --- Bottom Controls ---
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 24
@@ -242,6 +248,14 @@ Page {
                     color: enabled ? "#1f2937" : "#9ca3af"
                     radius: 6
                 }
+                contentItem: Text {
+                    text: parent.text
+                    color: "#ffffff"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 14
+                }
+                padding: 10
             }
 
             Button {
@@ -252,6 +266,14 @@ Page {
                     color: enabled ? "#1f2937" : "#9ca3af"
                     radius: 6
                 }
+                contentItem: Text {
+                    text: parent.text
+                    color: "#ffffff"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 14
+                }
+                padding: 10
             }
         }
 
