@@ -1,7 +1,5 @@
-#include <QFileDialog>
-#include <QDir>
+
 #include "schedules_display.h"
-#include "parsers/printSchedule.h"
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
     : ControllerManager(parent), m_currentScheduleIndex(0) {
@@ -62,21 +60,6 @@ int SchedulesDisplayController::getScheduleCount() const {
     return static_cast<int>(m_schedules.size());
 }
 
-void SchedulesDisplayController::saveCurrentSchedule(const QString &path) const {
-    if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
-        Model model;
-        Schedule schedule;
-        model.executeOperation(ModelOperation::SAVE_SCHEDULE, &schedule, path.toStdString());
-    }
-}
-
-void SchedulesDisplayController::printCurrentSchedule() const {
-    if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
-        Model model;
-        Schedule schedule;
-        model.executeOperation(ModelOperation::PRINT_SCHEDULE, &schedule);
-    }
-}
 void SchedulesDisplayController::saveScheduleAsPDF() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
         QString fileName = QFileDialog::getSaveFileName(nullptr,
@@ -85,7 +68,9 @@ void SchedulesDisplayController::saveScheduleAsPDF() {
                                                         "PDF Files (*.pdf)");
         if (!fileName.isEmpty()) {
             // Call the PDF export function
-            saveToPDF(m_schedules[m_currentScheduleIndex], fileName);
+            Model model;
+            model.executeOperation(ModelOperation::SAVE_SCHEDULE, &m_schedules[m_currentScheduleIndex], fileName.toLocal8Bit().constData());
+//            saveToPDF(m_schedules[m_currentScheduleIndex], fileName);
         }
     }
 }
@@ -93,9 +78,12 @@ void SchedulesDisplayController::saveScheduleAsPDF() {
 void SchedulesDisplayController::printScheduleDirectly() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
         // Call the print function
-        printSchedule(m_schedules[m_currentScheduleIndex]);
+        Model model;
+        model.executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex]);
+//        printSchedule(m_schedules[m_currentScheduleIndex]);
     }
 }
+
 void SchedulesDisplayController::goBack() {
     emit navigateBack();
 }

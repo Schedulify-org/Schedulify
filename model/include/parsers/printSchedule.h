@@ -10,7 +10,6 @@
 void saveToPDF(const InformativeSchedule& schedule, const QString& filePath);
 
 // Function to print a schedule directly to a printer
-void printSchedule(const InformativeSchedule& schedule);
-
+void printSelectedSchedule(const InformativeSchedule& schedule);
 
 #endif // PRINT_SCHEDULE_H

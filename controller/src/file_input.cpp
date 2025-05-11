@@ -26,10 +26,10 @@ void FileInputController::loadFile() {
     string filePath;
 
     if (!selectedFilePath.isEmpty()) {
-        filePath = selectedFilePath.toStdString();
+        filePath = selectedFilePath.toLocal8Bit().constData();
     } else {
         qWarning() << "No file path available";
-        emit invalidFileFormat();  // ❗ Emit error
+        emit invalidFileFormat();
         return;
     }
 

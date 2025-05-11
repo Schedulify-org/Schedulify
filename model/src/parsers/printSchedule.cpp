@@ -97,7 +97,7 @@ void saveToPDF(const InformativeSchedule& schedule, const QString& filePath) {
     Logger::get().logInfo("Schedule successfully saved to PDF: " + filePath.toStdString());
 }
 
-void printSchedule(const InformativeSchedule& schedule) {
+void printSelectedSchedule(const InformativeSchedule& schedule) {
     QPrinter printer;
     printer.setPageSize(QPageSize(QPageSize::A4));
     printer.setPageOrientation(QPageLayout::Landscape);

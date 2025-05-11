@@ -39,32 +39,16 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
     return informativeSchedules;
 }
 
-void Model::saveSchedule(const Schedule& schedule, const string& path) {
-    vector<Course> courses; // Ideally, this would come from somewhere else
-    vector<Schedule> singleSchedule = {schedule};
-    vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(singleSchedule, courses);
-
-    if (!informativeSchedules.empty()) {
-        // Use the saveToPDF function from printSchedule.h
-        saveToPDF(informativeSchedules[0], QString::fromStdString(path));
-        Logger::get().logInfo("Schedule saved to PDF: " + path);
-    } else {
-        Logger::get().logError("Failed to convert schedule for PDF export");
-    }
+void Model::saveSchedule(const InformativeSchedule& infoSchedule, const string& path) {
+    // Use the saveToPDF function from printSchedule.h
+    saveToPDF(infoSchedule, QString::fromStdString(path));
+    Logger::get().logInfo("Schedule saved to PDF: " + path);
 }
 
-void Model::printSchedule(const Schedule& schedule) {
+void Model::printSchedule(const InformativeSchedule& infoSchedule) {
     // Convert Schedule to InformativeSchedule for printing
-    vector<Course> courses; // Ideally, this would come from somewhere else
-    vector<Schedule> singleSchedule = {schedule};
-    vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(singleSchedule, courses);
-
-    if (!informativeSchedules.empty()) {
-        ::printSchedule(informativeSchedules[0]);
-        Logger::get().logInfo("Schedule sent to printer");
-    } else {
-        Logger::get().logError("Failed to convert schedule for printing");
-    }
+    printSelectedSchedule(infoSchedule);
+    Logger::get().logInfo("Schedule sent to printer");
 }
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
@@ -89,7 +73,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
 
         case ModelOperation::SAVE_SCHEDULE:
             if (data && !path.empty()) {
-                const auto* schedule = static_cast<const Schedule*>(data);
+                const auto* schedule = static_cast<const InformativeSchedule*>(data);
                 saveSchedule(*schedule, path);
             }
             // Handle error case where data or path is null
@@ -97,7 +81,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
 
         case ModelOperation::PRINT_SCHEDULE:
             if (data) {
-                const auto* schedule = static_cast<const Schedule*>(data);
+                const auto* schedule = static_cast<const InformativeSchedule*>(data);
                 printSchedule(*schedule);
             }
             // Handle error case where data is null
