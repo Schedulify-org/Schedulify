@@ -17,7 +17,7 @@ add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
 
 add_compile_definitions(USERINPUT="/data/userInput.txt")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts)
 
 include_directories(model/include controller/include)
 
@@ -25,14 +25,14 @@ set(PROJECT_SOURCES
         main.cpp
         controller/main_controller.cpp
         controller/src/controller_manager.cpp
-        controller/src/course_model.cpp
+        controller/models/course_model.cpp
         controller/src/file_input.cpp
         controller/src/course_selection.cpp
         controller/src/schedules_display.cpp
 
         controller/include/main_controller.h
         controller/include/controller_manager.h
-        controller/include/course_model.h
+        controller/models/course_model.h
         controller/include/file_input.h
         controller/include/course_selection.h
         controller/include/schedules_display.h
@@ -49,8 +49,8 @@ set(PROJECT_SOURCES
         model/src/schedule_algorithm/TimeUtils.cpp
         model/src/parsers/parseToXlsx.cpp
         model/src/parsers/printSchedule.cpp
-        main_include.h
         model/src/parsers/ScheduleEnrichment.cpp
+        main_include.h
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -76,6 +76,8 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::Gui
         Qt6::Widgets
         Qt6::Quick
+        Qt6::Qml
+        Qt6::QuickLayouts
 )
 
 set_target_properties(SchedGUI PROPERTIES
