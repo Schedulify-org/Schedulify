@@ -1,0 +1,28 @@
+110525_13-53-12: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+110525_13-53-12: [INFO   ] Successfully parsed 3 courses.
+110525_13-53-12: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.courseOutput.json
+110525_13-53-12: [INFO   ] COURSES finished successfully
+110525_13-53-12: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+110525_13-53-12: [INFO   ] Successfully parsed 3 courses.
+110525_13-53-12: [INFO   ] Starting schedule generation for 1 courses.
+110525_13-53-12: [INFO   ] Generated 1 valid combinations for course ID 83533
+110525_13-53-12: [INFO   ] Generated 1 combinations for course ID 83533
+110525_13-53-12: [INFO   ] Finished schedule generation. Total valid schedules: 1
+110525_13-53-12: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.schedOutput.json
+110525_13-53-12: [INFO   ] SCHEDULES finished successfully
+110525_13-53-24: [INFO   ] Successfully parsed 3 courses.
+110525_13-53-25: [INFO   ] Starting schedule generation for 3 courses.
+110525_13-53-25: [INFO   ] Generated 16 valid combinations for course ID 83112
+110525_13-53-25: [INFO   ] Generated 16 combinations for course ID 83112
+110525_13-53-25: [INFO   ] Generated 1 valid combinations for course ID 83533
+110525_13-53-25: [INFO   ] Generated 1 combinations for course ID 83533
+110525_13-53-25: [INFO   ] Generated 4 valid combinations for course ID 1
+110525_13-53-25: [INFO   ] Generated 4 combinations for course ID 1
+110525_13-53-25: [INFO   ] Finished schedule generation. Total valid schedules: 44
+110525_13-53-26: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.
+110525_13-53-28: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.
+110525_13-53-28: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.
+110525_13-53-28: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.
+110525_13-53-29: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.
+110525_13-53-29: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.
+110525_13-53-29: [ERROR  ] Cannot print screenshot: widget parameter required. Use printSchedule(schedule, widget) instead.

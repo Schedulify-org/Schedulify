@@ -1,0 +1,16 @@
+030525_20-56-37: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+030525_20-56-37: [INFO   ] Successfully parsed 3 courses.
+030525_20-56-37: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.courseOutput.json
+030525_20-56-37: [INFO   ] COURSES finished successfully
+030525_20-56-37: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+030525_20-56-37: [INFO   ] Successfully parsed 3 courses.
+030525_20-56-37: [INFO   ] Starting schedule generation for 3 courses.
+030525_20-56-37: [INFO   ] Generated 1 valid combinations for course ID 83533
+030525_20-56-37: [INFO   ] Generated 1 combinations for course ID 83533
+030525_20-56-37: [INFO   ] Generated 16 valid combinations for course ID 83112
+030525_20-56-37: [INFO   ] Generated 16 combinations for course ID 83112
+030525_20-56-37: [INFO   ] Generated 4 valid combinations for course ID 1
+030525_20-56-37: [INFO   ] Generated 4 combinations for course ID 1
+030525_20-56-37: [INFO   ] Finished schedule generation. Total valid schedules: 44
+030525_20-56-37: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.schedOutput.json
+030525_20-56-37: [INFO   ] SCHEDULES finished successfully

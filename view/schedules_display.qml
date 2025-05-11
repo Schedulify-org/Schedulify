@@ -185,62 +185,118 @@ Page {
             Layout.alignment: Qt.AlignHCenter
             spacing: 24
 
-            Button {
-                text: "← הקודם"
-                enabled: currentIndex > 0
-                onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
-                background: Rectangle {
-                    color: enabled ? "#1f2937" : "#9ca3af"
-                    radius: 6
-                }
-            }
+            // ← הקודם Button
+            Rectangle {
+                id: prevButton
+                radius: 4
+                color: prevMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 120
+                implicitHeight: 40
 
-            Button {
-                text: "הבא →"
-                enabled: currentIndex < totalSchedules - 1
-                onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
-                background: Rectangle {
-                    color: enabled ? "#1f2937" : "#9ca3af"  // אפור כהה / אפור בהיר
-                    radius: 6
-                }
-            }
-            Button {
-                id: saveButton
-                text: "שמור כ-PDF"
-                onClicked: controller.saveScheduleAsPDF()
-                background: Rectangle {
-                    color: "#4b5563"
-                    radius: 6
-                }
-                contentItem: Text {
-                    text: parent.text
-                    font.pixelSize: 14
+                Layout.preferredWidth: 140
+                visible: currentIndex > 0
+
+                Text {
+                    text: "← הקודם"
+                    anchors.centerIn: parent
                     color: "white"
+                    font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                padding: 10
-                Layout.preferredWidth: 140
+
+                MouseArea {
+                    id: prevMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    enabled: currentIndex > 0
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
+                }
             }
 
-            Button {
-                id: printButton
-                text: "הדפסה"
-                onClicked: controller.printScheduleDirectly()
-                background: Rectangle {
-                    color: "#4b5563"
-                    radius: 6
-                }
-                contentItem: Text {
-                    text: parent.text
-                    font.pixelSize: 14
+            // הבא → Button
+            Rectangle {
+                id: nextButton
+                radius: 4
+                color: nextMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 120
+                implicitHeight: 40
+
+                Layout.preferredWidth: 140
+                visible: currentIndex < totalSchedules - 1
+
+                Text {
+                    text: "הבא →"
+                    anchors.centerIn: parent
                     color: "white"
+                    font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                padding: 10
-                Layout.preferredWidth: 140
+
+                MouseArea {
+                    id: nextMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    enabled: currentIndex < totalSchedules - 1
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
+                }
+            }
+
+            // Save PDF Button
+            Rectangle {
+                id: saveButtonRect
+                radius: 4
+                color: saveMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+
+                Text {
+                    text: "שמור כ-PDF"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: saveMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.saveScheduleAsPDF()
+                }
+            }
+
+            // Print Button
+            Rectangle {
+                id: printButtonRect
+                radius: 4
+                color: printMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+
+                Text {
+                    text: "הדפסה"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: printMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.printScheduleDirectly()
+                }
             }
         }
-    }
+        }
+
 }
