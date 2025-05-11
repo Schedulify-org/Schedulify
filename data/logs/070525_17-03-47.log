@@ -1,0 +1,21 @@
+070525_17-03-47: [INFO   ] directory: C:\Users\Elad\Documents\Degree Software Enginner\Second Year Bar-Ilan\Project In Software Engineering\Schedulify
+070525_17-03-47: [INFO   ] Successfully parsed 3 courses.
+070525_17-03-47: [INFO   ] output finish, can be seen in C:\Users\Elad\Documents\Degree Software Enginner\Second Year Bar-Ilan\Project In Software Engineering\Schedulify/data/V1.courseOutput.json
+070525_17-03-47: [INFO   ] COURSES finished successfully
+070525_17-03-47: [INFO   ] directory: C:\Users\Elad\Documents\Degree Software Enginner\Second Year Bar-Ilan\Project In Software Engineering\Schedulify
+070525_17-03-47: [INFO   ] Successfully parsed 3 courses.
+070525_17-03-47: [INFO   ] Starting schedule generation for 1 courses.
+070525_17-03-47: [INFO   ] Generated 1 valid combinations for course ID 83533
+070525_17-03-47: [INFO   ] Generated 1 combinations for course ID 83533
+070525_17-03-47: [INFO   ] Finished schedule generation. Total valid schedules: 1
+070525_17-03-47: [INFO   ] output finish, can be seen in C:\Users\Elad\Documents\Degree Software Enginner\Second Year Bar-Ilan\Project In Software Engineering\Schedulify/data/V1.schedOutput.json
+070525_17-03-47: [INFO   ] SCHEDULES finished successfully
+070525_17-26-43: [INFO   ] Successfully parsed 3 courses.
+070525_17-26-46: [INFO   ] Starting schedule generation for 1 courses.
+070525_17-26-46: [INFO   ] Generated 16 valid combinations for course ID 83112
+070525_17-26-46: [INFO   ] Generated 16 combinations for course ID 83112
+070525_17-26-46: [INFO   ] Finished schedule generation. Total valid schedules: 16
+070525_17-26-50: [INFO   ] Starting schedule generation for 1 courses.
+070525_17-26-50: [INFO   ] Generated 16 valid combinations for course ID 83112
+070525_17-26-50: [INFO   ] Generated 16 combinations for course ID 83112
+070525_17-26-50: [INFO   ] Finished schedule generation. Total valid schedules: 16
