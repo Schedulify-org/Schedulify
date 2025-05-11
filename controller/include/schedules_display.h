@@ -25,8 +25,11 @@ public:
     Q_INVOKABLE void saveCurrentSchedule(const QString& path) const;
     Q_INVOKABLE void printCurrentSchedule() const;
     Q_INVOKABLE void goBack() override;
+    Q_INVOKABLE void saveScheduleAsPDF();
+    Q_INVOKABLE void printScheduleDirectly();
 
-    signals:
+
+signals:
         void currentScheduleIndexChanged();
         void scheduleChanged();
 

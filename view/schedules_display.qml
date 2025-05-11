@@ -204,6 +204,43 @@ Page {
                     radius: 6
                 }
             }
+            Button {
+                id: saveButton
+                text: "שמור כ-PDF"
+                onClicked: controller.saveScheduleAsPDF()
+                background: Rectangle {
+                    color: "#4b5563"
+                    radius: 6
+                }
+                contentItem: Text {
+                    text: parent.text
+                    font.pixelSize: 14
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                padding: 10
+                Layout.preferredWidth: 140
+            }
+
+            Button {
+                id: printButton
+                text: "הדפסה"
+                onClicked: controller.printScheduleDirectly()
+                background: Rectangle {
+                    color: "#4b5563"
+                    radius: 6
+                }
+                contentItem: Text {
+                    text: parent.text
+                    font.pixelSize: 14
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                padding: 10
+                Layout.preferredWidth: 140
+            }
         }
     }
 }
