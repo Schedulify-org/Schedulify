@@ -10,18 +10,17 @@ Page {
     property var controller: schedulesDisplayController
     property int currentIndex: controller.currentScheduleIndex
     property int totalSchedules: controller.getScheduleCount()
-    // מספר הימים ורוחב כל עמודה
     property int numDays: 7
     property real dayColumnWidth: Math.max(135, (width - timeColumnWidth) / numDays)
     property real timeColumnWidth: 70
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 0
+        spacing: 16
+        anchors.margins: 24
 
         // --- Header ---
         Rectangle {
-            id: header
             Layout.fillWidth: true
             height: 80
             color: "#ffffff"
@@ -60,10 +59,8 @@ Page {
 
         Label {
             text: "מערכת נוכחית: " + (currentIndex + 1) + " / " + totalSchedules
-            font.pixelSize: 20
+            font.pixelSize: 24
             color: "#3a3e45"
-            Layout.alignment: Qt.AlignHCenter
-            padding: 12
         }
 
         Flickable {
@@ -79,7 +76,6 @@ Page {
                 id: tableContent
                 width: scrollArea.contentWidth
 
-                // Days row
                 Row {
                     id: dayHeaderRow
                     height: 40
@@ -119,7 +115,6 @@ Page {
                     }
                 }
 
-                // Table
                 TableView {
                     id: scheduleTable
                     width: scrollArea.contentWidth
@@ -127,12 +122,12 @@ Page {
                     clip: true
                     rowSpacing: 1
                     columnSpacing: 1
-                    interactive: false // Let the parent Flickable handle scrolling
+                    interactive: false
 
                     property var timeSlots: [
                         "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
-                        "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00", "16:00-17:00",
-                        "17:00-18:00", "18:00-19:00", "19:00-20:00"
+                        "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
+                        "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"
                     ]
 
                     columnWidthProvider: function(col) {
@@ -200,32 +195,27 @@ Page {
                         radius: 4
 
                         color: model.column === 0
-                            ? "#f3f4f6"
+                            ? "#1e293b"
                             : (model.display && String(model.display).trim().length > 0
-                                ? "#e8ebf2"
+                                ? "#64748BFF"
                                 : "#ffffff")
 
                         Text {
                             anchors.fill: parent
                             wrapMode: Text.WordWrap
                             verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignLeft
+                            horizontalAlignment: Text.AlignHCenter
                             padding: 6
                             font.pixelSize: 11
                             textFormat: Text.RichText
                             text: model.display ? String(model.display) : ""
-                            color: "#2e2e2e"
+                            color: "#000000"
                         }
                     }
 
-                    // לאפס את רוחב העמודות כאשר גודל המסך משתנה
-                    onWidthChanged: {
-                        forceLayout();
-                    }
                 }
             }
 
-            // Add scrollbars for better UX
             ScrollBar.vertical: ScrollBar {
                 policy: ScrollBar.AsNeeded
                 active: ScrollBar.AlwaysOn
@@ -240,56 +230,146 @@ Page {
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: 24
-            Button {
-                text: "← הקודם"
-                enabled: currentIndex > 0
-                onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
-                background: Rectangle {
-                    color: enabled ? "#1f2937" : "#9ca3af"
-                    radius: 6
+
+            // ← הקודם
+            Rectangle {
+                id: prevButton
+                radius: 4
+                color: prevMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+                visible: currentIndex > 0
+
+                Text {
+                    text: "← הקודם"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
                 }
-                contentItem: Text {
-                    text: parent.text
-                    color: "#ffffff"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
+
+                MouseArea {
+                    id: prevMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
                 }
-                padding: 10
             }
 
-            Button {
-                text: "הבא →"
-                enabled: currentIndex < totalSchedules - 1
-                onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
-                background: Rectangle {
-                    color: enabled ? "#1f2937" : "#9ca3af"
-                    radius: 6
+            // הבא →
+            Rectangle {
+                id: nextButton
+                radius: 4
+                color: nextMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+                visible: currentIndex < totalSchedules - 1
+
+                Text {
+                    text: "הבא →"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
                 }
-                contentItem: Text {
-                    text: parent.text
-                    color: "#ffffff"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
+
+                MouseArea {
+                    id: nextMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
                 }
-                padding: 10
+            }
+
+            // PDF Save
+            Rectangle {
+                id: saveButtonRect
+                radius: 4
+                color: saveMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+
+                Text {
+                    text: "שמור כ-PDF"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
+                }
+
+                MouseArea {
+                    id: saveMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.saveScheduleAsPDF()
+                }
+            }
+
+            // Print
+            Rectangle {
+                id: printButtonRect
+                radius: 4
+                color: printMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+
+                Text {
+                    text: "הדפסה"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
+                }
+
+                MouseArea {
+                    id: printMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: controller.printScheduleDirectly()
+                }
+            }
+
+            // Screenshot
+            Rectangle {
+                id: screenshotButtonRect
+                radius: 4
+                color: screenshotMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+
+                Text {
+                    text: "צילום מסך"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
+                }
+
+                MouseArea {
+                    id: screenshotMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        schedulesDisplayPage.grabToImage(function(result) {
+                            if (result && result.saveToFile) {
+                                var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                                var filename = "screenshot-" + timestamp + ".png";
+                                result.saveToFile(filename);
+                                console.log("Screenshot saved to " + filename);
+                            } else {
+                                console.log("Failed to capture screenshot.");
+                            }
+                        });
+                    }
+                }
             }
         }
 
-        // --- Footer ---
-        Rectangle {
-            height: 60
-            Layout.fillWidth: true
-            color: "#ffffff"
-            border.color: "#e5e7eb"
-
-            Label {
-                anchors.centerIn: parent
-                text: "© 2025 Schedulify. All rights reserved."
-                color: "#6b7280"
-                font.pixelSize: 12
-            }
+        Label {
+            Layout.alignment: Qt.AlignHCenter
+            text: "© 2025 Schedulify. All rights reserved."
+            color: "#6b7280"
+            font.pixelSize: 12
         }
     }
 }

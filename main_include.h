@@ -76,8 +76,8 @@ public:
 private:
     static vector<Course> generateCourses(const string& path);
     static vector<InformativeSchedule> generateSchedules(const vector<Course>& userInput, const vector<Course>& allCourses);
-    static void saveSchedule(const Schedule& schedule, const string& path);
-    static void printSchedule(const Schedule& schedule);
+    static void saveSchedule(const InformativeSchedule& infoSchedule, const string& path);
+    static void printSchedule(const InformativeSchedule& infoSchedule);
 
     vector<Course> lastGeneratedCourses;
     vector<InformativeSchedule> lastGeneratedSchedules;

@@ -1,3 +1,4 @@
+
 #include "schedules_display.h"
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
@@ -59,19 +60,27 @@ int SchedulesDisplayController::getScheduleCount() const {
     return static_cast<int>(m_schedules.size());
 }
 
-void SchedulesDisplayController::saveCurrentSchedule(const QString &path) const {
+void SchedulesDisplayController::saveScheduleAsPDF() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
-        Model model;
-        Schedule schedule;
-        model.executeOperation(ModelOperation::SAVE_SCHEDULE, &schedule, path.toStdString());
+        QString fileName = QFileDialog::getSaveFileName(nullptr,
+                                                        "Save Schedule as PDF",
+                                                        QDir::homePath() + "/schedule.pdf",
+                                                        "PDF Files (*.pdf)");
+        if (!fileName.isEmpty()) {
+            // Call the PDF export function
+            Model model;
+            model.executeOperation(ModelOperation::SAVE_SCHEDULE, &m_schedules[m_currentScheduleIndex], fileName.toLocal8Bit().constData());
+//            saveToPDF(m_schedules[m_currentScheduleIndex], fileName);
+        }
     }
 }
 
-void SchedulesDisplayController::printCurrentSchedule() const {
+void SchedulesDisplayController::printScheduleDirectly() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
+        // Call the print function
         Model model;
-        Schedule schedule;
-        model.executeOperation(ModelOperation::PRINT_SCHEDULE, &schedule);
+        model.executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex]);
+//        printSchedule(m_schedules[m_currentScheduleIndex]);
     }
 }
 

@@ -4,6 +4,8 @@
 #include "controller_manager.h"
 #include <QObject>
 #include <QVariant>
+#include <QFileDialog>
+#include <QDir>
 #include "main_include.h"
 
 class SchedulesDisplayController : public ControllerManager {
@@ -22,11 +24,12 @@ public:
     Q_INVOKABLE [[nodiscard]] QVariantList getDayItems(int scheduleIndex, int dayIndex) const;
     Q_INVOKABLE [[nodiscard]] static QString getDayName(int dayIndex) ;
     Q_INVOKABLE [[nodiscard]] int getScheduleCount() const;
-    Q_INVOKABLE void saveCurrentSchedule(const QString& path) const;
-    Q_INVOKABLE void printCurrentSchedule() const;
     Q_INVOKABLE void goBack() override;
+    Q_INVOKABLE void saveScheduleAsPDF();
+    Q_INVOKABLE void printScheduleDirectly();
 
-    signals:
+
+signals:
         void currentScheduleIndexChanged();
         void scheduleChanged();
 
