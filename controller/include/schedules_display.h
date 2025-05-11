@@ -6,6 +6,9 @@
 #include <QVariant>
 #include <QFileDialog>
 #include <QDir>
+#include <QQuickItem>
+#include <QStandardPaths>
+#include <QQuickItemGrabResult>
 #include "main_include.h"
 
 class SchedulesDisplayController : public ControllerManager {
@@ -27,13 +30,17 @@ public:
     Q_INVOKABLE void goBack() override;
     Q_INVOKABLE void saveScheduleAsPDF();
     Q_INVOKABLE void printScheduleDirectly();
+    Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
 
 signals:
         void currentScheduleIndexChanged();
+        void screenshotSaved(const QString& path);
+        void screenshotFailed();
         void scheduleChanged();
 
 private:
+    static QString generateFilename(const QString& basePath);
     vector<InformativeSchedule> m_schedules;
     int m_currentScheduleIndex;
 };

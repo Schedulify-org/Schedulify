@@ -87,3 +87,53 @@ void SchedulesDisplayController::printScheduleDirectly() {
 void SchedulesDisplayController::goBack() {
     emit navigateBack();
 }
+
+void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString& savePath) {
+    if (!item) {
+        emit screenshotFailed();
+        return;
+    }
+
+    // Let user select path if not provided
+    QString path = savePath;
+    if (path.isEmpty()) {
+        path = QFileDialog::getSaveFileName(
+                nullptr,
+                tr("Save Screenshot"),
+                generateFilename(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)),
+                tr("Images (*.png)")
+        );
+
+        if (path.isEmpty()) {
+            // User canceled the dialog
+            return;
+        }
+    } else {
+        // If path is just a directory, append generated filename
+        QFileInfo fileInfo(path);
+        if (fileInfo.isDir()) {
+            path = QDir(path).filePath(generateFilename(""));
+        }
+    }
+
+    // Capture the screenshot
+    QSharedPointer<QQuickItemGrabResult> result = item->grabToImage();
+    connect(result.data(), &QQuickItemGrabResult::ready, [this, result, path]() {
+        if (result->saveToFile(path)) {
+            emit screenshotSaved(path);
+        } else {
+            emit screenshotFailed();
+        }
+    });
+}
+
+QString SchedulesDisplayController::generateFilename(const QString& basePath) {
+    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss");
+    QString filename = QString("screenshot-%1.png").arg(timestamp);
+
+    if (basePath.isEmpty()) {
+        return filename;
+    }
+
+    return QDir(basePath).filePath(filename);
+}

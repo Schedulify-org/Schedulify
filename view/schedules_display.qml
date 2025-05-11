@@ -350,16 +350,8 @@ Page {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        schedulesDisplayPage.grabToImage(function(result) {
-                            if (result && result.saveToFile) {
-                                var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-                                var filename = "screenshot-" + timestamp + ".png";
-                                result.saveToFile(filename);
-                                console.log("Screenshot saved to " + filename);
-                            } else {
-                                console.log("Failed to capture screenshot.");
-                            }
-                        });
+                        // Pass the item you want to capture (likely the parent container)
+                        schedulesDisplayController.captureAndSave(tableContent)
                     }
                 }
             }
