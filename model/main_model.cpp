@@ -40,7 +40,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 }
 
 void Model::saveSchedule(const Schedule& schedule, const string& path) {
-    // Convert Schedule to InformativeSchedule for PDF export
     vector<Course> courses; // Ideally, this would come from somewhere else
     vector<Schedule> singleSchedule = {schedule};
     vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(singleSchedule, courses);
@@ -61,7 +60,6 @@ void Model::printSchedule(const Schedule& schedule) {
     vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(singleSchedule, courses);
 
     if (!informativeSchedules.empty()) {
-        // Use the printSchedule function from printSchedule.h
         ::printSchedule(informativeSchedules[0]);
         Logger::get().logInfo("Schedule sent to printer");
     } else {

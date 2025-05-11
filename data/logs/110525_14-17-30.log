@@ -1,0 +1,24 @@
+110525_14-17-30: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+110525_14-17-30: [INFO   ] Successfully parsed 3 courses.
+110525_14-17-30: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.courseOutput.json
+110525_14-17-30: [INFO   ] COURSES finished successfully
+110525_14-17-30: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+110525_14-17-30: [INFO   ] Successfully parsed 3 courses.
+110525_14-17-30: [INFO   ] Starting schedule generation for 1 courses.
+110525_14-17-30: [INFO   ] Generated 1 valid combinations for course ID 83533
+110525_14-17-30: [INFO   ] Generated 1 combinations for course ID 83533
+110525_14-17-30: [INFO   ] Finished schedule generation. Total valid schedules: 1
+110525_14-17-30: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.schedOutput.json
+110525_14-17-30: [INFO   ] SCHEDULES finished successfully
+110525_14-17-39: [INFO   ] Successfully parsed 3 courses.
+110525_14-17-41: [INFO   ] Starting schedule generation for 3 courses.
+110525_14-17-41: [INFO   ] Generated 16 valid combinations for course ID 83112
+110525_14-17-41: [INFO   ] Generated 16 combinations for course ID 83112
+110525_14-17-41: [INFO   ] Generated 1 valid combinations for course ID 83533
+110525_14-17-41: [INFO   ] Generated 1 combinations for course ID 83533
+110525_14-17-41: [INFO   ] Generated 4 valid combinations for course ID 1
+110525_14-17-41: [INFO   ] Generated 4 combinations for course ID 1
+110525_14-17-41: [INFO   ] Finished schedule generation. Total valid schedules: 44
+110525_14-17-42: [INFO   ] Schedule successfully saved to PDF: C:/Users/nick/AppData/Local/Temp/temp_schedule_print.pdf
+110525_14-17-50: [INFO   ] HTML content generated for printing. Length: 12057
+110525_14-17-50: [INFO   ] Schedule printed successfully.

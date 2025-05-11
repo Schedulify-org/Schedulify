@@ -296,6 +296,44 @@ Page {
                     onClicked: controller.printScheduleDirectly()
                 }
             }
+            // Screenshot Button
+            Rectangle {
+                id: screenshotButtonRect
+                radius: 4
+                color: screenshotMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                implicitWidth: 140
+                implicitHeight: 40
+
+                Text {
+                    text: "צילום מסך"
+                    anchors.centerIn: parent
+                    color: "white"
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: screenshotMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        // Capture the screenshot
+                        schedulesDisplayPage.grabToImage(function(result) {
+                            if (result && result.saveToFile) {
+                                var timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+                                var filename = "screenshot-" + timestamp + ".png";
+                                result.saveToFile(filename);
+                                console.log("Screenshot saved to " + filename);
+                            } else {
+                                console.log("Failed to capture screenshot.");
+                            }
+                        });
+                    }
+                }
+            }
+
         }
         }
 
