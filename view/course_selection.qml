@@ -342,7 +342,7 @@ Page {
 
                             contentItem: Text {
                                 text: "X"
-                                font.pixelSize: 25
+                                font.pixelSize: 20
                                 color: "#000000"
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
