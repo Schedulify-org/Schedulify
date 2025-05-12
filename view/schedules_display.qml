@@ -76,6 +76,7 @@ Page {
     }
 
     Rectangle{
+        id: mainContent
         anchors {
             top: header.bottom
             left: parent.left
@@ -86,28 +87,89 @@ Page {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 10
-            spacing: 10
 
-            ColumnLayout{
-                anchors {
-                    top: parent.top
-                    left: parent.left
-                    right: parent.right
-                    bottom: scrollArea.top
+            RowLayout {
+                id: topButtonsRow
+                width: parent.width
+                Layout.fillWidth: true
+                spacing: 10
+
+                // ← הקודם
+                Rectangle {
+                    id: prevButton
+                    radius: 4
+                    color: prevMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                    implicitWidth: 50
+                    implicitHeight: 40
+                    visible: currentIndex > 0
+                    Layout.alignment: Qt.AlignLeft
+
+                    Text {
+                        text: "←"
+                        anchors.centerIn: parent
+                        color: "white"
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        id: prevMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
+                    }
                 }
 
-                Label {
-                    text: "Schedule Options"
-                    font.pixelSize: 20
-                    color: "#3a3e45"
-                    anchors.horizontalCenter: parent.horizontalCenter
+                Item {
+                    Layout.fillWidth: true
                 }
 
-                Label {
-                    text: "Schedule " + (currentIndex + 1) + " of " + totalSchedules
-                    font.pixelSize: 15
-                    color: "#3a3e45"
+                ColumnLayout{
                     anchors.horizontalCenter: parent.horizontalCenter
+
+                    Label {
+                        text: "Schedule Options"
+                        font.pixelSize: 20
+                        color: "#3a3e45"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Label {
+                        text: "Schedule " + (currentIndex + 1) + " of " + totalSchedules
+                        font.pixelSize: 15
+                        color: "#3a3e45"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                // הבא →
+                Rectangle {
+                    id: nextButton
+                    radius: 4
+                    color: nextMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                    implicitWidth: 50
+                    implicitHeight: 40
+                    visible: currentIndex < totalSchedules - 1
+                    Layout.alignment: Qt.AlignRight
+
+                    Text {
+                        text: "→"
+                        anchors.centerIn: parent
+                        color: "white"
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        id: nextMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
+                    }
                 }
             }
 
@@ -297,56 +359,6 @@ Page {
                 Layout.alignment: Qt.AlignHCenter
                 spacing: 24
 
-                // ← הקודם
-                Rectangle {
-                    id: prevButton
-                    radius: 4
-                    color: prevMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 140
-                    implicitHeight: 40
-                    visible: currentIndex > 0
-
-                    Text {
-                        text: "← הקודם"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: prevMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
-                    }
-                }
-
-                // הבא →
-                Rectangle {
-                    id: nextButton
-                    radius: 4
-                    color: nextMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 140
-                    implicitHeight: 40
-                    visible: currentIndex < totalSchedules - 1
-
-                    Text {
-                        text: "הבא →"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: nextMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
-                    }
-                }
-
                 // PDF Save
                 Rectangle {
                     id: saveButtonRect
@@ -422,7 +434,6 @@ Page {
                     }
                 }
             }
-
         }
     }
 
