@@ -2,9 +2,12 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.qmlmodels 1.0
+import QtQuick.Controls.Basic
+import "."
 
 Page {
     id: schedulesDisplayPage
+
     background: Rectangle { color: "#ffffff" }
 
     property var controller: schedulesDisplayController
@@ -74,12 +77,64 @@ Page {
             }
 
             Button {
+                id: logButtonC
+                anchors {
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    rightMargin: 15
+                }
+                width: 40
+                height: 40
+
+                background: Rectangle {
+                    color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
+                    radius: 20
+
+                    Text {
+                        text: "📋"
+                        anchors.centerIn: parent
+                        font.pixelSize: 20
+                    }
+                }
+
+                MouseArea {
+                    id: logMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!logDisplayController.isLogWindowOpen) {
+                            var component = Qt.createComponent("qrc:/log_display.qml");
+                            if (component.status === Component.Ready) {
+                                logDisplayController.setLogWindowOpen(true);
+                                var logWindow = component.createObject(schedulesDisplayPage, {
+                                    "onClosing": function(close) {
+                                        logDisplayController.setLogWindowOpen(false);
+                                    }
+                                });
+                                logWindow.show();
+                            } else {
+                                console.error("Error creating log window:", component.errorString());
+                            }
+                        }
+                    }
+                }
+
+                ToolTip {
+                    visible: logMouseArea.containsMouse
+                    text: "Open Application Logs"
+                    font.pixelSize: 12
+                    delay: 500
+                }
+            }
+
+            Button {
                 id: exportButton
                 width: 180
                 height: 40
                 anchors {
                     right: parent.right
-                    rightMargin: 16
+                    rightMargin: 25 + logButtonC.width
                     verticalCenter: parent.verticalCenter
                 }
 
@@ -95,6 +150,7 @@ Page {
                     color: "white"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+                    font.pixelSize: 14
                 }
 
                 MouseArea {
@@ -386,6 +442,7 @@ Page {
                         text: "←"
                         anchors.centerIn: parent
                         color: "white"
+                        font.pixelSize: 20
                         font.bold: true
                     }
 
@@ -438,6 +495,7 @@ Page {
                         text: "→"
                         anchors.centerIn: parent
                         color: "white"
+                        font.pixelSize: 20
                         font.bold: true
                     }
 

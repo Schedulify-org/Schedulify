@@ -2,19 +2,10 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Basic
+import "."
 
 Page {
     id: inputScreen
-
-    function openLogWindow() {
-        var component = Qt.createComponent("qrc:/log_display.qml");
-        if (component.status === Component.Ready) {
-            var logWindow = component.createObject(inputScreen);
-            logWindow.show();
-        } else {
-            console.error("Error creating log window:", component.errorString());
-        }
-    }
 
     Connections {
         target: fileInputController
@@ -168,11 +159,11 @@ Page {
             }
 
             Button {
-                id: logButton
+                id: logButtonA
                 anchors {
                     right: parent.right
                     verticalCenter: parent.verticalCenter
-                    rightMargin: 24
+                    rightMargin: 15
                 }
                 width: 40
                 height: 40
@@ -181,9 +172,8 @@ Page {
                     color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
                     radius: 20
 
-                    // Simple log icon representation
                     Text {
-                        text: "📋" // Using an emoji for simplicity
+                        text: "📋"
                         anchors.centerIn: parent
                         font.pixelSize: 20
                     }
@@ -194,7 +184,22 @@ Page {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: openLogWindow()
+                    onClicked: {
+                        if (!logDisplayController.isLogWindowOpen) {
+                            var component = Qt.createComponent("qrc:/log_display.qml");
+                            if (component.status === Component.Ready) {
+                                logDisplayController.setLogWindowOpen(true);
+                                var logWindow = component.createObject(inputScreen, {
+                                    "onClosing": function(close) {
+                                        logDisplayController.setLogWindowOpen(false);
+                                    }
+                                });
+                                logWindow.show();
+                            } else {
+                                console.error("Error creating log window:", component.errorString());
+                            }
+                        }
+                    }
                 }
 
                 ToolTip {
@@ -204,6 +209,7 @@ Page {
                     delay: 500
                 }
             }
+
         }
 
         // Upload Container

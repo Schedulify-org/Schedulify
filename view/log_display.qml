@@ -1,4 +1,3 @@
-// LogWindow.qml - Updated version
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
@@ -68,17 +67,16 @@ Window {
                 }
                 width: 32
                 height: 32
+                Text {
+                    text: "🔄"
+                    anchors.centerIn: parent
+                    font.pixelSize: 16
+                    color: "#1f2937"
+                }
 
                 background: Rectangle {
                     color: "#ffffff"
                     radius: 16
-
-                    Text {
-                        text: "🔄"
-                        anchors.centerIn: parent
-                        font.pixelSize: 16
-                        color: "#1f2937"
-                    }
                 }
 
                 MouseArea {
@@ -232,6 +230,12 @@ Window {
                     }
                 }
             }
+        }
+    }
+
+    onClosing: {
+        if (logDisplayController) {
+            logDisplayController.setLogWindowOpen(false);
         }
     }
 }

@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Basic
+import "."
 
 Page {
     id: courseListScreen
@@ -84,14 +85,65 @@ Page {
                     }
                 }
 
-                // Generate Schedules Button - Only visible when at least 1 course is selected
+                Button {
+                    id: logButtonB
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        rightMargin: 15
+                    }
+                    width: 40
+                    height: 40
+
+                    background: Rectangle {
+                        color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
+                        radius: 20
+
+                        Text {
+                            text: "📋"
+                            anchors.centerIn: parent
+                            font.pixelSize: 20
+                        }
+                    }
+
+                    MouseArea {
+                        id: logMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (!logDisplayController.isLogWindowOpen) {
+                                var component = Qt.createComponent("qrc:/log_display.qml");
+                                if (component.status === Component.Ready) {
+                                    logDisplayController.setLogWindowOpen(true);
+                                    var logWindow = component.createObject(courseListScreen, {
+                                        "onClosing": function(close) {
+                                            logDisplayController.setLogWindowOpen(false);
+                                        }
+                                    });
+                                    logWindow.show();
+                                } else {
+                                    console.error("Error creating log window:", component.errorString());
+                                }
+                            }
+                        }
+                    }
+
+                    ToolTip {
+                        visible: logMouseArea.containsMouse
+                        text: "Open Application Logs"
+                        font.pixelSize: 12
+                        delay: 500
+                    }
+                }
+
                 Button {
                     id: generateButton
                     width: 180
                     height: 40
                     anchors {
                         right: parent.right
-                        rightMargin: 16
+                        rightMargin: 25 + logButtonB.width
                         verticalCenter: parent.verticalCenter
                     }
                     visible: selectedCoursesRepeater.count > 0
@@ -107,6 +159,7 @@ Page {
                     contentItem: Text {
                         text: "Generate Schedules →"
                         color: "white"
+                        font.pixelSize: 14
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -433,17 +486,23 @@ Page {
                         function onSelectionChanged() {
                             // Update color based on selection state and max courses limit
                             if (courseSelectionController.isCourseSelected(originalIndex)) {
-                                courseDelegate.color = "#f0f9ff" // Selected course
+                                courseDelegate.color = "#f0f9ff"
                                 courseDelegate.border.color = "#3b82f6"
                                 courseDelegate.opacity = 1
+                                courseIdBox.color = "#dbeafe"
+                                courseIdBoxLabel.color = "#2563eb"
                             } else if (selectedCoursesRepeater.count >= 7) {
-                                courseDelegate.color = "#e5e7eb" // Disabled (max courses selected)
+                                courseDelegate.color = "#e5e7eb"
                                 courseDelegate.border.color = "#d1d5db"
                                 courseDelegate.opacity = 0.7
+                                courseIdBox.color = "#e5e7eb"
+                                courseIdBoxLabel.color = "#9ca3af"
                             } else {
-                                courseDelegate.color = "#ffffff" // Normal state
+                                courseDelegate.color = "#ffffff"
                                 courseDelegate.border.color = "#e5e7eb"
                                 courseDelegate.opacity = 1
+                                courseIdBox.color = "#f3f4f6"
+                                courseIdBoxLabel.color = "#4b5563"
                             }
                         }
                     }
@@ -472,6 +531,7 @@ Page {
                             radius: 4
 
                             Label {
+                                id: courseIdBoxLabel
                                 anchors.centerIn: parent
                                 text: courseId
                                 font.bold: true

@@ -16,12 +16,20 @@
 class LogDisplayController : public ControllerManager {
 Q_OBJECT
     Q_PROPERTY(QVariantList logEntries READ getLogEntries NOTIFY logEntriesChanged)
+    Q_PROPERTY(bool isLogWindowOpen READ isLogWindowOpen WRITE setLogWindowOpen NOTIFY logWindowOpenChanged)
 
 public:
     explicit LogDisplayController(QObject* parent = nullptr);
     virtual ~LogDisplayController() override = default;
 
-    // Method to refresh logs
+    Q_INVOKABLE bool isLogWindowOpen() const { return m_isLogWindowOpen; }
+    Q_INVOKABLE void setLogWindowOpen(bool open) {
+        if (m_isLogWindowOpen != open) {
+            m_isLogWindowOpen = open;
+            emit logWindowOpenChanged();
+        }
+    }
+
     Q_INVOKABLE void refreshLogs();
     Q_INVOKABLE void forceUpdate() {
         updateLogEntries();
@@ -40,10 +48,12 @@ public:
 
 signals:
     void logEntriesChanged();
+    void logWindowOpenChanged();
 
 private:
     void updateLogEntries();
     QVariantList m_logEntries;
+    bool m_isLogWindowOpen = false;
 };
 
 
