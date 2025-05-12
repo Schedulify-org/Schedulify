@@ -316,11 +316,14 @@ Page {
                             id: searchField
                             width: parent.width - 32
                             placeholderText: "Search by course ID, name, or instructor..."
+                            placeholderTextColor: "#9CA3AF"
                             font.pixelSize: 14
                             color: "#1f2937"
                             selectByMouse: true
+
                             background: Rectangle {
-                                color: "transparent"
+                                radius: 4
+                                color: "#FFFFFF"
                             }
 
                             onTextChanged: {
@@ -331,6 +334,7 @@ Page {
 
                         // Clear icon
                         Button {
+                            id: clearSearch
                             visible: searchField.text !== ""
                             width: 30
                             height: 24
@@ -341,11 +345,24 @@ Page {
                             }
 
                             contentItem: Text {
-                                text: "X"
-                                font.pixelSize: 20
-                                color: "#000000"
+                                text: "✕"
+                                font.pixelSize: 18
+                                font.bold: true
+                                color: clearSearchMouseArea.containsMouse ? "#d81a1a" : "#000000"
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
+                            }
+
+                            MouseArea {
+                                id: clearSearchMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    searchField.text = ""
+                                    searchText = ""
+                                    courseSelectionController.resetFilter()
+                                }
+                                cursorShape: Qt.PointingHandCursor
                             }
 
                             onClicked: {

@@ -40,7 +40,7 @@ signals:
         void scheduleChanged();
 
 private:
-    static QString generateFilename(const QString& basePath);
+    static QString generateFilename(const QString& basePath, int index);
     vector<InformativeSchedule> m_schedules;
     int m_currentScheduleIndex;
 };

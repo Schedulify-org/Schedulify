@@ -100,7 +100,7 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
         path = QFileDialog::getSaveFileName(
                 nullptr,
                 tr("Save Screenshot"),
-                generateFilename(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation)),
+                generateFilename(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation), m_currentScheduleIndex+1),
                 tr("Images (*.png)")
         );
 
@@ -112,7 +112,7 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
         // If path is just a directory, append generated filename
         QFileInfo fileInfo(path);
         if (fileInfo.isDir()) {
-            path = QDir(path).filePath(generateFilename(""));
+            path = QDir(path).filePath(generateFilename("", m_currentScheduleIndex+1));
         }
     }
 
@@ -127,9 +127,8 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
     });
 }
 
-QString SchedulesDisplayController::generateFilename(const QString& basePath) {
-    QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss");
-    QString filename = QString("screenshot-%1.png").arg(timestamp);
+QString SchedulesDisplayController::generateFilename(const QString& basePath, int index) {
+    QString filename = QString("Schedule-%1.png").arg(index);
 
     if (basePath.isEmpty()) {
         return filename;
