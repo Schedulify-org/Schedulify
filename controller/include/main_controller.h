@@ -8,6 +8,7 @@
 #include "file_input.h"
 #include "course_selection.h"
 #include "schedules_display.h"
+#include "log_display.h"
 
 class MainController : public QObject {
 Q_OBJECT
@@ -18,6 +19,7 @@ public:
     FileInputController* fileInputController() const { return m_fileInputController; }
     CourseSelectionController* courseSelectionController() const { return m_courseSelectionController; }
     SchedulesDisplayController* schedulesDisplayController() const { return m_schedulesDisplayController; }
+    LogDisplayController* logDisplayController() const { return m_logDisplayController; }
 
 signals:
     void navigateToScreen(const QUrl &screenUrl);
@@ -30,6 +32,7 @@ private:
     FileInputController* m_fileInputController;
     CourseSelectionController* m_courseSelectionController;
     SchedulesDisplayController* m_schedulesDisplayController;
+    LogDisplayController* m_logDisplayController;
 
     // Connect sub-controller signals to main controller signals
     void connectControllerSignals(const ControllerManager* controller) const;

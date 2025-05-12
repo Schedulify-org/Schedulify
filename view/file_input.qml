@@ -6,11 +6,25 @@ import QtQuick.Controls.Basic
 Page {
     id: inputScreen
 
+    function openLogWindow() {
+        var component = Qt.createComponent("qrc:/log_display.qml");
+        if (component.status === Component.Ready) {
+            var logWindow = component.createObject(inputScreen);
+            logWindow.show();
+        } else {
+            console.error("Error creating log window:", component.errorString());
+        }
+    }
+
     Connections {
         target: fileInputController
 
         function onInvalidFileFormat() {
             showErrorMessage("Invalid file format. Please upload a valid course list.");
+        }
+
+        function onErrorMessage(message) {
+            showErrorMessage(message);
         }
 
         // Connection for fileSelected signal
@@ -152,6 +166,44 @@ Page {
                 font.pixelSize: 20
                 color: "#1f2937"
             }
+
+            Button {
+                id: logButton
+                anchors {
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                    rightMargin: 24
+                }
+                width: 40
+                height: 40
+
+                background: Rectangle {
+                    color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
+                    radius: 20
+
+                    // Simple log icon representation
+                    Text {
+                        text: "📋" // Using an emoji for simplicity
+                        anchors.centerIn: parent
+                        font.pixelSize: 20
+                    }
+                }
+
+                MouseArea {
+                    id: logMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: openLogWindow()
+                }
+
+                ToolTip {
+                    visible: logMouseArea.containsMouse
+                    text: "Open Application Logs"
+                    font.pixelSize: 12
+                    delay: 500
+                }
+            }
         }
 
         // Upload Container
@@ -202,12 +254,7 @@ Page {
                             filePath = fileUrl.toString();
                         }
 
-                        if (filePath.endsWith(".txt")) {
-                            fileInputController.handleFileSelected(filePath);
-                        } else {
-                            // Show error if not a .txt file
-                            showErrorMessage("Only .txt files are supported. Please upload a valid list.");
-                        }
+                        fileInputController.handleFileSelected(filePath);
                     } else {
                         showErrorMessage("No valid file was dropped.");
                     }

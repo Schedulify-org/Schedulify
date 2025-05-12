@@ -5,7 +5,7 @@
 #include "parsers/parseSchedToJson.h"
 #include "parsers/parseCoursesToJson.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
-#include "logs/logger.h"
+#include "logger/logger.h"
 
 #include <vector>
 #include <map>

@@ -1,5 +1,5 @@
 #include "parsers/ScheduleEnrichment.h"
-#include "logs/logger.h"
+#include "logger/logger.h"
 
 vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& schedules, const vector<Course>& courses) {
     vector<InformativeSchedule> result;

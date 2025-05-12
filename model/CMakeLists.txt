@@ -23,8 +23,7 @@ set(SOURCES
         src/schedule_algorithm/ScheduleBuilder.cpp
         src/schedule_algorithm/CourseLegalComb.cpp
         src/schedule_algorithm/TimeUtils.cpp
-        src/logs/logManager.cpp
-        src/logs/logger.cpp
+        ../logger/logger.cpp
         src/parsers/parseCoursesToJson.cpp
 )
 

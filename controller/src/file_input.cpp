@@ -13,7 +13,7 @@ void FileInputController::handleUploadAndContinue() {
     );
 
     if (fileName.isEmpty()) {
-        qDebug() << "No file selected.";
+        Logger::get().logError("No file selected");
         return;
     }
 
@@ -28,7 +28,7 @@ void FileInputController::loadFile() {
     if (!selectedFilePath.isEmpty()) {
         filePath = selectedFilePath.toLocal8Bit().constData();
     } else {
-        qWarning() << "No file path available";
+        Logger::get().logError("No file path available");
         emit invalidFileFormat();
         return;
     }
@@ -38,8 +38,8 @@ void FileInputController::loadFile() {
     );
 
     if (!coursesPtr) {
-        qWarning() << "coursesPtr is null";
-        emit invalidFileFormat();  // ❗ Emit error
+        Logger::get().logError("could not find valid courses");
+        emit invalidFileFormat();
         return;
     }
 
@@ -52,7 +52,7 @@ void FileInputController::loadFile() {
         course_controller->initiateCoursesData(courses);
         goToScreen(QUrl(QStringLiteral("qrc:/course_selection.qml")));
     } else {
-        qWarning() << "Courses empty or controller missing";
+        Logger::get().logError("Courses empty or controller missing");
         emit invalidFileFormat();
     }
 }
@@ -60,8 +60,20 @@ void FileInputController::loadFile() {
 void FileInputController::handleFileSelected(const QString &filePath) {
     selectedFilePath = filePath;
 
-    // Emit signal that a file has been selected
-    emit fileSelected(!filePath.isEmpty());
+    if (!filePath.endsWith(".txt", Qt::CaseInsensitive)) {
+        emit invalidFileFormat();
+        Logger::get().logError("Invalid file type. only txt file are allowed");
+        return;
+    }
+
+    if (filePath.isEmpty()) {
+        emit fileSelected(false);
+        emit errorMessage("No file was selected");
+        Logger::get().logError("No file selected");
+        return;
+    } else {
+        emit fileSelected(true);
+    }
 
     // Extract just the filename from the path and emit it
     if (!filePath.isEmpty()) {

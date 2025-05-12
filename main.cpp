@@ -4,17 +4,13 @@
 #include <QUrl>
 #include <QQmlContext>
 #include "main_controller.h"
-#include "main/main_model_menu.h"
-#include "logs/logger.h"
+#include "logger.h"
 
 int main(int argc, char *argv[])
 {
-    Logger::get().initialize();
-
-    app_main("COURSES");
-    app_main("SCHEDULES");
-
     QApplication app(argc, argv);
+
+    Logger::get().logInitiate();
 
     // Create the QQmlApplicationEngine
     QQmlApplicationEngine engine;
@@ -33,6 +29,7 @@ int main(int argc, char *argv[])
 
     // Check for errors
     if (engine.rootObjects().isEmpty()) {
+        Logger::get().logError("Error loading main qml (view) file");
         return -1;
     }
 

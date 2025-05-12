@@ -5,6 +5,7 @@
 #include "main_include.h"
 #include "main/main_model.h"
 #include "course_selection.h"
+#include "logger.h"
 
 #include <QFileDialog>
 #include <QStandardPaths>
@@ -22,6 +23,7 @@ public slots:
 
 signals:
     void invalidFileFormat();
+    void errorMessage(const QString &message);
     void fileSelected(bool hasFile);
     void fileNameChanged(const QString &fileName);
 

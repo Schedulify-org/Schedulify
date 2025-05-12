@@ -11,7 +11,7 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
     if (courses.empty()) {
         // Navigate to course selection screen
-        qWarning() << "Warning: Empty courses vector provided to initiateCoursesData";
+        Logger::get().logError("Empty courses vector provided to initiateCoursesData");
     } else {
         // Initialize the course model with the data
         allCourses = courses;
@@ -56,7 +56,7 @@ void CourseSelectionController::generateSchedules() {
 
 void CourseSelectionController::toggleCourseSelection(int index) {
     if (index < 0 || index >= static_cast<int>(allCourses.size())) {
-        qWarning() << "Invalid course index:" << index;
+        Logger::get().logError("Invalid selected course index");
         return;
     }
 
@@ -83,7 +83,7 @@ void CourseSelectionController::toggleCourseSelection(int index) {
 
 void CourseSelectionController::deselectCourse(int index) {
     if (index < 0 || index >= static_cast<int>(selectedCourses.size())) {
-        qWarning() << "Invalid selected course index:" << index;
+        Logger::get().logError("Invalid selected course index");
         return;
     }
 

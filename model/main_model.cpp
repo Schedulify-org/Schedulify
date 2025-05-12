@@ -1,6 +1,6 @@
 #include <QString>
 #include "main/main_model.h"
-#include "logs/logger.h"
+#include "logger/logger.h"
 #include "parsers/printSchedule.h"
 
 // this is the main model to run Schedulify 2.0
@@ -29,8 +29,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
     }
 
     vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(schedules, userInput);
-
-    printInformativeSchedules(informativeSchedules);
 
     if (informativeSchedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");

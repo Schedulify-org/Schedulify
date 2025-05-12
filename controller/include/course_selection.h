@@ -4,6 +4,7 @@
 #include "controller_manager.h"
 #include "controller/models/course_model.h"
 #include "schedules_display.h"
+#include "logger.h"
 
 #include <algorithm>
 #include <QUrl>

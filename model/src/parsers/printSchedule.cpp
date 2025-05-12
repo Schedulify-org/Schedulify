@@ -1,5 +1,5 @@
 #include "parsers/printSchedule.h"
-#include "logs/logger.h"
+#include "logger/logger.h"
 #include <QPrinter>
 #include <QPdfWriter>
 #include <QPainter>
