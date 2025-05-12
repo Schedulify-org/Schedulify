@@ -72,9 +72,287 @@ Page {
                     verticalCenter: parent.verticalCenter
                 }
             }
+
+            Button {
+                id: exportButton
+                width: 180
+                height: 40
+                anchors {
+                    right: parent.right
+                    rightMargin: 16
+                    verticalCenter: parent.verticalCenter
+                }
+
+                background: Rectangle {
+                    color: exportMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                    radius: 4
+                    implicitWidth: 180
+                    implicitHeight: 40
+                }
+                font.bold: true
+                contentItem: Text {
+                    text: "Export Schedule"
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: exportMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: exportMenu.open()
+
+                }
+            }
+
         }
     }
 
+    // Popup export menu
+    Popup {
+        id: exportMenu
+        width: 220
+        height: menuColumn.height
+        visible: false
+        modal: true
+        focus: true
+        clip: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+
+        // Style the popup
+        background: Rectangle {
+            color: "#1f2937"
+            border.color: "#d1d5db"
+            border.width: 1
+            radius: 6
+        }
+
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+
+        // Menu options column
+        Column {
+            id: menuColumn
+            width: parent.width
+            spacing: 0
+
+            Rectangle {
+                width: parent.width
+                height: 40
+                color: "transparent"
+
+                Text {
+                    text: "Export Schedule " + (currentIndex + 1)
+                    font.pixelSize: 16
+                    font.bold: true
+                    anchors.centerIn: parent
+                    color: "#ffffff"
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#ffffff"
+            }
+
+            // Print option
+            Rectangle {
+                width: parent.width
+                height: 50
+                color: printOptionArea.containsMouse ? "#415263" : "transparent"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 12
+
+                    Text {
+                        text: "🖨️"
+                        font.pixelSize: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "Print schedule"
+                        font.pixelSize: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: "#ffffff"
+                    }
+                }
+
+                MouseArea {
+                    id: printOptionArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        controller.printScheduleDirectly()
+                        exportMenu.close()
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#ffffff"
+            }
+
+            // Save as PNG option
+            Rectangle {
+                width: parent.width
+                height: 50
+                color: pngOptionArea.containsMouse ? "#415263" : "transparent"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 12
+
+                    Text {
+                        text: "🖼️"
+                        font.pixelSize: 18
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "Save as PNG"
+                        font.pixelSize: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: "#ffffff"
+                    }
+                }
+
+                MouseArea {
+                    id: pngOptionArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        schedulesDisplayController.captureAndSave(tableContent)
+                        exportMenu.close()
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#ffffff"
+            }
+
+            // Save as PDF option
+            Rectangle {
+                width: parent.width
+                height: 50
+                color: pdfOptionArea.containsMouse ? "#415263" : "transparent"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 12
+
+                    Text {
+                        text: "📄"
+                        font.pixelSize: 18
+                        color: "#4b5563"
+                    }
+
+                    Text {
+                        text: "Save as PDF"
+                        font.pixelSize: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: "#ffffff"
+                    }
+                }
+
+                MouseArea {
+                    id: pdfOptionArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        controller.saveScheduleAsPDF()
+                        exportMenu.close()
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: "#ffffff"
+            }
+
+            // Cancel button
+            Rectangle {
+                width: parent.width
+                height: 40
+                color: abortOptionArea.containsMouse ? "#f18888" : "transparent"
+
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                }
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 12
+
+                    Text {
+                        text: "❌"
+                        font.pixelSize: 16
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "Cancel"
+                        font.pixelSize: 14
+                        font.bold: true
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: "#df4646"
+                    }
+                }
+
+                MouseArea {
+                    id: abortOptionArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        exportMenu.close()
+                    }
+                }
+            }
+
+            // Separator
+            Rectangle {
+                width: parent.width
+                height: 10
+                color: "transparent"
+            }
+        }
+    }
+
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        propagateComposedEvents: true
+        onClicked: {
+            if (exportMenu.visible &&
+                !exportButton.contains(exportButton.mapFromItem(mouseArea, mouse.x, mouse.y)) &&
+                !exportMenu.contains(exportMenu.mapFromItem(mouseArea, mouse.x, mouse.y))) {
+                exportMenu.visible = false
+            }
+            mouse.accepted = false
+        }
+    }
+
+    // main content zone
     Rectangle{
         id: mainContent
         anchors {
@@ -351,87 +629,6 @@ Page {
                         }
                         forceActiveFocus();
                     });
-                }
-            }
-
-            RowLayout {
-                id: buttonsRow
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 24
-
-                // PDF Save
-                Rectangle {
-                    id: saveButtonRect
-                    radius: 4
-                    color: saveMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 140
-                    implicitHeight: 40
-
-                    Text {
-                        text: "שמור כ-PDF"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: saveMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.saveScheduleAsPDF()
-                    }
-                }
-
-                // Print
-                Rectangle {
-                    id: printButtonRect
-                    radius: 4
-                    color: printMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 140
-                    implicitHeight: 40
-
-                    Text {
-                        text: "הדפסה"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: printMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.printScheduleDirectly()
-                    }
-                }
-
-                // Screenshot
-                Rectangle {
-                    id: screenshotButtonRect
-                    radius: 4
-                    color: screenshotMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 140
-                    implicitHeight: 40
-
-                    Text {
-                        text: "צילום מסך"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: screenshotMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            // Pass the item you want to capture (likely the parent container)
-                            schedulesDisplayController.captureAndSave(tableContent)
-                        }
-                    }
                 }
             }
         }
