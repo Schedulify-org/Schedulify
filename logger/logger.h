@@ -9,7 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <functional>
-
+#include <QObject>
 
 using std::string;
 using std::vector;
@@ -33,7 +33,8 @@ struct LogEntry {
     string message;
 };
 
-class Logger {
+class Logger : public QObject {
+Q_OBJECT
 public:
     static Logger& get();
     void logInitiate();
@@ -43,7 +44,9 @@ public:
     void logWarning(const string& message);
 
     const vector<LogEntry>& getLogs() const;
-    void registerLogCallback(function<void()> callback);
+
+signals:
+    void logAdded();
 
 private:
     Logger();

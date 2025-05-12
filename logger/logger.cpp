@@ -18,8 +18,12 @@ void Logger::log(LogLevel level, const string& message) {
     entry.level = level;
     entry.message = message;
 
-    std::lock_guard<std::mutex> lock(logMutex);
-    logList.push_back(entry);
+    {
+        std::lock_guard<std::mutex> lock(logMutex);
+        logList.push_back(entry);
+    }
+
+    emit logAdded();
 }
 
 void Logger::logInfo(const string& message) {
@@ -38,16 +42,11 @@ const vector<LogEntry>& Logger::getLogs() const {
     return logList;
 }
 
-void Logger::registerLogCallback(std::function<void()> callback) {
-    std::lock_guard<std::mutex> lock(logMutex);
-    logCallbacks.push_back(callback);
-}
-
 string Logger::getTimeStamp() {
     time_t now = time(nullptr);
     tm* localTime = localtime(&now);
 
     ostringstream oss;
-    oss << put_time(localTime, "%d%m%y_%H-%M-%S");
+    oss << put_time(localTime, "%d/%m/%y-%H:%M:%S");
     return oss.str();
 }

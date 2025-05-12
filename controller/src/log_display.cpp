@@ -1,22 +1,15 @@
 #include "log_display.h"
 
 LogDisplayController::LogDisplayController(QObject* parent) : ControllerManager(parent) {
-    // Register for log updates
-    Logger::get().registerLogCallback([this]() {
-        QMetaObject::invokeMethod(this, "refreshLogs", Qt::QueuedConnection);
-    });
-
+    connect(&Logger::get(), &Logger::logAdded, this, &LogDisplayController::refreshLogs);
     updateLogEntries();
 }
 
 void LogDisplayController::refreshLogs() {
-    // Get fresh logs from the Logger
     updateLogEntries();
 
-    // Explicitly emit the change signal to ensure QML updates
     emit logEntriesChanged();
 
-    // Force QML to process events - may help with updates
     QCoreApplication::processEvents();
 }
 
@@ -36,11 +29,11 @@ QString LogDisplayController::getAppLoadMessage() const {
 
 QColor LogDisplayController::getColorForLogLevel(LogLevel level) {
     switch (level) {
-        case LogLevel::INITIATE: return QColor("#0077CC"); // Blue
-        case LogLevel::INFO:     return QColor("#00AA00"); // Green
-        case LogLevel::WARNING:  return QColor("#FFAA00"); // Yellow
-        case LogLevel::ERROR:    return QColor("#DD0000"); // Red
-        default:                 return QColor("#888888"); // Gray
+        case LogLevel::INITIATE: return {"#0077CC"};
+        case LogLevel::INFO:     return {"#00AA00"};
+        case LogLevel::WARNING:  return {"#FFAA00"};
+        case LogLevel::ERROR:    return {"#DD0000"};
+        default:                 return {"#888888"};
     }
 }
 

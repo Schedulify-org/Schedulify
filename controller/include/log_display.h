@@ -8,6 +8,7 @@
 #include <QDateTime>
 #include <QJsonObject>
 #include <QCoreApplication>
+#include <QPointer>
 
 #include "logger.h"
 #include "controller_manager.h"
@@ -46,6 +47,7 @@ signals:
 private:
     void updateLogEntries();
     QVariantList m_logEntries;
+    function<void()> m_logCallback;
 };
 
 
