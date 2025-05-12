@@ -16,7 +16,6 @@
 class LogDisplayController : public ControllerManager {
 Q_OBJECT
     Q_PROPERTY(QVariantList logEntries READ getLogEntries NOTIFY logEntriesChanged)
-    Q_PROPERTY(QString appLoadMessage READ getAppLoadMessage NOTIFY logEntriesChanged)
 
 public:
     explicit LogDisplayController(QObject* parent = nullptr);
@@ -32,8 +31,6 @@ public:
     // Method to get log entries as QVariantList for QML
     QVariantList getLogEntries() const;
 
-    // Method to get app loaded message
-    QString getAppLoadMessage() const;
 
     // Helper method to convert LogLevel to QColor
     static QColor getColorForLogLevel(LogLevel level);
@@ -47,7 +44,6 @@ signals:
 private:
     void updateLogEntries();
     QVariantList m_logEntries;
-    function<void()> m_logCallback;
 };
 
 

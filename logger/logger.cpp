@@ -1,5 +1,4 @@
 #include "logger.h"
-#include <mutex>
 
 Logger::Logger() = default;
 

@@ -17,16 +17,6 @@ QVariantList LogDisplayController::getLogEntries() const {
     return m_logEntries;
 }
 
-QString LogDisplayController::getAppLoadMessage() const {
-    if (!m_logEntries.isEmpty()) {
-        const QVariantMap& firstLog = m_logEntries.first().toMap();
-        if (firstLog["level"].toString() == "INITIATE") {
-            return QString("Schedulify logs, app loaded on %1").arg(firstLog["timestamp"].toString());
-        }
-    }
-    return "Schedulify logs";
-}
-
 QColor LogDisplayController::getColorForLogLevel(LogLevel level) {
     switch (level) {
         case LogLevel::INITIATE: return {"#0077CC"};

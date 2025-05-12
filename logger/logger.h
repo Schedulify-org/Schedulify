@@ -4,21 +4,15 @@
 #include <string>
 #include <vector>
 #include <mutex>
-#include <sstream>
 #include <iomanip>
 #include <fstream>
-#include <iostream>
-#include <functional>
 #include <QObject>
 
 using std::string;
 using std::vector;
 using std::ostringstream;
 using std::put_time;
-using std::ofstream;
 using std::endl;
-using std::ios;
-using std::function;
 
 enum class LogLevel {
     INFO,
@@ -55,8 +49,6 @@ private:
 
     vector<LogEntry> logList;
     mutable std::mutex logMutex;
-
-    vector<std::function<void()>> logCallbacks;
 };
 
 #endif // LOGGER_H

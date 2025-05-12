@@ -58,7 +58,6 @@ void FileInputController::loadFile() {
 }
 
 void FileInputController::handleFileSelected(const QString &filePath) {
-    selectedFilePath = filePath;
 
     if (!filePath.endsWith(".txt", Qt::CaseInsensitive)) {
         emit invalidFileFormat();
@@ -72,12 +71,9 @@ void FileInputController::handleFileSelected(const QString &filePath) {
         Logger::get().logError("No file selected");
         return;
     } else {
-        emit fileSelected(true);
-    }
-
-    // Extract just the filename from the path and emit it
-    if (!filePath.isEmpty()) {
+        selectedFilePath = filePath;
         QString fileName = filePath.split('/').last().split('\\').last();
         emit fileNameChanged(fileName);
+        emit fileSelected(true);
     }
 }
