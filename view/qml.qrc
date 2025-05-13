@@ -5,5 +5,6 @@
         <file>course_selection.qml</file>
         <file>schedules_display.qml</file>
         <file>log_display.qml</file>
+        <file>loading_overlay.qml</file>
     </qresource>
 </RCC>

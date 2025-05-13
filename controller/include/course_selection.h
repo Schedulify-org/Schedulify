@@ -2,6 +2,7 @@
 #define COURSE_SELECTION_H
 
 #include "controller/models/course_model.h"
+#include "ScheduleGenerator.h"
 #include "main/model_factory.h"
 #include "controller_manager.h"
 #include "schedules_display.h"
@@ -10,6 +11,15 @@
 #include <algorithm>
 #include <QUrl>
 #include <QStringList>
+#include <QThread>
+#include <QQmlApplicationEngine>
+#include <vector>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QGuiApplication>
+#include <QQuickWindow>
+#include <QTimer>
+
 
 class CourseSelectionController final : public ControllerManager {
 Q_OBJECT
@@ -35,8 +45,15 @@ public:
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
 
+public slots:
+    Q_INVOKABLE void abortGeneration();
+
+private slots:
+    void onSchedulesGenerated(std::vector<InformativeSchedule>* schedules);
+
 signals:
     void selectionChanged();
+    void abortScheduleGenerationRequested();
 
 private:
     CourseModel* m_courseModel;
@@ -48,6 +65,7 @@ private:
     vector<int> selectedIndices;
     vector<int> filteredIndicesMap;
     IModel* modelConnection;
+    QThread* workerThread = nullptr;
 };
 
 #endif //COURSE_SELECTION_H

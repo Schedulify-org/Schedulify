@@ -17,6 +17,27 @@ Window {
         initialItem: "qrc:/file_input.qml"
     }
 
+    Loader {
+        id: overlayLoader
+        anchors.fill: parent
+        active: false
+        source: "qrc:/loading_overlay.qml"
+        z: 9999 // Ensure it appears on top of everything
+
+        // Connect the abort signal
+        Connections {
+            target: overlayLoader.item
+            function onAbortRequested() {
+                courseSelectionController.abortGeneration()
+            }
+        }
+    }
+
+    // Add this function to show/hide the overlay
+    function showLoadingOverlay(show) {
+        overlayLoader.active = show
+    }
+
     // Connect to the controller's signals for navigation
     Connections {
         target: controller

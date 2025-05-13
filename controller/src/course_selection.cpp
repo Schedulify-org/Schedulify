@@ -5,6 +5,7 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         , m_courseModel(new CourseModel(this))
         , m_selectedCoursesModel(new CourseModel(this))
         , m_filteredCourseModel(new CourseModel(this))
+        , workerThread(nullptr)
 {
     modelConnection = ModelFactory::createModel();
 }
@@ -37,24 +38,79 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
     }
 }
 
+// CourseSelectionController.cpp
 void CourseSelectionController::generateSchedules() {
     if (selectedCourses.empty()) {
         return;
     }
 
-    //generate Schedule vector
-    auto* schedulePtr = static_cast<vector<InformativeSchedule>*>
-    (modelConnection->executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
+    // Create a worker thread for the operation
+    workerThread = new QThread();
+    auto* worker = new ScheduleGenerator(modelConnection, selectedCourses);
+    worker->moveToThread(workerThread);
 
-    vector<InformativeSchedule>& schedules = *schedulePtr;
+    // Connect signals/slots
+    connect(workerThread, &QThread::started, worker, &ScheduleGenerator::generateSchedules);
+    connect(worker, &ScheduleGenerator::schedulesGenerated, this, &CourseSelectionController::onSchedulesGenerated);
+    connect(worker, &ScheduleGenerator::schedulesGenerated, workerThread, &QThread::quit);
+    connect(workerThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(workerThread, &QThread::finished, workerThread, &QObject::deleteLater);
+    connect(this, &CourseSelectionController::abortScheduleGenerationRequested, worker, &ScheduleGenerator::abort);
 
-    auto* schedule_controller =
-            qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+    // Start thread before showing overlay
+    workerThread->start();
 
-    schedule_controller->loadScheduleData(schedules);
+    // Get the main QML engine
+    auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
+    if (!engine || engine->rootObjects().isEmpty()) {
+        return;
+    }
 
-    // Navigate to schedules display screen
-    goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+    // Show loading overlay with a slight delay
+    QTimer::singleShot(100, this, [this, engine]() {
+        if (workerThread && workerThread->isRunning()) {
+            // Get root object
+            QObject* rootObject = engine->rootObjects().first();
+            if (!rootObject) {
+                return;
+            }
+
+            // Call the QML function to show the overlay
+            QMetaObject::invokeMethod(rootObject, "showLoadingOverlay",
+                                      Q_ARG(QVariant, QVariant(true)));
+        }
+    });
+}
+
+// Handle the abort request from QML
+void CourseSelectionController::abortGeneration() {
+    emit abortScheduleGenerationRequested();
+}
+
+// Handle when schedules are generated
+void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSchedule>* schedules) {
+    // Get the main QML engine
+    auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
+    if (engine && !engine->rootObjects().isEmpty()) {
+        // Hide the loading overlay
+        QObject* rootObject = engine->rootObjects().first();
+        QMetaObject::invokeMethod(rootObject, "showLoadingOverlay",
+                                  Q_ARG(QVariant, QVariant(false)));
+    }
+
+    // Only process if we received schedules (not aborted)
+    if (schedules) {
+        auto* schedule_controller =
+                qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+
+        schedule_controller->loadScheduleData(*schedules);
+
+        // Navigate to schedules display screen
+        goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+    }
+
+    // Reset worker thread pointer
+    workerThread = nullptr;
 }
 
 void CourseSelectionController::toggleCourseSelection(int index) {

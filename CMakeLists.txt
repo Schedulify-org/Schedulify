@@ -52,6 +52,9 @@ set(PROJECT_SOURCES
         model/src/parsers/ScheduleEnrichment.cpp
         model_interfaces.h
         model/src/main/model_factory.cpp
+        controller/include/ScheduleGenerator.h
+        controller/include/ScheduleGenerator.h
+        controller/src/ScheduleGenerator.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
