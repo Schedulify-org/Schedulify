@@ -64,8 +64,8 @@ void SchedulesDisplayController::saveScheduleAsPDF() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
         QString fileName = QFileDialog::getSaveFileName(nullptr,
                                                         "Save Schedule as PDF",
-                                                        QDir::homePath() + "/schedule.pdf",
-                                                        "PDF Files (*.pdf)");
+                                                        QDir::homePath() + "/schedule.csv",
+                                                        "CSV Files (*.csv)");
         if (!fileName.isEmpty()) {
             // Call the PDF export function
             Model model;

@@ -2,6 +2,7 @@
 #include "main/main_model.h"
 #include "logger/logger.h"
 #include "parsers/printSchedule.h"
+#include "parsers/parseToCsv.h"
 
 // this is the main model to run Schedulify 2.0
 
@@ -39,7 +40,7 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
 void Model::saveSchedule(const InformativeSchedule& infoSchedule, const string& path) {
     // Use the saveToPDF function from printSchedule.h
-    saveToPDF(infoSchedule, QString::fromStdString(path));
+    saveScheduleToCsv(path, infoSchedule);
     Logger::get().logInfo("Schedule saved to PDF: " + path);
 }
 

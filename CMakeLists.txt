@@ -48,7 +48,7 @@ set(PROJECT_SOURCES
         model/src/schedule_algorithm/CourseLegalComb.cpp
         model/src/schedule_algorithm/ScheduleBuilder.cpp
         model/src/schedule_algorithm/TimeUtils.cpp
-        model/src/parsers/parseToXlsx.cpp
+        model/src/parsers/parseToCsv.cpp
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
         main_include.h
