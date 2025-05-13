@@ -63,11 +63,12 @@ int SchedulesDisplayController::getScheduleCount() const {
     return static_cast<int>(m_schedules.size());
 }
 
-void SchedulesDisplayController::saveScheduleAsPDF() {
+void SchedulesDisplayController::saveScheduleAsCSV() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
         QString fileName = QFileDialog::getSaveFileName(nullptr,
                                                         "Save Schedule as PDF",
-                                                        QDir::homePath() + "/schedule.csv",
+                                                        QDir::homePath() + "/" + generateFilename("",
+                                                              m_currentScheduleIndex+1, fileType::CSV),
                                                         "CSV Files (*.csv)");
         if (!fileName.isEmpty()) {
             modelConnection->executeOperation(ModelOperation::SAVE_SCHEDULE,
@@ -78,7 +79,7 @@ void SchedulesDisplayController::saveScheduleAsPDF() {
 
 void SchedulesDisplayController::printScheduleDirectly() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
-        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex]);
+        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex], "");
     }
 }
 
@@ -92,13 +93,13 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
         return;
     }
 
-    // Let user select path if not provided
     QString path = savePath;
     if (path.isEmpty()) {
         path = QFileDialog::getSaveFileName(
                 nullptr,
                 tr("Save Screenshot"),
-                generateFilename(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation), m_currentScheduleIndex+1),
+                generateFilename(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
+                                 m_currentScheduleIndex+1, fileType::PNG),
                 tr("Images (*.png)")
         );
 
@@ -107,14 +108,13 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
             return;
         }
     } else {
-        // If path is just a directory, append generated filename
         QFileInfo fileInfo(path);
         if (fileInfo.isDir()) {
-            path = QDir(path).filePath(generateFilename("", m_currentScheduleIndex+1));
+            path = QDir(path).filePath(generateFilename("", m_currentScheduleIndex+1
+                                                        , fileType::PNG));
         }
     }
 
-    // Capture the screenshot
     QSharedPointer<QQuickItemGrabResult> result = item->grabToImage();
     connect(result.data(), &QQuickItemGrabResult::ready, [this, result, path]() {
         if (result->saveToFile(path)) {
@@ -125,8 +125,17 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
     });
 }
 
-QString SchedulesDisplayController::generateFilename(const QString& basePath, int index) {
-    QString filename = QString("Schedule-%1.png").arg(index);
+QString SchedulesDisplayController::generateFilename(const QString& basePath, int index, fileType type) {
+    QString filename;
+    switch (type) {
+        case fileType::PNG:
+            filename = QString("Schedule-%1.png").arg(index);
+            break;
+
+        case fileType::CSV:
+            filename = QString("Schedule-%1.csv").arg(index);
+            break;
+    }
 
     if (basePath.isEmpty()) {
         return filename;

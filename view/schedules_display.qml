@@ -318,7 +318,7 @@ Page {
                     }
 
                     Text {
-                        text: "Save as PDF"
+                        text: "Save as CSV"
                         font.pixelSize: 14
                         anchors.verticalCenter: parent.verticalCenter
                         color: "#ffffff"
@@ -331,7 +331,7 @@ Page {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        controller.saveScheduleAsPDF()
+                        controller.saveScheduleAsCSV()
                         exportMenu.close()
                     }
                 }

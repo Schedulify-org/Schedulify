@@ -44,9 +44,9 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
             for (int hour = startHour; hour < endHour; hour++) {
                 // Create cell content with formatting like in the picture
                 stringstream cellContent;
-                cellContent << item.courseName << "\n"
-                            << item.raw_id << " - " << item.type << "\n"
-                            << item.start << " - " << item.end << "\n"
+                cellContent << item.courseName << " "
+                            << item.raw_id << " - " << item.type << ", "
+                            << item.start << " - " << item.end << ", "
                             << "Building: " << item.building << ", Room: " << item.room;
 
                 // Store in map with (hour, day) as key
