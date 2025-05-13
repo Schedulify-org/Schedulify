@@ -12,7 +12,6 @@
 #include <QUrl>
 #include <QStringList>
 #include <QThread>
-#include <QQmlApplicationEngine>
 #include <vector>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -45,15 +44,12 @@ public:
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
 
-public slots:
-    Q_INVOKABLE void abortGeneration();
-
 private slots:
     void onSchedulesGenerated(std::vector<InformativeSchedule>* schedules);
 
 signals:
     void selectionChanged();
-    void abortScheduleGenerationRequested();
+    void errorMessage(const QString &message);
 
 private:
     CourseModel* m_courseModel;

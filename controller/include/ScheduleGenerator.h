@@ -12,7 +12,6 @@ public:
 
 public slots:
     void generateSchedules();
-    void abort();
 
 signals:
     void schedulesGenerated(std::vector<InformativeSchedule>* schedules);
@@ -20,5 +19,4 @@ signals:
 private:
     IModel* modelConnection;
     std::vector<Course> selectedCourses;
-    bool abortRequested;
 };

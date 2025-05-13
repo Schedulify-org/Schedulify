@@ -284,75 +284,42 @@ Rectangle {
                 }
             }
         }
-    }
 
-    // Status text
-    Text {
-        id: statusText
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: abortButton.top
-        anchors.bottomMargin: root.height * 0.03
-        color: "#e2e8f0"
-        font.pixelSize: Math.max(12, root.height * 0.016)
-        opacity: 0.8
-        text: "Finding optimal course combinations..."
+        // Status text
+        Text {
+            id: statusText
+            anchors.horizontalCenter: parent.horizontalCenter
+            color: "#e2e8f0"
+            font.pixelSize: Math.max(12, root.height * 0.016)
+            opacity: 0.8
+            text: "Finding optimal course combinations..."
 
-        property var messages: [
-            "Finding optimal course combinations...",
-            "Avoiding time conflicts...",
-            "Organizing your schedule...",
-            "Optimizing course selection...",
-            "Almost done..."
-        ]
+            property var messages: [
+                "Finding optimal course combinations...",
+                "Avoiding time conflicts...",
+                "Organizing your schedule...",
+                "Optimizing course selection...",
+                "Almost done..."
+            ]
 
-        Timer {
-            interval: 2000
-            running: true
-            repeat: true
-            onTriggered: {
-                let currentIndex = statusText.messages.indexOf(statusText.text);
-                let nextIndex = (currentIndex + 1) % statusText.messages.length;
-                statusText.text = statusText.messages[nextIndex];
+            Timer {
+                interval: 2000
+                running: true
+                repeat: true
+                onTriggered: {
+                    let currentIndex = statusText.messages.indexOf(statusText.text);
+                    let nextIndex = (currentIndex + 1) % statusText.messages.length;
+                    statusText.text = statusText.messages[nextIndex];
+                }
             }
-        }
 
-        Behavior on text {
-            SequentialAnimation {
-                NumberAnimation { target: statusText; property: "opacity"; to: 0; duration: 300 }
-                PropertyAction { target: statusText; property: "text" }
-                NumberAnimation { target: statusText; property: "opacity"; to: 0.8; duration: 300 }
+            Behavior on text {
+                SequentialAnimation {
+                    NumberAnimation { target: statusText; property: "opacity"; to: 0; duration: 300 }
+                    PropertyAction { target: statusText; property: "text" }
+                    NumberAnimation { target: statusText; property: "opacity"; to: 0.8; duration: 300 }
+                }
             }
-        }
-    }
-
-    // Abort button - added for cancellation functionality
-    Button {
-        id: abortButton
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.height * 0.1
-        width: root.width * 0.25
-        height: root.height * 0.06
-
-        contentItem: Text {
-            text: "Cancel"
-            color: "#ffffff"
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            font.pixelSize: Math.max(14, parent.height * 0.4)
-            font.weight: Font.Medium
-        }
-
-        background: Rectangle {
-            radius: height / 2
-            color: abortButton.pressed ? "#b91c1c" : "#ef4444"
-            border.color: "#f87171"
-            border.width: 1
-        }
-
-        // Notify C++ controller when button is clicked
-        onClicked: {
-            root.abortRequested();
         }
     }
 }

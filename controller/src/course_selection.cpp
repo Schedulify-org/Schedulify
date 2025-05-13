@@ -38,7 +38,6 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
     }
 }
 
-// CourseSelectionController.cpp
 void CourseSelectionController::generateSchedules() {
     if (selectedCourses.empty()) {
         return;
@@ -55,7 +54,6 @@ void CourseSelectionController::generateSchedules() {
     connect(worker, &ScheduleGenerator::schedulesGenerated, workerThread, &QThread::quit);
     connect(workerThread, &QThread::finished, worker, &QObject::deleteLater);
     connect(workerThread, &QThread::finished, workerThread, &QObject::deleteLater);
-    connect(this, &CourseSelectionController::abortScheduleGenerationRequested, worker, &ScheduleGenerator::abort);
 
     // Start thread before showing overlay
     workerThread->start();
@@ -82,12 +80,6 @@ void CourseSelectionController::generateSchedules() {
     });
 }
 
-// Handle the abort request from QML
-void CourseSelectionController::abortGeneration() {
-    emit abortScheduleGenerationRequested();
-}
-
-// Handle when schedules are generated
 void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSchedule>* schedules) {
     // Get the main QML engine
     auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
@@ -99,7 +91,7 @@ void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSche
     }
 
     // Only process if we received schedules (not aborted)
-    if (schedules) {
+    if (schedules && !schedules->empty()) {
         auto* schedule_controller =
                 qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
 
@@ -107,6 +99,8 @@ void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSche
 
         // Navigate to schedules display screen
         goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+    } else {
+        emit errorMessage("There are no valid schedule for your selected courses");
     }
 
     // Reset worker thread pointer

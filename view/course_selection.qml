@@ -7,6 +7,118 @@ import "."
 Page {
     id: courseListScreen
 
+    Connections {
+        target: courseSelectionController
+
+        function onErrorMessage(message) {
+            showErrorMessage(message);
+        }
+    }
+
+    property string errorDialogText: ""
+
+    Dialog {
+        id: errorDialog
+        modal: true
+        title: ""
+        anchors.centerIn: parent
+        width: 420
+        height: 220
+        padding: 0
+
+        // Remove default buttons and handle our own
+        standardButtons: Dialog.NoButton
+        closePolicy: Dialog.CloseOnEscape
+
+        // Modern clean background
+        background: Rectangle {
+            color: "#ffffff"
+            radius: 8
+            border.width: 1
+            border.color: "#e5e7eb"
+        }
+
+        contentItem: Item {
+            width: parent.width
+            height: parent.height
+
+            Column {
+                id: dialogContent
+                anchors.fill: parent
+                anchors.margins: 24
+                spacing: 16
+
+                // Warning icon (emoji instead of image to avoid resource issues)
+                Text {
+                    id: errorIcon
+                    text: "⚠️"
+                    font.pixelSize: 32
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+
+                // Error title
+                Label {
+                    id: errorTitle
+                    text: "File Error"
+                    font.pixelSize: 18
+                    font.bold: true
+                    color: "#1e293b"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+
+                // Error message
+                Label {
+                    id: errorMessageView
+                    text: errorDialogText
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 14
+                    color: "#64748b"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+            }
+
+            // Confirm button
+            Button {
+                id: confirmButton
+                anchors {
+                    bottom: parent.bottom
+                    bottomMargin: 24
+                    horizontalCenter: parent.horizontalCenter
+                }
+
+                width: 100
+                height: 36
+
+                background: Rectangle {
+                    radius: 4
+                    color: confirmButton.pressed ? "#1e293b" : "#1f2937"
+                    border.width: 0
+                }
+
+                contentItem: Text {
+                    text: "OK"
+                    color: "#ffffff"
+                    font.pixelSize: 14
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    errorDialog.close()
+                }
+            }
+        }
+    }
+
+    function showErrorMessage(msg) {
+        errorDialogText = msg;
+        errorDialog.open();
+    }
+
     // Property to store error message
     property string errorMessage: ""
     // Property to store search text
