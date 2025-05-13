@@ -1,7 +1,8 @@
 #ifndef PARSE_TO_XLSX_H
 #define PARSE_TO_XLSX_H
 
-#include "main_include.h"
+#include "model_interfaces.h"
+#include "logger.h"
 
 #include <iostream>
 #include <fstream>
@@ -13,8 +14,11 @@
 #include <sstream>
 #include <iomanip>
 
+// Helper function to convert time string to hour integer
 int getHourFromTimeString(const std::string& timeStr);
-void saveScheduleToCsv(const std::string& filePath, const InformativeSchedule& schedule);
+
+
+bool saveScheduleToCsv(const std::string& filePath, const InformativeSchedule& schedule);
 
 
 #endif //PARSE_TO_XLSX_H

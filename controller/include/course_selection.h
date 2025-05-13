@@ -1,8 +1,9 @@
 #ifndef COURSE_SELECTION_H
 #define COURSE_SELECTION_H
 
-#include "controller_manager.h"
 #include "controller/models/course_model.h"
+#include "main/model_factory.h"
+#include "controller_manager.h"
 #include "schedules_display.h"
 #include "logger.h"
 
@@ -19,7 +20,7 @@ Q_OBJECT
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
-    ~CourseSelectionController() override = default;
+    ~CourseSelectionController() override;
 
     [[nodiscard]] CourseModel* courseModel() const { return m_courseModel; }
     [[nodiscard]] CourseModel* selectedCoursesModel() const { return m_selectedCoursesModel; }
@@ -45,7 +46,8 @@ private:
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
     vector<int> selectedIndices;
-    vector<int> filteredIndicesMap; // Maps filtered index to original index
+    vector<int> filteredIndicesMap;
+    IModel* modelConnection;
 };
 
 #endif //COURSE_SELECTION_H

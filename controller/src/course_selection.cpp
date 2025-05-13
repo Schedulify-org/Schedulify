@@ -6,6 +6,11 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         , m_selectedCoursesModel(new CourseModel(this))
         , m_filteredCourseModel(new CourseModel(this))
 {
+    modelConnection = ModelFactory::createModel();
+}
+
+CourseSelectionController::~CourseSelectionController() {
+    delete modelConnection;
 }
 
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
@@ -33,15 +38,13 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 }
 
 void CourseSelectionController::generateSchedules() {
-    Model model;
-
     if (selectedCourses.empty()) {
         return;
     }
 
     //generate Schedule vector
     auto* schedulePtr = static_cast<vector<InformativeSchedule>*>
-    (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
+    (modelConnection->executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
 
     vector<InformativeSchedule>& schedules = *schedulePtr;
 

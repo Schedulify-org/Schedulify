@@ -1,6 +1,4 @@
 #include "parsers/parseSchedToJson.h"
-#include "parsers/ScheduleEnrichment.h"
-#include "logger/logger.h"
 
 bool exportSchedulesToJson(const vector<Schedule>& schedules, const string& outputPath, const vector<Course>& courses) {
     ofstream outFile(outputPath);

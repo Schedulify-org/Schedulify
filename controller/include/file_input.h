@@ -2,7 +2,8 @@
 #define FILE_INPUT_H
 
 #include "controller_manager.h"
-#include "main_include.h"
+#include "main/model_factory.h"
+#include "model_interfaces.h"
 #include "main/main_model.h"
 #include "course_selection.h"
 #include "logger.h"
@@ -15,7 +16,7 @@ Q_OBJECT
 
 public:
     explicit FileInputController(QObject *parent = nullptr);
-    ~FileInputController() override = default;
+    ~FileInputController() override;
 
 public slots:
     void handleUploadAndContinue();
@@ -32,6 +33,7 @@ public:
 
 private:
     QString selectedFilePath;
+    IModel* modelConnection;
 };
 
 #endif // FILE_INPUT_H

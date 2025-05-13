@@ -1,7 +1,7 @@
 #ifndef COURSE_MODEL_H
 #define COURSE_MODEL_H
 
-#include "main_include.h"
+#include "model_interfaces.h"
 
 #include <QAbstractListModel>
 #include <utility>

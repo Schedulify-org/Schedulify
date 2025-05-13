@@ -3,9 +3,12 @@
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
     : ControllerManager(parent), m_currentScheduleIndex(0) {
+    modelConnection = ModelFactory::createModel();
 }
 
-SchedulesDisplayController::~SchedulesDisplayController() = default;
+SchedulesDisplayController::~SchedulesDisplayController() {
+    delete modelConnection;
+};
 
 void SchedulesDisplayController::loadScheduleData(const vector<InformativeSchedule> &schedules) {
     m_schedules = schedules;
@@ -67,20 +70,15 @@ void SchedulesDisplayController::saveScheduleAsPDF() {
                                                         QDir::homePath() + "/schedule.csv",
                                                         "CSV Files (*.csv)");
         if (!fileName.isEmpty()) {
-            // Call the PDF export function
-            Model model;
-            model.executeOperation(ModelOperation::SAVE_SCHEDULE, &m_schedules[m_currentScheduleIndex], fileName.toLocal8Bit().constData());
-//            saveToPDF(m_schedules[m_currentScheduleIndex], fileName);
+            modelConnection->executeOperation(ModelOperation::SAVE_SCHEDULE,
+                                  &m_schedules[m_currentScheduleIndex], fileName.toLocal8Bit().constData());
         }
     }
 }
 
 void SchedulesDisplayController::printScheduleDirectly() {
     if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
-        // Call the print function
-        Model model;
-        model.executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex]);
-//        printSchedule(m_schedules[m_currentScheduleIndex]);
+        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex]);
     }
 }
 

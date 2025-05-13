@@ -2,6 +2,9 @@
 #define SCHEDULES_DISPLAY_H
 
 #include "controller_manager.h"
+#include "main/model_factory.h"
+#include "model_interfaces.h"
+
 #include <QObject>
 #include <QVariant>
 #include <QFileDialog>
@@ -9,7 +12,6 @@
 #include <QQuickItem>
 #include <QStandardPaths>
 #include <QQuickItemGrabResult>
-#include "main_include.h"
 
 class SchedulesDisplayController : public ControllerManager {
     Q_OBJECT
@@ -43,6 +45,7 @@ private:
     static QString generateFilename(const QString& basePath, int index);
     vector<InformativeSchedule> m_schedules;
     int m_currentScheduleIndex;
+    IModel* modelConnection;
 };
 
 #endif // SCHEDULES_DISPLAY_H

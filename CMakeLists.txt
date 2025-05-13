@@ -39,7 +39,6 @@ set(PROJECT_SOURCES
         controller/include/schedules_display.h
         controller/include/log_display.h
 
-        model/main_model_menu.cpp
         model/main_model.cpp
         logger/logger.cpp
         model/src/parsers/parseCoursesToJson.cpp
@@ -51,7 +50,8 @@ set(PROJECT_SOURCES
         model/src/parsers/parseToCsv.cpp
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
-        main_include.h
+        model_interfaces.h
+        model/src/main/model_factory.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

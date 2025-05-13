@@ -25,7 +25,6 @@ add_executable(tests_executable
         TimeUtils_test.cpp
         preParser_test.cpp
         ScheduleBuilder_test.cpp
-        ../main_model_menu.cpp
         ../../logger/logger.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp
         ../src/schedule_algorithm/CourseLegalComb.cpp

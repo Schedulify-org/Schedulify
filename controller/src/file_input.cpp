@@ -1,7 +1,13 @@
 #include "file_input.h"
 
 FileInputController::FileInputController(QObject *parent)
-        : ControllerManager(parent) {}
+        : ControllerManager(parent) {
+    modelConnection = ModelFactory::createModel();
+}
+
+FileInputController::~FileInputController() {
+    delete modelConnection;
+}
 
 void FileInputController::handleUploadAndContinue() {
     // Open file dialog to select .txt file, starting in Documents
@@ -34,7 +40,7 @@ void FileInputController::loadFile() {
     }
 
     auto* coursesPtr = static_cast<vector<Course>*>(
-            model.executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath)
+            modelConnection->executeOperation(ModelOperation::GENERATE_COURSES, nullptr, filePath)
     );
 
     if (!coursesPtr) {
