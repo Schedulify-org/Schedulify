@@ -5,13 +5,19 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         , m_courseModel(new CourseModel(this))
         , m_selectedCoursesModel(new CourseModel(this))
         , m_filteredCourseModel(new CourseModel(this))
+        , workerThread(nullptr)
 {
+    modelConnection = ModelFactory::createModel();
+}
+
+CourseSelectionController::~CourseSelectionController() {
+    delete modelConnection;
 }
 
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
     if (courses.empty()) {
         // Navigate to course selection screen
-        qWarning() << "Warning: Empty courses vector provided to initiateCoursesData";
+        Logger::get().logError("Empty courses vector provided to initiateCoursesData");
     } else {
         // Initialize the course model with the data
         allCourses = courses;
@@ -33,30 +39,77 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 }
 
 void CourseSelectionController::generateSchedules() {
-    Model model;
-
     if (selectedCourses.empty()) {
         return;
     }
 
-    //generate Schedule vector
-    auto* schedulePtr = static_cast<vector<InformativeSchedule>*>
-    (model.executeOperation(ModelOperation::GENERATE_SCHEDULES, &selectedCourses, ""));
+    // Create a worker thread for the operation
+    workerThread = new QThread();
+    auto* worker = new ScheduleGenerator(modelConnection, selectedCourses);
+    worker->moveToThread(workerThread);
 
-    vector<InformativeSchedule>& schedules = *schedulePtr;
+    // Connect signals/slots
+    connect(workerThread, &QThread::started, worker, &ScheduleGenerator::generateSchedules);
+    connect(worker, &ScheduleGenerator::schedulesGenerated, this, &CourseSelectionController::onSchedulesGenerated);
+    connect(worker, &ScheduleGenerator::schedulesGenerated, workerThread, &QThread::quit);
+    connect(workerThread, &QThread::finished, worker, &QObject::deleteLater);
+    connect(workerThread, &QThread::finished, workerThread, &QObject::deleteLater);
 
-    auto* schedule_controller =
-            qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+    // Start thread before showing overlay
+    workerThread->start();
 
-    schedule_controller->loadScheduleData(schedules);
+    // Get the main QML engine
+    auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
+    if (!engine || engine->rootObjects().isEmpty()) {
+        return;
+    }
 
-    // Navigate to schedules display screen
-    goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+    // Show loading overlay with a slight delay
+    QTimer::singleShot(100, this, [this, engine]() {
+        if (workerThread && workerThread->isRunning()) {
+            // Get root object
+            QObject* rootObject = engine->rootObjects().first();
+            if (!rootObject) {
+                return;
+            }
+
+            // Call the QML function to show the overlay
+            QMetaObject::invokeMethod(rootObject, "showLoadingOverlay",
+                                      Q_ARG(QVariant, QVariant(true)));
+        }
+    });
+}
+
+void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSchedule>* schedules) {
+    // Get the main QML engine
+    auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
+    if (engine && !engine->rootObjects().isEmpty()) {
+        // Hide the loading overlay
+        QObject* rootObject = engine->rootObjects().first();
+        QMetaObject::invokeMethod(rootObject, "showLoadingOverlay",
+                                  Q_ARG(QVariant, QVariant(false)));
+    }
+
+    // Only process if we received schedules (not aborted)
+    if (schedules && !schedules->empty()) {
+        auto* schedule_controller =
+                qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+
+        schedule_controller->loadScheduleData(*schedules);
+
+        // Navigate to schedules display screen
+        goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+    } else {
+        emit errorMessage("There are no valid schedule for your selected courses");
+    }
+
+    // Reset worker thread pointer
+    workerThread = nullptr;
 }
 
 void CourseSelectionController::toggleCourseSelection(int index) {
     if (index < 0 || index >= static_cast<int>(allCourses.size())) {
-        qWarning() << "Invalid course index:" << index;
+        Logger::get().logError("Invalid selected course index");
         return;
     }
 
@@ -83,7 +136,7 @@ void CourseSelectionController::toggleCourseSelection(int index) {
 
 void CourseSelectionController::deselectCourse(int index) {
     if (index < 0 || index >= static_cast<int>(selectedCourses.size())) {
-        qWarning() << "Invalid selected course index:" << index;
+        Logger::get().logError("Invalid selected course index");
         return;
     }
 

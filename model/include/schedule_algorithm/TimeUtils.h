@@ -1,7 +1,7 @@
 #ifndef TIMEUTILS_H
 #define TIMEUTILS_H
 
-#include "main_include.h"
+#include "model_interfaces.h"
 #include "parsers/parseCoursesToVector.h"
 
 #include <string>

@@ -1,15 +1,22 @@
 #ifndef PRINT_SCHEDULE_H
 #define PRINT_SCHEDULE_H
 
+#include "model_interfaces.h"
+
 #include <QString>
 #include <QFileDialog>
 #include <QPrintDialog>
-#include "../main/main_model.h"
-
-// Function to save a schedule to PDF format
-void saveToPDF(const InformativeSchedule& schedule, const QString& filePath);
+#include "logger/logger.h"
+#include <QPrinter>
+#include <QPainter>
+#include <QTextDocument>
+#include <QDateTime>
+#include <QPrintDialog>
+#include <QPageSize>
+#include <QPageLayout>
+#include <QDesktopServices>
 
 // Function to print a schedule directly to a printer
-void printSelectedSchedule(const InformativeSchedule& schedule);
+bool printSelectedSchedule(const InformativeSchedule& schedule);
 
 #endif // PRINT_SCHEDULE_H

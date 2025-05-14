@@ -5,6 +5,7 @@
 #include <QUrl>
 #include <QString>
 #include <QDebug>
+#include <QQmlApplicationEngine>
 
 class MainController; // Forward declaration
 
@@ -22,6 +23,8 @@ public:
 
     // Find another controller by name
     static QObject* findController(const QString& controllerName);
+
+    static QQmlApplicationEngine* getEngine() ;
 
 signals:
     void navigateToScreen(const QUrl &screenUrl);

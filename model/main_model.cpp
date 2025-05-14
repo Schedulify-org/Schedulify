@@ -1,7 +1,4 @@
-#include <QString>
 #include "main/main_model.h"
-#include "logs/logger.h"
-#include "parsers/printSchedule.h"
 
 // this is the main model to run Schedulify 2.0
 
@@ -30,8 +27,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
     vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(schedules, userInput);
 
-    printInformativeSchedules(informativeSchedules);
-
     if (informativeSchedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");
     }
@@ -40,14 +35,13 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 }
 
 void Model::saveSchedule(const InformativeSchedule& infoSchedule, const string& path) {
-    // Use the saveToPDF function from printSchedule.h
-    saveToPDF(infoSchedule, QString::fromStdString(path));
-    Logger::get().logInfo("Schedule saved to PDF: " + path);
+    bool status = saveScheduleToCsv(path, infoSchedule);
+    string message = status ? "Schedule saved to CSV: " + path : "An error has accused, unable to save schedule as csv";
+    Logger::get().logInfo(message);
 }
 
 void Model::printSchedule(const InformativeSchedule& infoSchedule) {
-    // Convert Schedule to InformativeSchedule for printing
-    printSelectedSchedule(infoSchedule);
+    bool status = printSelectedSchedule(infoSchedule);
     Logger::get().logInfo("Schedule sent to printer");
 }
 
@@ -57,24 +51,27 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             if (!path.empty()) {
                 lastGeneratedCourses = generateCourses(path);
                 return &lastGeneratedCourses;
+            } else {
+                Logger::get().logError("File not found, aborting...");
+                return {};
             }
-            // Handle error case where path is null
-            break;
-
 
         case ModelOperation::GENERATE_SCHEDULES:
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
                 lastGeneratedSchedules = generateSchedules(*courses, lastGeneratedCourses);
                 return &lastGeneratedSchedules;
+            } else {
+                Logger::get().logError("unable to generate schedules, aborting...");
+                return {};
             }
-            Logger::get().logError("unable to generate schedules, aborting process");
-            break;
 
         case ModelOperation::SAVE_SCHEDULE:
             if (data && !path.empty()) {
                 const auto* schedule = static_cast<const InformativeSchedule*>(data);
                 saveSchedule(*schedule, path);
+            } else {
+                Logger::get().logError("unable to generate schedules, aborting...");
             }
             // Handle error case where data or path is null
             break;

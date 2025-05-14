@@ -2,9 +2,122 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Basic
+import "."
 
 Page {
     id: courseListScreen
+
+    Connections {
+        target: courseSelectionController
+
+        function onErrorMessage(message) {
+            showErrorMessage(message);
+        }
+    }
+
+    property string errorDialogText: ""
+
+    Dialog {
+        id: errorDialog
+        modal: true
+        title: ""
+        anchors.centerIn: parent
+        width: 420
+        height: 220
+        padding: 0
+
+        // Remove default buttons and handle our own
+        standardButtons: Dialog.NoButton
+        closePolicy: Dialog.CloseOnEscape
+
+        // Modern clean background
+        background: Rectangle {
+            color: "#ffffff"
+            radius: 8
+            border.width: 1
+            border.color: "#e5e7eb"
+        }
+
+        contentItem: Item {
+            width: parent.width
+            height: parent.height
+
+            Column {
+                id: dialogContent
+                anchors.fill: parent
+                anchors.margins: 24
+                spacing: 16
+
+                // Warning icon (emoji instead of image to avoid resource issues)
+                Text {
+                    id: errorIcon
+                    text: "⚠️"
+                    font.pixelSize: 32
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+
+                // Error title
+                Label {
+                    id: errorTitle
+                    text: "File Error"
+                    font.pixelSize: 18
+                    font.bold: true
+                    color: "#1e293b"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+
+                // Error message
+                Label {
+                    id: errorMessageView
+                    text: errorDialogText
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 14
+                    color: "#64748b"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
+            }
+
+            // Confirm button
+            Button {
+                id: confirmButton
+                anchors {
+                    bottom: parent.bottom
+                    bottomMargin: 24
+                    horizontalCenter: parent.horizontalCenter
+                }
+
+                width: 100
+                height: 36
+
+                background: Rectangle {
+                    radius: 4
+                    color: confirmButton.pressed ? "#1e293b" : "#1f2937"
+                    border.width: 0
+                }
+
+                contentItem: Text {
+                    text: "OK"
+                    color: "#ffffff"
+                    font.pixelSize: 14
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                onClicked: {
+                    errorDialog.close()
+                }
+            }
+        }
+    }
+
+    function showErrorMessage(msg) {
+        errorDialogText = msg;
+        errorDialog.open();
+    }
 
     // Property to store error message
     property string errorMessage: ""
@@ -84,14 +197,65 @@ Page {
                     }
                 }
 
-                // Generate Schedules Button - Only visible when at least 1 course is selected
+                Button {
+                    id: logButtonB
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                        rightMargin: 15
+                    }
+                    width: 40
+                    height: 40
+
+                    background: Rectangle {
+                        color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
+                        radius: 20
+
+                        Text {
+                            text: "📋"
+                            anchors.centerIn: parent
+                            font.pixelSize: 20
+                        }
+                    }
+
+                    MouseArea {
+                        id: logMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (!logDisplayController.isLogWindowOpen) {
+                                var component = Qt.createComponent("qrc:/log_display.qml");
+                                if (component.status === Component.Ready) {
+                                    logDisplayController.setLogWindowOpen(true);
+                                    var logWindow = component.createObject(courseListScreen, {
+                                        "onClosing": function(close) {
+                                            logDisplayController.setLogWindowOpen(false);
+                                        }
+                                    });
+                                    logWindow.show();
+                                } else {
+                                    console.error("Error creating log window:", component.errorString());
+                                }
+                            }
+                        }
+                    }
+
+                    ToolTip {
+                        visible: logMouseArea.containsMouse
+                        text: "Open Application Logs"
+                        font.pixelSize: 12
+                        delay: 500
+                    }
+                }
+
                 Button {
                     id: generateButton
                     width: 180
                     height: 40
                     anchors {
                         right: parent.right
-                        rightMargin: 16
+                        rightMargin: 25 + logButtonB.width
                         verticalCenter: parent.verticalCenter
                     }
                     visible: selectedCoursesRepeater.count > 0
@@ -107,6 +271,7 @@ Page {
                     contentItem: Text {
                         text: "Generate Schedules →"
                         color: "white"
+                        font.pixelSize: 14
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -316,11 +481,14 @@ Page {
                             id: searchField
                             width: parent.width - 32
                             placeholderText: "Search by course ID, name, or instructor..."
+                            placeholderTextColor: "#9CA3AF"
                             font.pixelSize: 14
                             color: "#1f2937"
                             selectByMouse: true
+
                             background: Rectangle {
-                                color: "transparent"
+                                radius: 4
+                                color: "#FFFFFF"
                             }
 
                             onTextChanged: {
@@ -331,6 +499,7 @@ Page {
 
                         // Clear icon
                         Button {
+                            id: clearSearch
                             visible: searchField.text !== ""
                             width: 30
                             height: 24
@@ -341,11 +510,24 @@ Page {
                             }
 
                             contentItem: Text {
-                                text: "X"
-                                font.pixelSize: 25
-                                color: "#000000"
+                                text: "✕"
+                                font.pixelSize: 18
+                                font.bold: true
+                                color: clearSearchMouseArea.containsMouse ? "#d81a1a" : "#000000"
                                 horizontalAlignment: Text.AlignHCenter
                                 verticalAlignment: Text.AlignVCenter
+                            }
+
+                            MouseArea {
+                                id: clearSearchMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    searchField.text = ""
+                                    searchText = ""
+                                    courseSelectionController.resetFilter()
+                                }
+                                cursorShape: Qt.PointingHandCursor
                             }
 
                             onClicked: {
@@ -416,17 +598,23 @@ Page {
                         function onSelectionChanged() {
                             // Update color based on selection state and max courses limit
                             if (courseSelectionController.isCourseSelected(originalIndex)) {
-                                courseDelegate.color = "#f0f9ff" // Selected course
+                                courseDelegate.color = "#f0f9ff"
                                 courseDelegate.border.color = "#3b82f6"
                                 courseDelegate.opacity = 1
+                                courseIdBox.color = "#dbeafe"
+                                courseIdBoxLabel.color = "#2563eb"
                             } else if (selectedCoursesRepeater.count >= 7) {
-                                courseDelegate.color = "#e5e7eb" // Disabled (max courses selected)
+                                courseDelegate.color = "#e5e7eb"
                                 courseDelegate.border.color = "#d1d5db"
                                 courseDelegate.opacity = 0.7
+                                courseIdBox.color = "#e5e7eb"
+                                courseIdBoxLabel.color = "#9ca3af"
                             } else {
-                                courseDelegate.color = "#ffffff" // Normal state
+                                courseDelegate.color = "#ffffff"
                                 courseDelegate.border.color = "#e5e7eb"
                                 courseDelegate.opacity = 1
+                                courseIdBox.color = "#f3f4f6"
+                                courseIdBoxLabel.color = "#4b5563"
                             }
                         }
                     }
@@ -455,6 +643,7 @@ Page {
                             radius: 4
 
                             Label {
+                                id: courseIdBoxLabel
                                 anchors.centerIn: parent
                                 text: courseId
                                 font.bold: true

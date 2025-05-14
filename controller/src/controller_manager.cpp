@@ -28,3 +28,7 @@ QObject* ControllerManager::findController(const QString& controllerName) {
     qWarning() << "Unknown controller name:" << controllerName;
     return nullptr;
 }
+
+QQmlApplicationEngine *ControllerManager::getEngine() {
+    return s_mainController->getEngine();
+}

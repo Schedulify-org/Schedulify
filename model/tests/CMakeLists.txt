@@ -25,17 +25,14 @@ add_executable(tests_executable
         TimeUtils_test.cpp
         preParser_test.cpp
         ScheduleBuilder_test.cpp
-        ../main_model_menu.cpp
-        ../src/logs/logger.cpp
-        ../src/logs/logManager.cpp
+        ../../logger/logger.cpp
         ../src/schedule_algorithm/ScheduleBuilder.cpp
         ../src/schedule_algorithm/CourseLegalComb.cpp
         ../src/parsers/parseCoursesToVector.cpp
         ../src/schedule_algorithm/TimeUtils.cpp
         ../src/parsers/parseSchedToJson.cpp
         postParser_test.cpp
-        ../src/logs/logger.cpp
-        ../src/logs/logManager.cpp
+        ../../logger/logger.cpp
 )
 
 target_link_libraries(tests_executable gtest_main)

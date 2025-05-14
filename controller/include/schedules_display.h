@@ -2,11 +2,21 @@
 #define SCHEDULES_DISPLAY_H
 
 #include "controller_manager.h"
+#include "main/model_factory.h"
+#include "model_interfaces.h"
+
 #include <QObject>
 #include <QVariant>
 #include <QFileDialog>
 #include <QDir>
-#include "main_include.h"
+#include <QQuickItem>
+#include <QStandardPaths>
+#include <QQuickItemGrabResult>
+
+enum class fileType {
+    PNG,
+    CSV
+};
 
 class SchedulesDisplayController : public ControllerManager {
     Q_OBJECT
@@ -25,17 +35,22 @@ public:
     Q_INVOKABLE [[nodiscard]] static QString getDayName(int dayIndex) ;
     Q_INVOKABLE [[nodiscard]] int getScheduleCount() const;
     Q_INVOKABLE void goBack() override;
-    Q_INVOKABLE void saveScheduleAsPDF();
+    Q_INVOKABLE void saveScheduleAsCSV();
     Q_INVOKABLE void printScheduleDirectly();
+    Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
 
 signals:
         void currentScheduleIndexChanged();
+        void screenshotSaved(const QString& path);
+        void screenshotFailed();
         void scheduleChanged();
 
 private:
+    static QString generateFilename(const QString& basePath, int index, fileType type);
     vector<InformativeSchedule> m_schedules;
     int m_currentScheduleIndex;
+    IModel* modelConnection;
 };
 
 #endif // SCHEDULES_DISPLAY_H

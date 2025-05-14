@@ -1,7 +1,10 @@
 #ifndef SCHEDULE_ENRICHMENT_H
 #define SCHEDULE_ENRICHMENT_H
 
-#include "main_include.h"
+#include "model_interfaces.h"
+#include "main/inner_structs.h"
+#include "logger/logger.h"
+
 #include <vector>
 #include <string>
 #include <unordered_map>

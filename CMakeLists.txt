@@ -19,7 +19,7 @@ add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport)
 
-include_directories(model/include controller/include)
+include_directories(model/include controller/include logger)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -29,6 +29,7 @@ set(PROJECT_SOURCES
         controller/src/file_input.cpp
         controller/src/course_selection.cpp
         controller/src/schedules_display.cpp
+        controller/src/log_display.cpp
 
         controller/include/main_controller.h
         controller/include/controller_manager.h
@@ -36,21 +37,24 @@ set(PROJECT_SOURCES
         controller/include/file_input.h
         controller/include/course_selection.h
         controller/include/schedules_display.h
+        controller/include/log_display.h
 
-        model/main_model_menu.cpp
         model/main_model.cpp
-        model/src/logs/logger.cpp
-        model/src/logs/logManager.cpp
+        logger/logger.cpp
         model/src/parsers/parseCoursesToJson.cpp
         model/src/parsers/parseCoursesToVector.cpp
         model/src/parsers/parseSchedToJson.cpp
         model/src/schedule_algorithm/CourseLegalComb.cpp
         model/src/schedule_algorithm/ScheduleBuilder.cpp
         model/src/schedule_algorithm/TimeUtils.cpp
-        model/src/parsers/parseToXlsx.cpp
+        model/src/parsers/parseToCsv.cpp
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
-        main_include.h
+        model_interfaces.h
+        model/src/main/model_factory.cpp
+        controller/include/ScheduleGenerator.h
+        controller/include/ScheduleGenerator.h
+        controller/src/ScheduleGenerator.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

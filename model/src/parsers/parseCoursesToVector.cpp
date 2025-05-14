@@ -1,5 +1,5 @@
 #include "parsers//parseCoursesToVector.h"
-#include "logs/logger.h"
+#include "logger/logger.h"
 
 using namespace std;
 

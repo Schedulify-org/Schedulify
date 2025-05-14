@@ -1,12 +1,13 @@
 #ifndef SCHEDULE_BUILDER_H
 #define SCHEDULE_BUILDER_H
 
-#include "main_include.h"
-#include "parsers/parseCoursesToVector.h"
-#include "TimeUtils.h"
+#include "model_interfaces.h"
+#include "main/inner_structs.h"
 #include "schedule_algorithm/CourseLegalComb.h"
 #include "schedule_algorithm/TimeUtils.h"
 #include "schedule_algorithm/getSession.h"
+#include "logger/logger.h"
+#include "TimeUtils.h"
 
 #include <vector>
 

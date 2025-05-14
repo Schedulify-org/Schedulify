@@ -1,7 +1,8 @@
 #ifndef SCHED_TESTS_GETSESSION_H
 #define SCHED_TESTS_GETSESSION_H
 
-#include "main_include.h"
+#include "model_interfaces.h"
+#include "main/main_model.h"
 
 #pragma once
 

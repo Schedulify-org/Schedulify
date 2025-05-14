@@ -1,8 +1,10 @@
 #ifndef PARSE_SCHED_TO_JSON
 #define PARSE_SCHED_TO_JSON
 
-#include "main_include.h"
 #include "schedule_algorithm/ScheduleBuilder.h"
+#include "parsers/ScheduleEnrichment.h"
+#include "model_interfaces.h"
+#include "logger/logger.h"
 
 #include <iomanip>
 

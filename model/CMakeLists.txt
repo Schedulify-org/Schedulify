@@ -17,14 +17,12 @@ add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 # Source files
 set(SOURCES
-        main_model_menu.cpp
         src/parsers/parseCoursesToVector.cpp
         src/parsers/parseSchedToJson.cpp
         src/schedule_algorithm/ScheduleBuilder.cpp
         src/schedule_algorithm/CourseLegalComb.cpp
         src/schedule_algorithm/TimeUtils.cpp
-        src/logs/logManager.cpp
-        src/logs/logger.cpp
+        ../logger/logger.cpp
         src/parsers/parseCoursesToJson.cpp
 )
 

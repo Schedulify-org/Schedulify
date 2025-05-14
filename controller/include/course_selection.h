@@ -1,13 +1,24 @@
 #ifndef COURSE_SELECTION_H
 #define COURSE_SELECTION_H
 
-#include "controller_manager.h"
 #include "controller/models/course_model.h"
+#include "ScheduleGenerator.h"
+#include "main/model_factory.h"
+#include "controller_manager.h"
 #include "schedules_display.h"
+#include "logger.h"
 
 #include <algorithm>
 #include <QUrl>
 #include <QStringList>
+#include <QThread>
+#include <vector>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QGuiApplication>
+#include <QQuickWindow>
+#include <QTimer>
+
 
 class CourseSelectionController final : public ControllerManager {
 Q_OBJECT
@@ -18,7 +29,7 @@ Q_OBJECT
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
-    ~CourseSelectionController() override = default;
+    ~CourseSelectionController() override;
 
     [[nodiscard]] CourseModel* courseModel() const { return m_courseModel; }
     [[nodiscard]] CourseModel* selectedCoursesModel() const { return m_selectedCoursesModel; }
@@ -33,8 +44,12 @@ public:
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
 
+private slots:
+    void onSchedulesGenerated(std::vector<InformativeSchedule>* schedules);
+
 signals:
     void selectionChanged();
+    void errorMessage(const QString &message);
 
 private:
     CourseModel* m_courseModel;
@@ -44,7 +59,9 @@ private:
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
     vector<int> selectedIndices;
-    vector<int> filteredIndicesMap; // Maps filtered index to original index
+    vector<int> filteredIndicesMap;
+    IModel* modelConnection;
+    QThread* workerThread = nullptr;
 };
 
 #endif //COURSE_SELECTION_H

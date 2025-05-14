@@ -1,5 +1,4 @@
 #include "schedule_algorithm/ScheduleBuilder.h"
-#include "logs/logger.h"
 
 using namespace std;
 
