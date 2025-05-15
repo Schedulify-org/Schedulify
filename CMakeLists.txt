@@ -43,7 +43,6 @@ set(PROJECT_SOURCES
         logger/logger.cpp
         model/src/parsers/parseCoursesToJson.cpp
         model/src/parsers/parseCoursesToVector.cpp
-        model/src/parsers/parseSchedToJson.cpp
         model/src/schedule_algorithm/CourseLegalComb.cpp
         model/src/schedule_algorithm/ScheduleBuilder.cpp
         model/src/schedule_algorithm/TimeUtils.cpp
