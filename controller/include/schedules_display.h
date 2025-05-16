@@ -12,6 +12,7 @@
 #include <QQuickItem>
 #include <QStandardPaths>
 #include <QQuickItemGrabResult>
+#include <QtQuick/QQuickItem>
 
 enum class fileType {
     PNG,
@@ -39,6 +40,7 @@ public:
     Q_INVOKABLE void printScheduleDirectly();
     Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
+    static QString generateFilename(const QString& basePath, int index, fileType type);
 
 signals:
         void currentScheduleIndexChanged();
@@ -47,7 +49,6 @@ signals:
         void scheduleChanged();
 
 private:
-    static QString generateFilename(const QString& basePath, int index, fileType type);
     vector<InformativeSchedule> m_schedules;
     int m_currentScheduleIndex;
     IModel* modelConnection;

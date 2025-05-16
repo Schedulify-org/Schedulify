@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(schedTest)
+project(schedModelTest)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,7 +9,7 @@ add_compile_definitions(USER_DB_PATH="../../data/V1.0CourseDB.txt")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport)
 
-include_directories(../include ../src ../logger ../..)
+include_directories(../../model/include ../../model/src ../logger ../..)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -23,21 +23,21 @@ FetchContent_Declare(googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(schedTest
+add_executable(schedModelTest
         ../../logger/logger.cpp
         ../../logger/logger.h
 
-        ../src/parsers/parseCoursesToJson.cpp
-        ../src/parsers/parseCoursesToVector.cpp
-        ../src/parsers/parseSchedToJson.cpp
-        ../src/schedule_algorithm/CourseLegalComb.cpp
-        ../src/schedule_algorithm/ScheduleBuilder.cpp
-        ../src/schedule_algorithm/TimeUtils.cpp
-        ../src/parsers/parseToCsv.cpp
-        ../src/parsers/printSchedule.cpp
-        ../src/parsers/ScheduleEnrichment.cpp
-        ../src/main/model_factory.cpp
-        ../main_model.cpp
+        ../../model/src/parsers/parseCoursesToJson.cpp
+        ../../model/src/parsers/parseCoursesToVector.cpp
+        ../../model/src/parsers/parseSchedToJson.cpp
+        ../../model/src/schedule_algorithm/CourseLegalComb.cpp
+        ../../model/src/schedule_algorithm/ScheduleBuilder.cpp
+        ../../model/src/schedule_algorithm/TimeUtils.cpp
+        ../../model/src/parsers/parseToCsv.cpp
+        ../../model/src/parsers/printSchedule.cpp
+        ../../model/src/parsers/ScheduleEnrichment.cpp
+        ../../model/src/main/model_factory.cpp
+        ../../model/main_model.cpp
 
         main_tests.cpp
         CourseLegalComb_test.cpp
@@ -48,7 +48,7 @@ add_executable(schedTest
 )
 
 # Link Qt libraries
-target_link_libraries(schedTest
+target_link_libraries(schedModelTest
         PRIVATE
         gtest_main
         Qt6::Core
@@ -62,4 +62,4 @@ target_link_libraries(schedTest
 
 # Add model-tests
 enable_testing()
-add_test(NAME MyTests COMMAND schedTest)
+add_test(NAME MyTests COMMAND schedModelTest)
