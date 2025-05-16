@@ -1,4 +1,4 @@
-#include "parsers//parseCoursesToVector.h"
+#include "parsers/parseCoursesToVector.h"
 #include "logger/logger.h"
 
 using namespace std;

@@ -1,7 +1,7 @@
 #include "schedule_algorithm/ScheduleBuilder.h"
 #include "gtest/gtest.h"
 #include "test_helpers.h"
-#include "parsers/parseToJson.h"
+#include "parsers/parseCoursesToVector.h"
 
 
 using namespace std;

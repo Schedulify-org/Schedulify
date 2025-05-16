@@ -2,7 +2,6 @@
 #define SCHED_TESTS_GETSESSION_H
 
 #include "model_interfaces.h"
-#include "main/main_model.h"
 
 #pragma once
 

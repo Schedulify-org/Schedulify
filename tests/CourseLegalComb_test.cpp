@@ -1,8 +1,5 @@
 #include <gtest/gtest.h>
 #include "schedule_algorithm/CourseLegalComb.h"
-#include "schedule_algorithm/TimeUtils.h"
-#include "parsers/parseToJson.h"
-
 
 enum DayOfWeek { Mon = 0, Tue, Wed, Thu, Fri, Sat, Sun };
 
