@@ -34,9 +34,9 @@ public:
 
     explicit CourseModel(QObject* parent = nullptr);
 
-    // Override methods from QAbstractListModel without default arguments
-    [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    // Override methods from QAbstractListModel
+    [[nodiscard]] int rowCount(const QModelIndex &parent) const override;
+    [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override;
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     // Method to populate the model with sample data
