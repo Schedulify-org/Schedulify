@@ -8,7 +8,7 @@
 #include "parsers/ScheduleEnrichment.h"
 #include "parsers/printSchedule.h"
 #include "parsers/parseToCsv.h"
-#include "logger.h"
+#include "logger/logger.h"
 
 #include <vector>
 #include <string>

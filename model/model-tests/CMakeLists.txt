@@ -3,12 +3,13 @@ project(schedTest)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_TYPE Debug)
 
-add_compile_definitions(USER_DB_PATH="../data/V1.0CourseDB.txt")
+add_compile_definitions(USER_DB_PATH="../../data/V1.0CourseDB.txt")
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport)
 
-include_directories(../model/include ../model/src ../logger ..)
+include_directories(../include ../src ../logger ../..)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -23,20 +24,20 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(schedTest
-        ../logger/logger.cpp
-        ../logger/logger.h
+        ../../logger/logger.cpp
+        ../../logger/logger.h
 
-        ../model/src/parsers/parseCoursesToJson.cpp
-        ../model/src/parsers/parseCoursesToVector.cpp
-        ../model/src/parsers/parseSchedToJson.cpp
-        ../model/src/schedule_algorithm/CourseLegalComb.cpp
-        ../model/src/schedule_algorithm/ScheduleBuilder.cpp
-        ../model/src/schedule_algorithm/TimeUtils.cpp
-        ../model/src/parsers/parseToCsv.cpp
-        ../model/src/parsers/printSchedule.cpp
-        ../model/src/parsers/ScheduleEnrichment.cpp
-        ../model/src/main/model_factory.cpp
-        ../model/main_model.cpp
+        ../src/parsers/parseCoursesToJson.cpp
+        ../src/parsers/parseCoursesToVector.cpp
+        ../src/parsers/parseSchedToJson.cpp
+        ../src/schedule_algorithm/CourseLegalComb.cpp
+        ../src/schedule_algorithm/ScheduleBuilder.cpp
+        ../src/schedule_algorithm/TimeUtils.cpp
+        ../src/parsers/parseToCsv.cpp
+        ../src/parsers/printSchedule.cpp
+        ../src/parsers/ScheduleEnrichment.cpp
+        ../src/main/model_factory.cpp
+        ../main_model.cpp
 
         main_tests.cpp
         CourseLegalComb_test.cpp
@@ -59,6 +60,6 @@ target_link_libraries(schedTest
         Qt6::PrintSupport
 )
 
-# Add tests
+# Add model-tests
 enable_testing()
 add_test(NAME MyTests COMMAND schedTest)

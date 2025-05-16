@@ -1,4 +1,4 @@
-// tests/preParser_test.cpp
+// model-tests/preParser_test.cpp
 #include <gtest/gtest.h>
 #include "parsers/parseCoursesToVector.h"
 #include <fstream>
