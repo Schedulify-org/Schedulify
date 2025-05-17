@@ -9,7 +9,7 @@ $$$$
 Software Project
 83533
 Dr. Terry Bell
-L S,5,10:00,16:00,605,061
+L S,1,10:00,16:00,605,061
 T S,5,16:00,17:00,605,061
 $$$$
 Calculus 1 (eng)
