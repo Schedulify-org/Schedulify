@@ -2,7 +2,7 @@
 
 FileInputController::FileInputController(QObject *parent)
         : ControllerManager(parent) {
-    modelConnection = ModelFactory::createModel();
+    modelConnection = ModelAccess::getModel();
 }
 
 FileInputController::~FileInputController() {
@@ -28,7 +28,6 @@ void FileInputController::handleUploadAndContinue() {
 }
 
 void FileInputController::loadFile() {
-    Model model;
     string filePath;
 
     if (!selectedFilePath.isEmpty()) {

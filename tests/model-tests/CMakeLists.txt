@@ -36,7 +36,7 @@ add_executable(schedModelTest
         ../../model/src/parsers/parseToCsv.cpp
         ../../model/src/parsers/printSchedule.cpp
         ../../model/src/parsers/ScheduleEnrichment.cpp
-        ../../model/src/main/model_factory.cpp
+        ../../model/src/main/model_access.cpp
         ../../model/main_model.cpp
 
         main_tests.cpp

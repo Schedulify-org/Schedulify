@@ -7,7 +7,7 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         , m_filteredCourseModel(new CourseModel(this))
         , workerThread(nullptr)
 {
-    modelConnection = ModelFactory::createModel();
+    modelConnection = ModelAccess::getModel();
 }
 
 CourseSelectionController::~CourseSelectionController() {

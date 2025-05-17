@@ -2,7 +2,7 @@
 #define SCHEDULES_DISPLAY_H
 
 #include "controller_manager.h"
-#include "main/model_factory.h"
+#include "main/model_access.h"
 #include "model_interfaces.h"
 
 #include <QObject>
