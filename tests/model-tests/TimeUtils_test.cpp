@@ -1,7 +1,7 @@
 #include "schedule_algorithm/TimeUtils.h"
 #include "gtest/gtest.h"
-#include "test_helpers.h"  // Contains makeSession helper
-#include "parsers/parseToJson.h"
+#include "test_helpers.h"
+#include "parsers/parseCoursesToVector.h"
 
 using namespace std;
 

@@ -3,7 +3,7 @@
 
 #include "controller/models/course_model.h"
 #include "ScheduleGenerator.h"
-#include "main/model_factory.h"
+#include "main/model_access.h"
 #include "controller_manager.h"
 #include "schedules_display.h"
 #include "logger.h"

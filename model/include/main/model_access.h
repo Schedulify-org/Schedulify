@@ -3,9 +3,9 @@
 
 #include "model_interfaces.h"
 
-class ModelFactory {
+class ModelAccess {
 public:
-    static IModel* createModel();
+    static IModel* getModel();
 };
 
 #endif //MODEL_FACTORY_H

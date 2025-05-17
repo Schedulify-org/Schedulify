@@ -7,7 +7,7 @@
 #include "schedule_algorithm/TimeUtils.h"
 #include "schedule_algorithm/getSession.h"
 #include "logger/logger.h"
-#include "TimeUtils.h"
+#include "schedule_algorithm/TimeUtils.h"
 
 #include <vector>
 

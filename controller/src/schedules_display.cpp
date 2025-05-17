@@ -3,7 +3,7 @@
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
     : ControllerManager(parent), m_currentScheduleIndex(0) {
-    modelConnection = ModelFactory::createModel();
+    modelConnection = ModelAccess::getModel();
 }
 
 SchedulesDisplayController::~SchedulesDisplayController() {

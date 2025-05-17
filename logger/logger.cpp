@@ -1,6 +1,6 @@
 #include "logger.h"
 
-Logger::Logger() = default;
+Logger::Logger() : QObject(nullptr) {}
 
 Logger& Logger::get() {
     static Logger instance;

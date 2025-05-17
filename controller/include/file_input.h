@@ -2,9 +2,8 @@
 #define FILE_INPUT_H
 
 #include "controller_manager.h"
-#include "main/model_factory.h"
+#include "main/model_access.h"
 #include "model_interfaces.h"
-#include "main/main_model.h"
 #include "course_selection.h"
 #include "logger.h"
 
