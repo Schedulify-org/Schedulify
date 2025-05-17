@@ -91,110 +91,62 @@ InformativeSchedule createInformativeSchedule(const Schedule& schedule, size_t i
     return informativeSchedule;
 }
 
-
-void processScheduleRange(const vector<Schedule>& schedules, const unordered_map<int, CourseInfo>& courseInfoMap,
-        size_t startIdx, size_t endIdx, size_t threadIdx, vector<vector<InformativeSchedule>>& threadResults,
-        atomic<size_t>& validCount) {
-
-    size_t localValidCount = 0;
-    threadResults[threadIdx].reserve((endIdx - startIdx) / 2);
-
-    for (size_t i = startIdx; i < endIdx; ++i) {
-        InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
-
-        if (schedule.week.empty()) {
-            continue; // Skip invalid schedules
-        }
-
-        localValidCount++;
-        threadResults[threadIdx].push_back(std::move(schedule));
-    }
-
-    validCount += localValidCount;
-}
-
-
 vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& schedules, const vector<Course>& courses) {
-    // Create course info map
+    Logger::get().logInfo("Initiate schedule enrichment");
+
     auto courseInfoMap = buildCourseInfoMap(courses);
 
-    // Determine thread count
-    unsigned int numThreads = calculateOptimalThreadCount(schedules.size());
+    vector<InformativeSchedule> results[2];
+    results[0].reserve(schedules.size() / 4);
+    results[1].reserve(schedules.size() / 4);
 
-    // Create thread-local results
-    vector<vector<InformativeSchedule>> threadResults(numThreads);
-    atomic<size_t> validCount{0};
+    size_t half = schedules.size() / 2;
 
-    // Launch threads
-    vector<thread> threads = launchProcessingThreads(
-            schedules, courseInfoMap, numThreads, threadResults, validCount);
+    // Create and launch two threads
+    thread thread1([&]() {
+        for (size_t i = 0; i < half; ++i) {
+            InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
+            if (!schedule.week.empty()) {
+                results[0].push_back(std::move(schedule));
+            }
+        }
+    });
 
-    // Wait for all threads to complete
-    for (auto& thread : threads) {
-        thread.join();
+    thread thread2([&]() {
+        for (size_t i = half; i < schedules.size(); ++i) {
+            InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
+            if (!schedule.week.empty()) {
+                results[1].push_back(std::move(schedule));
+            }
+        }
+    });
+
+    thread1.join();
+    thread2.join();
+
+    size_t validCount = results[0].size() + results[1].size();
+    vector<InformativeSchedule> finalResult;
+    finalResult.reserve(validCount);
+
+    size_t currentIndex = 1;
+    for (auto& schedule : results[0]) {
+        schedule.index = currentIndex++;
+        finalResult.push_back(std::move(schedule));
     }
 
-    // Check if we have any valid schedules
+    for (auto& schedule : results[1]) {
+        schedule.index = currentIndex++;
+        finalResult.push_back(std::move(schedule));
+    }
+
     if (validCount == 0) {
         Logger::get().logError("There are no valid schedules, aborting...");
         return {};
     }
 
-    // Combine results from all threads
-    return combineThreadResults(threadResults, validCount);
-}
+    Logger::get().logInfo("Done working on " + to_string(validCount) + " valid schedules");
 
-
-unsigned int calculateOptimalThreadCount(size_t dataSize) {
-    unsigned int numThreads = thread::hardware_concurrency();
-    if (numThreads == 0) numThreads = 4;
-
-    // Limit threads based on data size
-    numThreads = min(numThreads, static_cast<unsigned int>(dataSize / 1000 + 1));
-    return min(numThreads, 16u);
-}
-
-
-vector<thread> launchProcessingThreads(const vector<Schedule>& schedules,
-        const unordered_map<int, CourseInfo>& courseInfoMap, unsigned int numThreads,
-        vector<vector<InformativeSchedule>>& threadResults, atomic<size_t>& validCount) {
-
-    vector<thread> threads;
-    size_t schedulesPerThread = schedules.size() / numThreads;
-
-    for (size_t threadIdx = 0; threadIdx < numThreads; ++threadIdx) {
-        size_t startIdx = threadIdx * schedulesPerThread;
-        size_t endIdx = (threadIdx == numThreads - 1) ? schedules.size() : (threadIdx + 1) * schedulesPerThread;
-
-        threads.emplace_back(processScheduleRange,
-                             ref(schedules),
-                             ref(courseInfoMap),
-                             startIdx,
-                             endIdx,
-                             threadIdx,
-                             ref(threadResults),
-                             ref(validCount));
-    }
-
-    return threads;
-}
-
-
-vector<InformativeSchedule> combineThreadResults(vector<vector<InformativeSchedule>>& threadResults, size_t validCount) {
-
-    vector<InformativeSchedule> result;
-    result.reserve(validCount);
-
-    // Merge all thread results and fix indices
-    size_t currentIndex = 1;
-    for (auto& threadResult : threadResults) {
-        for (auto& schedule : threadResult) {
-            schedule.index = currentIndex++;
-            result.push_back(std::move(schedule));
-        }
-    }
-
-    return result;
+    return finalResult;
 }
 
 
