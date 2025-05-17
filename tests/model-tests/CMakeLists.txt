@@ -29,7 +29,6 @@ add_executable(schedModelTest
 
         ../../model/src/parsers/parseCoursesToJson.cpp
         ../../model/src/parsers/parseCoursesToVector.cpp
-        ../../model/src/parsers/parseSchedToJson.cpp
         ../../model/src/schedule_algorithm/CourseLegalComb.cpp
         ../../model/src/schedule_algorithm/ScheduleBuilder.cpp
         ../../model/src/schedule_algorithm/TimeUtils.cpp
@@ -44,7 +43,7 @@ add_executable(schedModelTest
         TimeUtils_test.cpp
         preParser_test.cpp
         ScheduleBuilder_test.cpp
-        postParser_test.cpp
+        scheduleEnrichment_test.cpp
 )
 
 # Link Qt libraries
