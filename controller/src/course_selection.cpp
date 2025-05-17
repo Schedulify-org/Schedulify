@@ -95,6 +95,7 @@ void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSche
         auto* schedule_controller =
                 qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
 
+
         schedule_controller->loadScheduleData(*schedules);
 
         // Navigate to schedules display screen
