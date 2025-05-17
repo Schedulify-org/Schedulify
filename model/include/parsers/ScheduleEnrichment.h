@@ -5,13 +5,9 @@
 #include "main/inner_structs.h"
 #include "logger/logger.h"
 
-#include <thread>
-#include <atomic>
 #include <vector>
 #include <string>
 #include <iostream>
-#include <algorithm>
-#include <functional>
 #include <unordered_map>
 
 using std::string;

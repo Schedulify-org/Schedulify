@@ -63,7 +63,6 @@ ScheduleDay createScheduleDay(int day, unordered_map<int, vector<ScheduleItem>>&
             return a.start < b.start;
         });
 
-        // Move items instead of copying
         scheduleDay.day_items = std::move(items);
     }
 
@@ -96,57 +95,27 @@ vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& sch
 
     auto courseInfoMap = buildCourseInfoMap(courses);
 
-    vector<InformativeSchedule> results[2];
-    results[0].reserve(schedules.size() / 4);
-    results[1].reserve(schedules.size() / 4);
+    vector<InformativeSchedule> result;
+    size_t validCount = 0;
 
-    size_t half = schedules.size() / 2;
+    for (size_t i = 0; i < schedules.size(); ++i) {
+        InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
 
-    // Create and launch two threads
-    thread thread1([&]() {
-        for (size_t i = 0; i < half; ++i) {
-            InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
-            if (!schedule.week.empty()) {
-                results[0].push_back(std::move(schedule));
-            }
+        if (schedule.week.empty()) {
+            continue; // Skip invalid schedules
         }
-    });
 
-    thread thread2([&]() {
-        for (size_t i = half; i < schedules.size(); ++i) {
-            InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
-            if (!schedule.week.empty()) {
-                results[1].push_back(std::move(schedule));
-            }
-        }
-    });
-
-    thread1.join();
-    thread2.join();
-
-    size_t validCount = results[0].size() + results[1].size();
-    vector<InformativeSchedule> finalResult;
-    finalResult.reserve(validCount);
-
-    size_t currentIndex = 1;
-    for (auto& schedule : results[0]) {
-        schedule.index = currentIndex++;
-        finalResult.push_back(std::move(schedule));
-    }
-
-    for (auto& schedule : results[1]) {
-        schedule.index = currentIndex++;
-        finalResult.push_back(std::move(schedule));
+        validCount++;
+        result.push_back(std::move(schedule));
     }
 
     if (validCount == 0) {
         Logger::get().logError("There are no valid schedules, aborting...");
         return {};
     }
-
     Logger::get().logInfo("Done working on " + to_string(validCount) + " valid schedules");
 
-    return finalResult;
+    return result;
 }
 
 
