@@ -17,7 +17,12 @@ add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
 
 add_compile_definitions(USERINPUT="/data/userInput.txt")
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport)
+if(APPLE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+endif()
+
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
 
 include_directories(model/include controller/include logger)
 
@@ -81,6 +86,7 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::Qml
         Qt6::QuickLayouts
         Qt6::PrintSupport
+        Qt6::QuickControls2
 )
 
 set_target_properties(SchedGUI PROPERTIES

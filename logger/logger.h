@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <fstream>
 #include <QObject>
+#include <sstream>
 
 using std::string;
 using std::vector;

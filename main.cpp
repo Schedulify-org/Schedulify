@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQuickView>
 #include <QUrl>
+#include <QQuickStyle>
 #include <QQmlContext>
 #include "main_controller.h"
 #include "logger.h"
