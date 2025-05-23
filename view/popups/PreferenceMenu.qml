@@ -166,7 +166,9 @@ Popup {
                     ScrollView {
                         width: parent.width
                         height: 250
-                        clip: true
+
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
                         Column {
                             width: parent.width
@@ -181,7 +183,7 @@ Popup {
                                 }
 
                                 delegate: Rectangle {
-                                    width: parent.width
+                                    width: root.width - 52
                                     height: 60
                                     color: "#374151"
                                     radius: 4
@@ -210,10 +212,13 @@ Popup {
 
                                         Item { Layout.fillWidth: true }
 
-                                        Text {
-                                            text: "🗑️"
-                                            font.pixelSize: 18
+                                        Image {
                                             Layout.alignment: Qt.AlignVCenter
+                                            width: 24
+                                            height: 24
+                                            source: "qrc:/icons/ic-delete.svg"
+                                            sourceSize.width: 22
+                                            sourceSize.height: 22
 
                                             MouseArea {
                                                 anchors.fill: parent
@@ -250,7 +255,7 @@ Popup {
                             ComboBox {
                                 id: daySelector
                                 anchors.fill: parent
-                                model: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+                                model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
                             }
                         }
 

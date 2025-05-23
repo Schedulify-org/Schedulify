@@ -10,6 +10,7 @@
         <file>popups/PreferenceMenu.qml</file>
         <file>icons/ic-export.svg</file>
         <file>icons/ic-logs.svg</file>
+        <file>icons/ic-delete.svg</file>
         <file>icons/ic-preference.svg</file>
     </qresource>
 </RCC>

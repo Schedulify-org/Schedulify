@@ -251,7 +251,7 @@ Page {
                     // Hover tooltip
                     ToolTip {
                         id: preferenceTooltip
-                        text: "Set schedule preference"
+                        text: "Set Schedule Preference"
                         visible: preferenceMouseArea.containsMouse
                         delay: 500
                         timeout: 3000
