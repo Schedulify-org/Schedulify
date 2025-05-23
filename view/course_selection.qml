@@ -109,13 +109,44 @@ Page {
                     height: 40
 
                     background: Rectangle {
-                        color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                        radius: 20
+                        color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                        radius: 10
+                    }
 
-                        Text {
-                            text: "📋"
+                    // Custom content with SVG icon
+                    contentItem: Item {
+                        anchors.fill: parent
+
+                        // SVG Icon
+                        Image {
+                            id: logIcon
                             anchors.centerIn: parent
-                            font.pixelSize: 20
+                            width: 24
+                            height: 24
+                            source: "qrc:/icons/ic-logs.svg"
+                            sourceSize.width: 22
+                            sourceSize.height: 22
+                        }
+
+                        // Hover tooltip
+                        ToolTip {
+                            id: logsTooltip
+                            text: "Open Application Logs"
+                            visible: logMouseArea.containsMouse
+                            delay: 500
+                            timeout: 3000
+
+                            background: Rectangle {
+                                color: "#374151"
+                                radius: 4
+                                border.color: "#4b5563"
+                            }
+
+                            contentItem: Text {
+                                text: logsTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
                         }
                     }
 
@@ -140,13 +171,6 @@ Page {
                                 }
                             }
                         }
-                    }
-
-                    ToolTip {
-                        visible: logMouseArea.containsMouse
-                        text: "Open Application Logs"
-                        font.pixelSize: 12
-                        delay: 500
                     }
                 }
 

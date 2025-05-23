@@ -6,5 +6,8 @@
         <file>schedules_display.qml</file>
         <file>log_display.qml</file>
         <file>loading_overlay.qml</file>
+        <file>icons/ic-export.svg</file>
+        <file>icons/ic-logs.svg</file>
+        <file>icons/ic-preference.svg</file>
     </qresource>
 </RCC>

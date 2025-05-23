@@ -87,13 +87,44 @@ Page {
                 height: 40
 
                 background: Rectangle {
-                    color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                    radius: 20
+                    color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
+                }
 
-                    Text {
-                        text: "📋"
+                // Custom content with SVG icon
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    // SVG Icon
+                    Image {
+                        id: logIcon
                         anchors.centerIn: parent
-                        font.pixelSize: 20
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-logs.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
+                    }
+
+                    // Hover tooltip
+                    ToolTip {
+                        id: logsTooltip
+                        text: "Open Application Logs"
+                        visible: logMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: logsTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
                     }
                 }
 
@@ -119,18 +150,11 @@ Page {
                         }
                     }
                 }
-
-                ToolTip {
-                    visible: logMouseArea.containsMouse
-                    text: "Open Application Logs"
-                    font.pixelSize: 12
-                    delay: 500
-                }
             }
 
             Button {
                 id: exportButton
-                width: 180
+                width: 40
                 height: 40
                 anchors {
                     right: parent.right
@@ -139,18 +163,45 @@ Page {
                 }
 
                 background: Rectangle {
-                    color: exportMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    radius: 4
-                    implicitWidth: 180
-                    implicitHeight: 40
+                    color: exportMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
                 }
-                font.bold: true
-                contentItem: Text {
-                    text: "Export Schedule"
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
+
+                // Custom content with SVG icon
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    // SVG Icon
+                    Image {
+                        id: exportIcon
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-export.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
+                    }
+
+                    // Hover tooltip
+                    ToolTip {
+                        id: exportTooltip
+                        text: "Export Schedule"
+                        visible: exportMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: exportTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
+                    }
                 }
 
                 MouseArea {
@@ -163,6 +214,67 @@ Page {
                 }
             }
 
+            Button {
+                id: preferenceButton
+                width: 40
+                height: 40
+                anchors {
+                    right: parent.right
+                    rightMargin: 35 + exportButton.width + logButtonC.width
+                    verticalCenter: parent.verticalCenter
+                }
+
+                background: Rectangle {
+                    color: preferenceMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
+                }
+
+                // Custom content with SVG icon
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    // SVG Icon
+                    Image {
+                        id: preferenceIcon
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-preference.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
+                    }
+
+                    // Hover tooltip
+                    ToolTip {
+                        id: preferenceTooltip
+                        text: "Set schedule preference"
+                        visible: preferenceMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: preferenceTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: preferenceMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: exportMenu.open()
+
+                }
+            }
         }
     }
 
