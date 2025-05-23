@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 Popup {
     id: root
@@ -40,7 +41,7 @@ Popup {
             height: 60
             color: "transparent"
 
-            Row {
+            Item {
                 anchors.fill: parent
                 anchors.margins: 20
 
@@ -50,11 +51,7 @@ Popup {
                     font.bold: true
                     color: "#ffffff"
                     anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Item {
-                    width: parent.width - 200
-                    height: 1
+                    anchors.left: parent.left
                 }
 
                 Text {
@@ -176,12 +173,12 @@ Popup {
                                     color: "#374151"
                                     radius: 4
 
-                                    Row {
+                                    RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 10
 
                                         Column {
-                                            anchors.verticalCenter: parent.verticalCenter
+                                            Layout.alignment: Qt.AlignVCenter
                                             spacing: 2
 
                                             Text {
@@ -198,15 +195,12 @@ Popup {
                                             }
                                         }
 
-                                        Item {
-                                            width: parent.width - 200
-                                            height: 1
-                                        }
+                                        Item { Layout.fillWidth: true }
 
                                         Text {
                                             text: "🗑️"
                                             font.pixelSize: 18
-                                            anchors.verticalCenter: parent.verticalCenter
+                                            Layout.alignment: Qt.AlignVCenter
 
                                             MouseArea {
                                                 anchors.fill: parent
@@ -244,18 +238,6 @@ Popup {
                                 id: daySelector
                                 anchors.fill: parent
                                 model: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-                                contentItem: Text {
-                                    text: daySelector.displayText
-                                    font.pixelSize: 14
-                                    color: "#ffffff"
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: 10
-                                }
-
-                                background: Rectangle {
-                                    color: "transparent"
-                                }
                             }
                         }
 
@@ -327,33 +309,29 @@ Popup {
                         }
                     }
 
-                    Item {
-                        width: parent.width - 200
-                        height: 1
+                    Item { height: 1 } // Spacer instead of Layout.fillHeight
+                }
+                // Save & Close button
+                Rectangle {
+                    width: parent.width
+                    height: 50
+                    color: "#374151"
+                    radius: 25
+
+                    Text {
+                        text: "Save & Close"
+                        font.pixelSize: 16
+                        font.bold: true
+                        color: "#ffffff"
+                        anchors.centerIn: parent
                     }
 
-                    // Save & Close button
-                    Rectangle {
-                        width: parent.width
-                        height: 50
-                        color: "#374151"
-                        radius: 25
-
-                        Text {
-                            text: "Save & Close"
-                            font.pixelSize: 16
-                            font.bold: true
-                            color: "#ffffff"
-                            anchors.centerIn: parent
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                // Save and close
-                                root.close()
-                            }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            // Save and close
+                            root.close()
                         }
                     }
                 }
