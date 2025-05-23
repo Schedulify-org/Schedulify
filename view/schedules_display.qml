@@ -314,17 +314,10 @@ Page {
         id: preferenceMenu
         parent: Overlay.overlay
 
-        // Handle the signals
-        onFilterApplied: {
-            // Handle filter application
-            console.log("Filters applied:", filters)
-            // controller.applyFilters(filters) // Uncomment when implementing
-        }
-
-        onBlockedTimesUpdated: {
-            // Handle blocked times update
-            console.log("Blocked times updated:", blockedTimes)
-            // controller.updateBlockedTimes(blockedTimes) // Uncomment when implementing
+        onSaveAndClose: {
+            // Handle both filters and blocked times
+            console.log("Filters:", filters)
+            console.log("Blocked Times:", blockedTimes)
         }
     }
 
