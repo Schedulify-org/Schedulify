@@ -676,7 +676,7 @@ Page {
         Rectangle {
             id: footer
             width: parent.width
-            height: 60
+            height: 30
             anchors.bottom: parent.bottom
             color: "#ffffff"
             border.color: "#e5e7eb"

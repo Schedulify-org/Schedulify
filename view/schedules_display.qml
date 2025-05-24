@@ -15,12 +15,30 @@ Page {
     property int currentIndex: controller.currentScheduleIndex
     property int totalSchedules: controller.getScheduleCount()
     property int numDays: 7
-    property real dayColumnWidth: Math.max(135, (width - timeColumnWidth) / numDays)
-    property real timeColumnWidth: 70
 
+    // Minimum constraints
+    property real minDayColumnWidth: 120
+    property real minTimeColumnWidth: 80
+    property real minRowHeight: 50
+    property int minTextSize: 11
+
+    // Table dimensions with dynamic calculations
+    property real timeColumnWidth: minTimeColumnWidth
+    property real dayColumnWidth: {
+        var availableWidth = mainContent.width - 30; // Account for margins
+        return Math.max(minDayColumnWidth, (availableWidth - timeColumnWidth) / numDays);
+    }
     property int numberOfTimeSlots: 12
-    property real availableTableHeight: mainContent.height - topButtonsRow.height - 20
-    property real uniformRowHeight: Math.max(60, Math.floor(availableTableHeight / numberOfTimeSlots))
+    property real headerHeight: 40
+    property real uniformRowHeight: {
+        var availableHeight = mainContent.height - topButtonsRow.height - 40;
+        var availableTableHeight = availableHeight - headerHeight;
+        return Math.max(minRowHeight, availableTableHeight / numberOfTimeSlots);
+    }
+
+    // Dynamic text size based on cell dimensions
+    property real dynamicTextSize: Math.max(minTextSize,
+        Math.min(15, Math.min(dayColumnWidth / 11.5, uniformRowHeight / 4.5)))
 
     // Header
     Rectangle {
@@ -65,6 +83,28 @@ Page {
                     hoverEnabled: true
                     onClicked: controller.goBack()
                     cursorShape: Qt.PointingHandCursor
+                }
+
+                ScrollBar.vertical: ScrollBar {
+                    policy: scrollArea.contentHeight > scrollArea.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                    active: scrollArea.contentHeight > scrollArea.height
+                    visible: scrollArea.contentHeight > scrollArea.height
+                }
+
+                ScrollBar.horizontal: ScrollBar {
+                    policy: scrollArea.contentWidth > scrollArea.width ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                    active: scrollArea.contentWidth > scrollArea.width
+                    visible: scrollArea.contentWidth > scrollArea.width
+                }
+
+                Component.onCompleted: {
+                    Qt.callLater(function() {
+                        var maxScroll = contentHeight - height;
+                        if (contentY > maxScroll) {
+                            contentY = maxScroll;
+                        }
+                        forceActiveFocus();
+                    });
                 }
             }
 
@@ -426,16 +466,18 @@ Page {
                 }
             }
 
+            // Scrollable table container - adapts to available space
             Flickable {
                 id: scrollArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
 
+                // Dynamic content sizing
                 contentWidth: timeColumnWidth + (numDays * dayColumnWidth) + 30
-                contentHeight: dayHeaderRow.height + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 10
+                contentHeight: headerHeight + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 10
                 boundsBehavior: Flickable.StopAtBounds
-                flickableDirection: Flickable.HorizontalAndVerticalFlick
+                flickableDirection: Flickable.VerticalFlick
 
                 Column  {
                     id: tableContent
@@ -444,20 +486,20 @@ Page {
 
                     Row {
                         id: dayHeaderRow
-                        height: 40
+                        height: headerHeight
                         spacing: 1
-                        width: parent.width
+                        width: scrollArea.contentWidth
 
                         Rectangle {
                             width: timeColumnWidth
-                            height: 40
+                            height: headerHeight
                             color: "#e5e7eb"
                             border.color: "#d1d5db"
 
                             Text {
                                 anchors.centerIn: parent
                                 text: "Hour/Day"
-                                font.pixelSize: 14
+                                font.pixelSize: Math.max(minTextSize, dynamicTextSize)
                                 font.bold: true
                                 color: "#4b5563"
                             }
@@ -468,16 +510,18 @@ Page {
 
                             Rectangle {
                                 width: dayColumnWidth
-                                height: 40
+                                height: headerHeight
                                 color: "#e5e7eb"
                                 border.color: "#d1d5db"
 
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData
-                                    font.pixelSize: 14
+                                    font.pixelSize: Math.max(minTextSize, dynamicTextSize)
                                     font.bold: true
                                     color: "#4b5563"
+                                    wrapMode: Text.WordWrap
+                                    elide: Text.ElideRight
                                 }
                             }
                         }
@@ -549,7 +593,7 @@ Page {
                                                     if (hour >= slotStart && hour < slotEnd) {
                                                         rows[rowIndex][dayName] +=
                                                             (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                            "<b style='font-size:13px'>" + item.courseName + "</b> ("
+                                                            "<b style='font-size:" + Math.max(minTextSize, dynamicTextSize - 1) + "px'>" + item.courseName + "</b> ("
                                                             + item.raw_id + ")" + "<br>" +
                                                             "Building: " + item.building + ", Room: " + item.room;
 
@@ -618,8 +662,8 @@ Page {
                                 wrapMode: Text.WordWrap
                                 verticalAlignment: Text.AlignVCenter
                                 horizontalAlignment: Text.AlignHCenter
-                                padding: 2
-                                font.pixelSize: 12
+                                padding: 4
+                                font.pixelSize: Math.max(minTextSize, dynamicTextSize)
                                 textFormat: Text.RichText
                                 text: model.display ? String(model.display) : ""
                                 color: "#000000"
@@ -627,30 +671,7 @@ Page {
                                 elide: Text.ElideRight
                             }
                         }
-
                     }
-                }
-
-                ScrollBar.vertical: ScrollBar {
-                    policy: scrollArea.contentHeight > scrollArea.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-                    active: scrollArea.contentHeight > scrollArea.height
-                    visible: scrollArea.contentHeight > scrollArea.height
-                }
-
-                ScrollBar.horizontal: ScrollBar {
-                    policy: scrollArea.contentWidth > scrollArea.width ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-                    active: scrollArea.contentWidth > scrollArea.width
-                    visible: scrollArea.contentWidth > scrollArea.width
-                }
-
-                Component.onCompleted: {
-                    Qt.callLater(function() {
-                        var maxScroll = contentHeight - height;
-                        if (contentY > maxScroll) {
-                            contentY = maxScroll;
-                        }
-                        forceActiveFocus();
-                    });
                 }
             }
         }
@@ -660,7 +681,7 @@ Page {
     Rectangle {
         id: footer
         width: parent.width
-        height: 60
+        height: 30
         anchors.bottom: parent.bottom
         color: "#ffffff"
         border.color: "#e5e7eb"

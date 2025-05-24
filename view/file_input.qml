@@ -348,7 +348,7 @@ Page {
                 left: parent.left
                 right: parent.right
             }
-            height: 60
+            height: 30
             color: "#ffffff"
             border.color: "#e5e7eb"
 
