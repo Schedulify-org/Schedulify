@@ -86,13 +86,7 @@ Page {
                 }
 
                 Component.onCompleted: {
-                    Qt.callLater(function() {
-                        var maxScroll = contentHeight - height;
-                        if (contentY > maxScroll) {
-                            contentY = maxScroll;
-                        }
-                        forceActiveFocus();
-                    });
+                    forceActiveFocus();
                 }
             }
 
@@ -377,16 +371,16 @@ Page {
                 Rectangle {
                     id: prevButton
                     radius: 4
-                    color: prevMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                    color: prevMouseArea.containsMouse && currentIndex > 0 ? "#35455c" :
+                            currentIndex > 0 ? "#1f2937" : "#9ca3af"  // Gray when disabled
                     implicitWidth: 50
                     implicitHeight: 40
-                    visible: currentIndex > 0
                     Layout.alignment: Qt.AlignLeft
 
                     Text {
                         text: "←"
                         anchors.centerIn: parent
-                        color: "white"
+                        color: currentIndex > 0 ? "white" : "#6b7280"  // Muted color when disabled
                         font.pixelSize: 20
                         font.bold: true
                     }
@@ -394,9 +388,14 @@ Page {
                     MouseArea {
                         id: prevMouseArea
                         anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
+                        hoverEnabled: currentIndex > 0  // Only enable hover when clickable
+                        cursorShape: currentIndex > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        enabled: currentIndex > 0  // Only enable clicking when there's a previous schedule
+                        onClicked: {
+                            if (currentIndex > 0) {  // Extra safety check
+                                controller.setCurrentScheduleIndex(currentIndex - 1)
+                            }
+                        }
                     }
                 }
 
@@ -405,20 +404,20 @@ Page {
                 }
 
                 ColumnLayout{
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter
 
                     Label {
+                        Layout.alignment: Qt.AlignHCenter
                         text: "Schedule Options"
                         font.pixelSize: 20
                         color: "#3a3e45"
-                        anchors.horizontalCenter: parent.horizontalCenter
                     }
 
                     Label {
+                        Layout.alignment: Qt.AlignHCenter
                         text: "Schedule " + (currentIndex + 1) + " of " + totalSchedules
                         font.pixelSize: 15
                         color: "#3a3e45"
-                        anchors.horizontalCenter: parent.horizontalCenter
                     }
                 }
 
@@ -430,16 +429,16 @@ Page {
                 Rectangle {
                     id: nextButton
                     radius: 4
-                    color: nextMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                    color: nextMouseArea.containsMouse && currentIndex < totalSchedules - 1 ? "#35455c" :
+                            currentIndex < totalSchedules - 1 ? "#1f2937" : "#9ca3af"  // Gray when disabled
                     implicitWidth: 50
                     implicitHeight: 40
-                    visible: currentIndex < totalSchedules - 1
                     Layout.alignment: Qt.AlignRight
 
                     Text {
                         text: "→"
                         anchors.centerIn: parent
-                        color: "white"
+                        color: currentIndex < totalSchedules - 1 ? "white" : "#6b7280"  // Muted color when disabled
                         font.pixelSize: 20
                         font.bold: true
                     }
@@ -447,9 +446,14 @@ Page {
                     MouseArea {
                         id: nextMouseArea
                         anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
+                        hoverEnabled: currentIndex < totalSchedules - 1  // Only enable hover when clickable
+                        cursorShape: currentIndex < totalSchedules - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        enabled: currentIndex < totalSchedules - 1  // Only enable clicking when there's a next schedule
+                        onClicked: {
+                            if (currentIndex < totalSchedules - 1) {  // Extra safety check
+                                controller.setCurrentScheduleIndex(currentIndex + 1)
+                            }
+                        }
                     }
                 }
             }
