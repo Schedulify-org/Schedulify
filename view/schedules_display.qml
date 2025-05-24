@@ -467,14 +467,14 @@ Page {
 
                 // Dynamic content sizing
                 contentWidth: timeColumnWidth + (numDays * dayColumnWidth) + 30
-                contentHeight: headerHeight + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 10
+                contentHeight: headerHeight + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 2
                 boundsBehavior: Flickable.StopAtBounds
                 flickableDirection: Flickable.VerticalFlick
 
                 Column  {
                     id: tableContent
                     width: scrollArea.contentWidth
-                    spacing: 0
+                    spacing: 1
 
                     Row {
                         id: dayHeaderRow
@@ -487,6 +487,7 @@ Page {
                             height: headerHeight
                             color: "#e5e7eb"
                             border.color: "#d1d5db"
+                            radius: 4
 
                             Text {
                                 anchors.centerIn: parent
@@ -505,6 +506,7 @@ Page {
                                 height: headerHeight
                                 color: "#e5e7eb"
                                 border.color: "#d1d5db"
+                                radius: 4
 
                                 Text {
                                     anchors.centerIn: parent
