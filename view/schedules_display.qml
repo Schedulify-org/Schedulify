@@ -18,6 +18,10 @@ Page {
     property real dayColumnWidth: Math.max(135, (width - timeColumnWidth) / numDays)
     property real timeColumnWidth: 70
 
+    property int numberOfTimeSlots: 12
+    property real availableTableHeight: mainContent.height - topButtonsRow.height - 20
+    property real uniformRowHeight: Math.max(60, Math.floor(availableTableHeight / numberOfTimeSlots))
+
     // Header
     Rectangle {
         id: header
@@ -429,7 +433,7 @@ Page {
                 clip: true
 
                 contentWidth: timeColumnWidth + (numDays * dayColumnWidth) + 30
-                contentHeight: dayHeaderRow.height + scheduleTable.height + 10
+                contentHeight: dayHeaderRow.height + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 10
                 boundsBehavior: Flickable.StopAtBounds
                 flickableDirection: Flickable.HorizontalAndVerticalFlick
 
@@ -482,7 +486,7 @@ Page {
                     TableView {
                         id: scheduleTable
                         width: scrollArea.contentWidth - 10
-                        height: timeSlots.length * 80 + 20
+                        height: numberOfTimeSlots * uniformRowHeight + (numberOfTimeSlots - 1) + 20
                         clip: true
                         rowSpacing: 1
                         columnSpacing: 1
@@ -496,6 +500,11 @@ Page {
 
                         columnWidthProvider: function(col) {
                             return col === 0 ? timeColumnWidth : dayColumnWidth;
+                        }
+
+                        // Set uniform row height
+                        rowHeightProvider: function(row) {
+                            return uniformRowHeight;
                         }
 
                         model: TableModel {
@@ -515,7 +524,10 @@ Page {
 
                                 for (let i = 0; i < timeSlots.length; i++) {
                                     let row = { timeSlot: timeSlots[i] };
-                                    for (let day of days) row[day] = "";
+                                    for (let day of days) {
+                                        row[day] = "";
+                                        row[day + "_type"] = "";
+                                    }
                                     rows.push(row);
                                 }
 
@@ -537,43 +549,82 @@ Page {
                                                     if (hour >= slotStart && hour < slotEnd) {
                                                         rows[rowIndex][dayName] +=
                                                             (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                            "<b style='font-size:13px'>" + item.courseName + "</b><br>" +
-                                                            item.raw_id + " - " + item.type + "<br>" +
-                                                            item.start + " - " + item.end + "<br>" +
+                                                            "<b style='font-size:13px'>" + item.courseName + "</b> ("
+                                                            + item.raw_id + ")" + "<br>" +
                                                             "Building: " + item.building + ", Room: " + item.room;
+
+                                                        if (!rows[rowIndex][dayName + "_type"] ||
+                                                            (item.type === "lecture") ||
+                                                            (item.type === "lab" && rows[rowIndex][dayName + "_type"] === "tutorial")) {
+                                                            rows[rowIndex][dayName + "_type"] = item.type;
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
                                 }
-
                                 return rows;
                             }
                         }
 
                         delegate: Rectangle {
-                            implicitHeight: 80
+                            implicitHeight: uniformRowHeight
                             border.width: 1
                             border.color: "#e0e0e0"
                             radius: 4
 
-                            color: model.column === 0
-                                ? "#d1d5db"
-                                : (model.display && String(model.display).trim().length > 0
-                                    ? "#64748BFF"
-                                    : "#ffffff")
+                            color: {
+                                if (model.column === 0) {
+                                    return "#d1d5db"; // Time slot column
+                                }
+
+                                if (!model.display || String(model.display).trim().length === 0) {
+                                    return "#ffffff"; // Empty cell
+                                }
+
+                                // Get the type information for color coding
+                                let columnName = "";
+                                switch(model.column) {
+                                    case 1: columnName = "sunday_type"; break;
+                                    case 2: columnName = "monday_type"; break;
+                                    case 3: columnName = "tuesday_type"; break;
+                                    case 4: columnName = "wednesday_type"; break;
+                                    case 5: columnName = "thursday_type"; break;
+                                    case 6: columnName = "friday_type"; break;
+                                    case 7: columnName = "saturday_type"; break;
+                                }
+
+                                let itemType = "";
+                                if (columnName && model.row !== undefined) {
+                                    // Access the type data from the model
+                                    let rowData = parent.parent.model.rows[model.row];
+                                    if (rowData && rowData[columnName]) {
+                                        itemType = rowData[columnName];
+                                    }
+                                }
+
+                                // Color based on item type
+                                switch(itemType) {
+                                    case "lecture": return "#b0e8ff";
+                                    case "lab": return "#abffc6";
+                                    case "tutorial": return "#edc8ff";
+                                    default: return "#64748BFF";
+                                }
+                            }
 
                             Text {
                                 anchors.fill: parent
                                 wrapMode: Text.WordWrap
                                 verticalAlignment: Text.AlignVCenter
                                 horizontalAlignment: Text.AlignHCenter
-                                padding: 6
-                                font.pixelSize: 11
+                                padding: 2
+                                font.pixelSize: 12
                                 textFormat: Text.RichText
                                 text: model.display ? String(model.display) : ""
                                 color: "#000000"
+                                clip: true
+                                elide: Text.ElideRight
                             }
                         }
 
@@ -581,15 +632,15 @@ Page {
                 }
 
                 ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AlwaysOn
-                    active: true
-                    visible: true
+                    policy: scrollArea.contentHeight > scrollArea.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                    active: scrollArea.contentHeight > scrollArea.height
+                    visible: scrollArea.contentHeight > scrollArea.height
                 }
 
                 ScrollBar.horizontal: ScrollBar {
-                    policy: ScrollBar.AlwaysOn
-                    active: true
-                    visible: true
+                    policy: scrollArea.contentWidth > scrollArea.width ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
+                    active: scrollArea.contentWidth > scrollArea.width
+                    visible: scrollArea.contentWidth > scrollArea.width
                 }
 
                 Component.onCompleted: {
@@ -622,4 +673,3 @@ Page {
         }
     }
 }
-
