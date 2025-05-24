@@ -12,8 +12,9 @@ Page {
     background: Rectangle { color: "#ffffff" }
 
     property var controller: schedulesDisplayController
-    property int currentIndex: controller.currentScheduleIndex
-    property int totalSchedules: controller.getScheduleCount()
+    property var scheduleModel: controller ? controller.scheduleModel : null
+    property int currentIndex: scheduleModel ? scheduleModel.currentScheduleIndex : 0
+    property int totalSchedules: scheduleModel ? scheduleModel.scheduleCount : 0
     property int numDays: 7
 
     // Minimum constraints
@@ -25,7 +26,7 @@ Page {
     // Table dimensions with dynamic calculations
     property real timeColumnWidth: minTimeColumnWidth
     property real dayColumnWidth: {
-        var availableWidth = mainContent.width - 30; // Account for margins
+        var availableWidth = mainContent.width - 30;
         return Math.max(minDayColumnWidth, (availableWidth - timeColumnWidth) / numDays);
     }
     property int numberOfTimeSlots: 13
@@ -39,6 +40,21 @@ Page {
     // Dynamic text size based on cell dimensions
     property real dynamicTextSize: Math.max(minTextSize,
         Math.min(15, Math.min(dayColumnWidth / 11.5, uniformRowHeight / 4.5)))
+
+    // Listen to model changes
+    Connections {
+        target: scheduleModel
+        function onCurrentScheduleIndexChanged() {
+            if (tableModel) {
+                tableModel.updateRows()
+            }
+        }
+        function onScheduleDataChanged() {
+            if (tableModel) {
+                tableModel.updateRows()
+            }
+        }
+    }
 
     // Header
     Rectangle {
@@ -56,7 +72,6 @@ Page {
             }
             height: coursesBackButton.height
 
-            // Back Button
             Button {
                 id: coursesBackButton
                 width: 40
@@ -90,7 +105,6 @@ Page {
                 }
             }
 
-            // Screen Title
             Label {
                 id: titleLabel
                 text: "Generated schedules"
@@ -118,11 +132,9 @@ Page {
                     radius: 10
                 }
 
-                // Custom content with SVG icon
                 contentItem: Item {
                     anchors.fill: parent
 
-                    // SVG Icon
                     Image {
                         id: logIcon
                         anchors.centerIn: parent
@@ -133,7 +145,6 @@ Page {
                         sourceSize.height: 22
                     }
 
-                    // Hover tooltip
                     ToolTip {
                         id: logsTooltip
                         text: "Open Application Logs"
@@ -194,11 +205,9 @@ Page {
                     radius: 10
                 }
 
-                // Custom content with SVG icon
                 contentItem: Item {
                     anchors.fill: parent
 
-                    // SVG Icon
                     Image {
                         id: exportIcon
                         anchors.centerIn: parent
@@ -209,7 +218,6 @@ Page {
                         sourceSize.height: 22
                     }
 
-                    // Hover tooltip
                     ToolTip {
                         id: exportTooltip
                         text: "Export Schedule"
@@ -240,7 +248,6 @@ Page {
                         exportMenu.currentIndex = currentIndex
                         exportMenu.open()
                     }
-
                 }
             }
 
@@ -259,11 +266,9 @@ Page {
                     radius: 10
                 }
 
-                // Custom content with SVG icon
                 contentItem: Item {
                     anchors.fill: parent
 
-                    // SVG Icon
                     Image {
                         id: preferenceIcon
                         anchors.centerIn: parent
@@ -274,7 +279,6 @@ Page {
                         sourceSize.height: 22
                     }
 
-                    // Hover tooltip
                     ToolTip {
                         id: preferenceTooltip
                         text: "Set Schedule Preference"
@@ -307,47 +311,38 @@ Page {
         }
     }
 
-    // Export menu popup
     ExportMenu {
         id: exportMenu
         parent: Overlay.overlay
 
-        // Connect the signals to local functions
         onPrintRequested: {
-            console.log("Print requested for schedule", currentIndex + 1)
             if (controller) {
                 controller.printScheduleDirectly()
             }
         }
 
         onSaveAsPngRequested: {
-            console.log("Save as PNG requested for schedule", currentIndex + 1)
             if (schedulesDisplayController && tableContent) {
                 schedulesDisplayController.captureAndSave(tableContent)
             }
         }
 
         onSaveAsCsvRequested: {
-            console.log("Save as CSV requested for schedule", currentIndex + 1)
             if (controller) {
                 controller.saveScheduleAsCSV()
             }
         }
     }
 
-    // Preference menu popup
     PreferenceMenu {
         id: preferenceMenu
         parent: Overlay.overlay
 
         onSaveAndClose: function(filters, blockedTimes) {
-            // Handle both filters and blocked times
-            console.log("Filters:", filters)
-            console.log("Blocked Times:", blockedTimes)
+            // Handle filters and blocked times
         }
     }
 
-    // main content zone
     Rectangle{
         id: mainContent
         anchors {
@@ -367,20 +362,26 @@ Page {
                 Layout.fillWidth: true
                 spacing: 10
 
-                // ← הקודם
                 Rectangle {
                     id: prevButton
                     radius: 4
-                    color: prevMouseArea.containsMouse && currentIndex > 0 ? "#35455c" :
-                            currentIndex > 0 ? "#1f2937" : "#9ca3af"  // Gray when disabled
+
+                    property bool isEnabled: scheduleModel ? scheduleModel.canGoPrevious : false
+
+                    color: {
+                        if (!isEnabled) return "#e5e7eb";
+                        return prevMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                    }
+
                     implicitWidth: 50
                     implicitHeight: 40
                     Layout.alignment: Qt.AlignLeft
+                    opacity: isEnabled ? 1.0 : 0.5
 
                     Text {
                         text: "←"
                         anchors.centerIn: parent
-                        color: currentIndex > 0 ? "white" : "#6b7280"  // Muted color when disabled
+                        color: parent.isEnabled ? "white" : "#9ca3af"
                         font.pixelSize: 20
                         font.bold: true
                     }
@@ -388,12 +389,12 @@ Page {
                     MouseArea {
                         id: prevMouseArea
                         anchors.fill: parent
-                        hoverEnabled: currentIndex > 0  // Only enable hover when clickable
-                        cursorShape: currentIndex > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: currentIndex > 0  // Only enable clicking when there's a previous schedule
+                        hoverEnabled: parent.isEnabled
+                        cursorShape: parent.isEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                        enabled: parent.isEnabled
                         onClicked: {
-                            if (currentIndex > 0) {  // Extra safety check
-                                controller.setCurrentScheduleIndex(currentIndex - 1)
+                            if (scheduleModel) {
+                                scheduleModel.previousSchedule()
                             }
                         }
                     }
@@ -425,20 +426,26 @@ Page {
                     Layout.fillWidth: true
                 }
 
-                // הבא →
                 Rectangle {
                     id: nextButton
                     radius: 4
-                    color: nextMouseArea.containsMouse && currentIndex < totalSchedules - 1 ? "#35455c" :
-                            currentIndex < totalSchedules - 1 ? "#1f2937" : "#9ca3af"  // Gray when disabled
+
+                    property bool isEnabled: scheduleModel ? scheduleModel.canGoNext : false
+
+                    color: {
+                        if (!isEnabled) return "#e5e7eb";
+                        return nextMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                    }
+
                     implicitWidth: 50
                     implicitHeight: 40
                     Layout.alignment: Qt.AlignRight
+                    opacity: isEnabled ? 1.0 : 0.5
 
                     Text {
                         text: "→"
                         anchors.centerIn: parent
-                        color: currentIndex < totalSchedules - 1 ? "white" : "#6b7280"  // Muted color when disabled
+                        color: parent.isEnabled ? "white" : "#9ca3af"
                         font.pixelSize: 20
                         font.bold: true
                     }
@@ -446,26 +453,24 @@ Page {
                     MouseArea {
                         id: nextMouseArea
                         anchors.fill: parent
-                        hoverEnabled: currentIndex < totalSchedules - 1  // Only enable hover when clickable
-                        cursorShape: currentIndex < totalSchedules - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: currentIndex < totalSchedules - 1  // Only enable clicking when there's a next schedule
+                        hoverEnabled: parent.isEnabled
+                        cursorShape: parent.isEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                        enabled: parent.isEnabled
                         onClicked: {
-                            if (currentIndex < totalSchedules - 1) {  // Extra safety check
-                                controller.setCurrentScheduleIndex(currentIndex + 1)
+                            if (scheduleModel) {
+                                scheduleModel.nextSchedule()
                             }
                         }
                     }
                 }
             }
 
-            // Scrollable table container - adapts to available space
             Flickable {
                 id: scrollArea
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
 
-                // Dynamic content sizing
                 contentWidth: timeColumnWidth + (numDays * dayColumnWidth) + 30
                 contentHeight: headerHeight + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 2
                 boundsBehavior: Flickable.StopAtBounds
@@ -541,12 +546,12 @@ Page {
                             return col === 0 ? timeColumnWidth : dayColumnWidth;
                         }
 
-                        // Set uniform row height
                         rowHeightProvider: function(row) {
                             return uniformRowHeight;
                         }
 
                         model: TableModel {
+                            id: tableModel
                             TableModelColumn { display: "timeSlot" }
                             TableModelColumn { display: "sunday" }
                             TableModelColumn { display: "monday" }
@@ -556,7 +561,7 @@ Page {
                             TableModelColumn { display: "friday" }
                             TableModelColumn { display: "saturday" }
 
-                            rows: {
+                            function updateRows() {
                                 let rows = [];
                                 const timeSlots = scheduleTable.timeSlots;
                                 const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -570,12 +575,13 @@ Page {
                                     rows.push(row);
                                 }
 
-                                if (totalSchedules > 0) {
+                                if (totalSchedules > 0 && scheduleModel) {
                                     for (let day = 0; day < 7; day++) {
                                         let dayName = days[day];
-                                        let items = controller.getDayItems(currentIndex, day);
+                                        let items = scheduleModel.getCurrentDayItems(day);
 
-                                        for (let item of items) {
+                                        for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+                                            let item = items[itemIndex];
                                             let start = parseInt(item.start.split(":")[0]);
                                             let end = parseInt(item.end.split(":")[0]);
 
@@ -603,8 +609,10 @@ Page {
                                         }
                                     }
                                 }
-                                return rows;
+                                tableModel.rows = rows;
                             }
+
+                            Component.onCompleted: updateRows()
                         }
 
                         delegate: Rectangle {
@@ -613,7 +621,6 @@ Page {
                             border.color: "#e0e0e0"
                             radius: 4
 
-                            // Define these properties once at the Rectangle level
                             property string columnName: {
                                 switch(model.column) {
                                     case 1: return "sunday_type";
@@ -639,11 +646,11 @@ Page {
 
                             color: {
                                 if (model.column === 0) {
-                                    return "#d1d5db"; // Time slot column
+                                    return "#d1d5db";
                                 }
 
                                 if (!model.display || String(model.display).trim().length === 0) {
-                                    return "#ffffff"; // Empty cell
+                                    return "#ffffff";
                                 }
 
                                 switch(itemType) {
@@ -654,7 +661,6 @@ Page {
                                 }
                             }
 
-                            // Hover tooltip
                             ToolTip {
                                 id: sessionTooltip
                                 text: itemType || "No session type"
@@ -701,7 +707,6 @@ Page {
         }
     }
 
-    // Footer
     Rectangle {
         id: footer
         width: parent.width

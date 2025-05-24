@@ -58,6 +58,8 @@ set(PROJECT_SOURCES
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
         model/src/main/model_access.cpp
+        controller/models/schedule_model.cpp
+        controller/models/schedule_model.h
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
