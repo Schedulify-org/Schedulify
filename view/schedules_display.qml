@@ -28,7 +28,7 @@ Page {
         var availableWidth = mainContent.width - 30; // Account for margins
         return Math.max(minDayColumnWidth, (availableWidth - timeColumnWidth) / numDays);
     }
-    property int numberOfTimeSlots: 12
+    property int numberOfTimeSlots: 13
     property real headerHeight: 40
     property real uniformRowHeight: {
         var availableHeight = mainContent.height - topButtonsRow.height - 40;
@@ -531,7 +531,8 @@ Page {
                         property var timeSlots: [
                             "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
                             "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
-                            "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"
+                            "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00",
+                            "20:00-21:00"
                         ]
 
                         columnWidthProvider: function(col) {
