@@ -1,14 +1,14 @@
 import QtQuick 2.15
-import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Controls 2.15
+import QtQuick.Controls.Basic
 
 Popup {
     id: root
 
-    // Expose signals for parent handling
     signal saveAndClose(var filters, var blockedTimes)
 
-    // Filter states (moved from FilterMenu)
+    // Filter states
     property bool daysToStudyEnabled: false
     property int daysToStudyValue: 7
     property bool totalGapsEnabled: false
@@ -22,6 +22,52 @@ Popup {
     property int avgDayEndHour: 17
     property int avgDayEndMinute: 0
 
+    // Window start and end time
+    property int windowStartHour: 8
+    property int windowStartMinute: 0
+    property int windowEndHour: 9
+    property int windowEndMinute: 0
+
+    // Window picker helpers
+    function getFormattedStartTime() {
+        return String(windowStartHour).padStart(2, '0') + ":" + String(windowStartMinute).padStart(2, '0');
+    }
+
+    function getFormattedEndTime() {
+        return String(windowEndHour).padStart(2, '0') + ":" + String(windowEndMinute).padStart(2, '0');
+    }
+
+    function timeToMinutes(hour, minute) {
+        return hour * 60 + minute;
+    }
+
+    function validateEndTime() {
+        var startMinutes = timeToMinutes(windowStartHour, windowStartMinute);
+        var endMinutes = timeToMinutes(windowEndHour, windowEndMinute);
+
+        if (endMinutes <= startMinutes) {
+            // Set end time to start time + 15 minutes
+            var newEndMinutes = startMinutes + 15;
+            windowEndHour = Math.floor(newEndMinutes / 60) % 24;
+            windowEndMinute = newEndMinutes % 60;
+        }
+    }
+
+    function validateStartTime() {
+        var startMinutes = timeToMinutes(windowStartHour, windowStartMinute);
+        var endMinutes = timeToMinutes(windowEndHour, windowEndMinute);
+
+        if (startMinutes >= endMinutes) {
+            // Set start time to end time - 15 minutes
+            var newStartMinutes = endMinutes - 15;
+            if (newStartMinutes < 0) {
+                newStartMinutes += 24 * 60; // Handle day wraparound
+            }
+            windowStartHour = Math.floor(newStartMinutes / 60) % 24;
+            windowStartMinute = newStartMinutes % 60;
+        }
+    }
+
     width: 400
     height: 600
     modal: true
@@ -29,7 +75,6 @@ Popup {
     clip: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
-    // Style the popup
     background: Rectangle {
         color: "#1f2937"
         border.color: "#d1d5db"
@@ -40,7 +85,6 @@ Popup {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
-    // Property to track current page
     property int currentPage: 0 // 0 = Block Times, 1 = Filter
 
     Column {
@@ -48,7 +92,7 @@ Popup {
         height: parent.height
         spacing: 0
 
-        // Header with title and close button
+        // Header
         Rectangle {
             width: parent.width
             height: 60
@@ -56,7 +100,7 @@ Popup {
 
             Item {
                 anchors.fill: parent
-                anchors.margins: 20
+                anchors.margins: 10
 
                 Text {
                     text: root.currentPage === 0 ? "Set Blocked Time" : "Filter Schedules"
@@ -67,17 +111,81 @@ Popup {
                     anchors.left: parent.left
                 }
 
-                Text {
-                    text: "✕"
-                    font.pixelSize: 24
-                    color: "#9ca3af"
+                Button {
+                    id: saveAndClose
+                    width: 40
+                    height: 40
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
+
+                    background: Rectangle {
+                        color: "transparent"
+                        radius: 4
+                    }
+
+                    // Custom content with SVG icon
+                    contentItem: Item {
+                        anchors.fill: parent
+
+                        // SVG Icon
+                        Image {
+                            id: saveIcon
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            source: "qrc:/icons/ic-save.svg"
+                            sourceSize.width: 22
+                            sourceSize.height: 22
+                        }
+
+                        // Hover tooltip
+                        ToolTip {
+                            id: saveTooltip
+                            text: "Save Preference & close"
+                            visible: preferenceMouseArea.containsMouse
+                            delay: 500
+                            timeout: 3000
+
+                            background: Rectangle {
+                                color: "#374151"
+                                radius: 4
+                                border.color: "#4b5563"
+                            }
+
+                            contentItem: Text {
+                                text: saveTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
 
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
+                            // Collect filters from the Filter page
+                            var filters = {
+                                daysToStudy: root.daysToStudyEnabled ? root.daysToStudyValue : null,
+                                totalGaps: root.totalGapsEnabled ? root.totalGapsValue : null,
+                                maxGapsTime: root.maxGapsTimeEnabled ? root.maxGapsTimeValue : null,
+                                avgDayStart: root.avgDayStartEnabled ? root.avgDayStartValue : null,
+                                avgDayEnd: root.avgDayEndEnabled ? root.avgDayEndValue : null
+                            }
+
+                            // Collect blocked times
+                            var blockedTimes = []
+                            for (var i = 0; i < blockedTimesModel.count; i++) {
+                                var item = blockedTimesModel.get(i)
+                                blockedTimes.push({
+                                    day: item.day,
+                                    startTime: item.startTime,
+                                    endTime: item.endTime
+                                })
+                            }
+
+                            // Emit unified signal
+                            root.saveAndClose(filters, blockedTimes)
                             root.close()
                         }
                     }
@@ -85,7 +193,7 @@ Popup {
             }
         }
 
-        // Tab navigation
+        // Navigation
         Rectangle {
             width: parent.width
             height: 50
@@ -147,84 +255,89 @@ Popup {
             }
         }
 
-        // Content area
+        // Main content
         Item {
             width: parent.width
-            height: parent.height - 170 // Header + tabs + button height
+            height: parent.height - 110 // Header + tabs + button height
 
-            // Block Times Page
+            // Block Times
             Item {
                 anchors.fill: parent
                 visible: root.currentPage === 0
 
                 Column {
                     anchors.fill: parent
-                    anchors.margins: 20
+                    anchors.margins: 10
                     spacing: 15
 
                     // Blocked time slots list
                     ScrollView {
                         width: parent.width
-                        height: 250
+                        height: parent.height - 120
+                        anchors.horizontalCenter: parent.horizontalCenter
 
                         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                         ScrollBar.vertical.policy: ScrollBar.AlwaysOff
 
                         Column {
                             width: parent.width
+                            anchors.horizontalCenter: parent.horizontalCenter
                             spacing: 10
 
-                            // Example blocked time slots
                             Repeater {
                                 model: ListModel {
                                     id: blockedTimesModel
-                                    ListElement { day: "Monday"; startTime: "09:00"; endTime: "11:00" }
-                                    ListElement { day: "Thursday"; startTime: "15:00"; endTime: "16:30" }
                                 }
 
-                                delegate: Rectangle {
-                                    width: root.width - 52
+                                delegate: Item {
+                                    width: parent.width  // Take full width of parent
                                     height: 60
-                                    color: "#374151"
-                                    radius: 4
 
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 10
+                                    Rectangle {
+                                        anchors.horizontalCenter: parent.horizontalCenter  // Center the rectangle within the Item
+                                        width: root.width - 52
+                                        height: 60
+                                        color: "#374151"
+                                        radius: 4
 
-                                        Column {
-                                            Layout.alignment: Qt.AlignVCenter
-                                            spacing: 2
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 10
 
-                                            Text {
-                                                text: model.day
-                                                font.pixelSize: 14
-                                                font.bold: true
-                                                color: "#ffffff"
+                                            Column {
+                                                Layout.alignment: Qt.AlignVCenter
+                                                spacing: 2
+
+                                                Text {
+                                                    text: model.day
+                                                    font.pixelSize: 14
+                                                    font.bold: true
+                                                    color: "#ffffff"
+                                                }
+
+                                                Text {
+                                                    text: model.startTime + " - " + model.endTime
+                                                    font.pixelSize: 12
+                                                    color: "#9ca3af"
+                                                }
                                             }
 
-                                            Text {
-                                                text: model.startTime + " - " + model.endTime
-                                                font.pixelSize: 12
-                                                color: "#9ca3af"
-                                            }
-                                        }
+                                            Item { Layout.fillWidth: true }
 
-                                        Item { Layout.fillWidth: true }
+                                            Image {
+                                                Layout.alignment: Qt.AlignVCenter
+                                                width: 24
+                                                height: 24
+                                                source: "qrc:/icons/ic-delete.svg"
+                                                sourceSize.width: 22
+                                                sourceSize.height: 22
 
-                                        Image {
-                                            Layout.alignment: Qt.AlignVCenter
-                                            width: 24
-                                            height: 24
-                                            source: "qrc:/icons/ic-delete.svg"
-                                            sourceSize.width: 22
-                                            sourceSize.height: 22
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    blockedTimesModel.remove(index)
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: {
+                                                        blockedTimesModel.remove(index)
+                                                    }
                                                 }
                                             }
                                         }
@@ -239,11 +352,13 @@ Popup {
                         width: parent.width
                         height: 1
                         color: "#374151"
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
 
+                    // Input row with day selector and time pickers
                     Row {
-                        width: parent.width
-                        spacing: 10
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 8
 
                         // Day selector
                         Rectangle {
@@ -251,32 +366,223 @@ Popup {
                             height: 40
                             color: "#374151"
                             radius: 4
+                            border.width: 1
+                            border.color: "#4b5563"
 
                             ComboBox {
                                 id: daySelector
                                 anchors.fill: parent
                                 model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+                                // Style the ComboBox
+                                background: Rectangle {
+                                    color: "#374151"
+                                    radius: 4
+                                    border.width: 1
+                                    border.color: "#4b5563"
+                                }
+
+                                contentItem: Text {
+                                    text: daySelector.displayText
+                                    font.pixelSize: 12
+                                    color: "#ffffff"
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: 10
+                                    rightPadding: 25
+                                }
+
+                                popup: Popup {
+                                    y: daySelector.height
+                                    width: daySelector.width
+                                    height: contentItem.implicitHeight
+                                    padding: 1
+
+                                    background: Rectangle {
+                                        color: "#374151"
+                                        border.width: 1
+                                        border.color: "#4b5563"
+                                        radius: 4
+                                    }
+
+                                    contentItem: ListView {
+                                        clip: true
+                                        implicitHeight: contentHeight
+                                        model: daySelector.delegateModel
+                                        currentIndex: daySelector.highlightedIndex
+
+                                        delegate: ItemDelegate {
+                                            width: daySelector.width
+                                            height: 30
+
+                                            background: Rectangle {
+                                                color: parent.hovered ? "#4b5563" : "#374151"
+                                                radius: 2
+                                            }
+
+                                            contentItem: Text {
+                                                text: modelData
+                                                font.pixelSize: 12
+                                                color: "#ffffff"
+                                                horizontalAlignment: Text.AlignHCenter
+                                                verticalAlignment: Text.AlignVCenter
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Style the dropdown indicator
+                                indicator: Text {
+                                    x: daySelector.width - width - 5
+                                    y: daySelector.topPadding + (daySelector.availableHeight - height) / 2
+                                    text: "▼"
+                                    font.pixelSize: 8
+                                    color: "#ffffff"
+                                }
                             }
                         }
 
-                        // Start time
+                        // Start Time Picker
                         Rectangle {
-                            width: 80
+                            width: 100
                             height: 40
                             color: "#374151"
                             radius: 4
+                            border.width: 1
+                            border.color: "#4b5563"
 
-                            TextInput {
-                                id: startTimeInput
-                                anchors.fill: parent
-                                text: "8:00"
-                                font.pixelSize: 14
-                                color: "#ffffff"
-                                verticalAlignment: Text.AlignVCenter
-                                horizontalAlignment: Text.AlignHCenter
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 2
+
+                                // Start Hour Controls
+                                Column {
+                                    spacing: 2
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▲"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowStartHour = (windowStartHour + 1) % 24;
+                                                validateEndTime();
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▼"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowStartHour = windowStartHour > 0 ? windowStartHour - 1 : 23;
+                                                validateEndTime();
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: String(windowStartHour).padStart(2, '0')
+                                    font.pixelSize: 12
+                                    color: "#ffffff"
+                                    width: 20
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Text {
+                                    text: ":"
+                                    font.pixelSize: 14
+                                    color: "#ffffff"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: String(windowStartMinute).padStart(2, '0')
+                                    font.pixelSize: 12
+                                    color: "#ffffff"
+                                    width: 20
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                // Start Minute Controls
+                                Column {
+                                    spacing: 2
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▲"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowStartMinute = (windowStartMinute + 15) % 60;
+                                                validateEndTime();
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▼"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowStartMinute = windowStartMinute >= 15 ? windowStartMinute - 15 : 45;
+                                                validateEndTime();
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
+                        // Separator
                         Text {
                             text: "-"
                             font.pixelSize: 16
@@ -284,29 +590,152 @@ Popup {
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
-                        // End time
+                        // End Time Picker
                         Rectangle {
-                            width: 80
+                            width: 100
                             height: 40
                             color: "#374151"
                             radius: 4
+                            border.width: 1
+                            border.color: "#4b5563"
 
-                            TextInput {
-                                id: endTimeInput
-                                anchors.fill: parent
-                                text: "9:00"
-                                font.pixelSize: 14
-                                color: "#ffffff"
-                                verticalAlignment: Text.AlignVCenter
-                                horizontalAlignment: Text.AlignHCenter
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: 2
+
+                                // End Hour Controls
+                                Column {
+                                    spacing: 2
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▲"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowEndHour = (windowEndHour + 1) % 24;
+                                                validateStartTime();
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▼"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowEndHour = windowEndHour > 0 ? windowEndHour - 1 : 23;
+                                                validateStartTime();
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: String(windowEndHour).padStart(2, '0')
+                                    font.pixelSize: 12
+                                    color: "#ffffff"
+                                    width: 20
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Text {
+                                    text: ":"
+                                    font.pixelSize: 14
+                                    color: "#ffffff"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                Text {
+                                    text: String(windowEndMinute).padStart(2, '0')
+                                    font.pixelSize: 12
+                                    color: "#ffffff"
+                                    width: 20
+                                    height: parent.height
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                // End Minute Controls
+                                Column {
+                                    spacing: 2
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▲"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowEndMinute = (windowEndMinute + 15) % 60;
+                                                validateStartTime();
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 20
+                                        height: 15
+                                        color: "#4b5563"
+                                        radius: 2
+
+                                        Text {
+                                            text: "▼"
+                                            font.pixelSize: 8
+                                            color: "#ffffff"
+                                            anchors.centerIn: parent
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                windowEndMinute = windowEndMinute >= 15 ? windowEndMinute - 15 : 45;
+                                                validateStartTime();
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
 
                     // Add blocked slot button
                     Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
                         width: parent.width
-                        height: 50
+                        height: 40
                         color: "#374151"
                         radius: 4
 
@@ -324,8 +753,8 @@ Popup {
                             onClicked: {
                                 blockedTimesModel.append({
                                     "day": daySelector.currentText,
-                                    "startTime": startTimeInput.text,
-                                    "endTime": endTimeInput.text
+                                    "startTime": getFormattedStartTime(),
+                                    "endTime": getFormattedEndTime()
                                 })
                             }
                         }
@@ -333,7 +762,7 @@ Popup {
                 }
             }
 
-            // Filter Page - Modified FilterMenu without buttons
+            // Filter Page
             Item {
                 anchors.fill: parent
                 visible: root.currentPage === 1
@@ -1087,59 +1516,6 @@ Popup {
                                 }
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        // Single Save & Close button at the bottom
-        Rectangle {
-            width: parent.width
-            height: 60
-            color: "transparent"
-
-            Rectangle {
-                width: parent.width - 40
-                height: 50
-                anchors.centerIn: parent
-                color: "#374151"
-                radius: 25
-
-                Text {
-                    text: "Save & Close"
-                    font.pixelSize: 16
-                    font.bold: true
-                    color: "#ffffff"
-                    anchors.centerIn: parent
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        // Collect filters from the Filter page
-                        var filters = {
-                            daysToStudy: root.daysToStudyEnabled ? root.daysToStudyValue : null,
-                            totalGaps: root.totalGapsEnabled ? root.totalGapsValue : null,
-                            maxGapsTime: root.maxGapsTimeEnabled ? root.maxGapsTimeValue : null,
-                            avgDayStart: root.avgDayStartEnabled ? root.avgDayStartValue : null,
-                            avgDayEnd: root.avgDayEndEnabled ? root.avgDayEndValue : null
-                        }
-
-                        // Collect blocked times
-                        var blockedTimes = []
-                        for (var i = 0; i < blockedTimesModel.count; i++) {
-                            var item = blockedTimesModel.get(i)
-                            blockedTimes.push({
-                                day: item.day,
-                                startTime: item.startTime,
-                                endTime: item.endTime
-                            })
-                        }
-
-                        // Emit unified signal
-                        root.saveAndClose(filters, blockedTimes)
-                        root.close()
                     }
                 }
             }

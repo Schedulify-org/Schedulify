@@ -340,7 +340,7 @@ Page {
         id: preferenceMenu
         parent: Overlay.overlay
 
-        onSaveAndClose: {
+        onSaveAndClose: function(filters, blockedTimes) {
             // Handle both filters and blocked times
             console.log("Filters:", filters)
             console.log("Blocked Times:", blockedTimes)
