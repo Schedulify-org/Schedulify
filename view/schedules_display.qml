@@ -85,18 +85,6 @@ Page {
                     cursorShape: Qt.PointingHandCursor
                 }
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: scrollArea.contentHeight > scrollArea.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-                    active: scrollArea.contentHeight > scrollArea.height
-                    visible: scrollArea.contentHeight > scrollArea.height
-                }
-
-                ScrollBar.horizontal: ScrollBar {
-                    policy: scrollArea.contentWidth > scrollArea.width ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
-                    active: scrollArea.contentWidth > scrollArea.width
-                    visible: scrollArea.contentWidth > scrollArea.width
-                }
-
                 Component.onCompleted: {
                     Qt.callLater(function() {
                         var maxScroll = contentHeight - height;
