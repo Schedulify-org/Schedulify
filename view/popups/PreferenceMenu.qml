@@ -39,6 +39,15 @@ Popup {
         }
     }
 
+    // Timer to scroll to bottom after adding item
+    Timer {
+        id: scrollToBottomTimer
+        interval: 50 // Small delay to allow layout update
+        onTriggered: {
+            scrollView.scrollToBottom();
+        }
+    }
+
     // Window picker helpers
     function getFormattedStartTime() {
         return String(windowStartHour).padStart(2, '0') + ":" + String(windowStartMinute).padStart(2, '0');
@@ -304,6 +313,7 @@ Popup {
 
                     // Blocked time slots list
                     ScrollView {
+                        id: scrollView
                         width: parent.width
                         height: errorMessage === "" ? parent.height - 120 : parent.height - 175
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -311,24 +321,38 @@ Popup {
                         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
                         ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
+                        // scroll to bottom on new item
+                        function scrollToBottom() {
+                            if (contentItem && contentItem.contentHeight > height) {
+                                contentItem.contentY = contentItem.contentHeight - height;
+                            }
+                        }
+
                         Column {
-                            width: parent.width
+                            id: blockedTimesColumn
+                            width: scrollView.width
                             anchors.horizontalCenter: parent.horizontalCenter
                             spacing: 10
 
                             Repeater {
                                 model: ListModel {
                                     id: blockedTimesModel
+
+                                    onCountChanged: {
+                                        if (count > 0) {
+                                            scrollToBottomTimer.start();
+                                        }
+                                    }
                                 }
 
                                 delegate: Item {
-                                    width: parent.width  // Take full width of parent
+                                    width: blockedTimesColumn.width
                                     height: 60
 
                                     Rectangle {
-                                        anchors.horizontalCenter: parent.horizontalCenter  // Center the rectangle within the Item
-                                        width: root.width - 52
+                                        width: parent.width - 20
                                         height: 60
+                                        anchors.horizontalCenter: parent.horizontalCenter
                                         color: "#374151"
                                         radius: 4
 
@@ -354,7 +378,9 @@ Popup {
                                                 }
                                             }
 
-                                            Item { Layout.fillWidth: true }
+                                            Item {
+                                                Layout.fillWidth: true
+                                            }
 
                                             Image {
                                                 Layout.alignment: Qt.AlignVCenter
@@ -815,7 +841,7 @@ Popup {
             Item {
                 anchors.fill: parent
                 visible: root.currentPage === 1
-                
+
                 ScrollView {
                     anchors.fill: parent
                     anchors.margins: 20
@@ -1379,7 +1405,7 @@ Popup {
                             }
                         }
 
-                        // Avg Day Start filter
+                        // Avg Day End filter
                         Item {
                             width: parent.width
                             height: 50
@@ -1502,7 +1528,7 @@ Popup {
                                     Text {
                                         text: ":"
                                         font.pixelSize: 14
-                                        color: root.avgDayStartEnabled ? "#ffffff" : "#9ca3af"
+                                        color: root.avgDayEndEnabled ? "#ffffff" : "#9ca3af"
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
