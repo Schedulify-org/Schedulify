@@ -152,8 +152,8 @@ Popup {
                         // Hover tooltip
                         ToolTip {
                             id: saveTooltip
-                            text: "Save Preference & close"
-                            visible: preferenceMouseArea.containsMouse
+                            text: "Save Preference & Close"
+                            visible: saveMouseArea.containsMouse
                             delay: 500
                             timeout: 3000
 
@@ -172,8 +172,10 @@ Popup {
                     }
 
                     MouseArea {
+                        id: saveMouseArea
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
                         onClicked: {
                             // Collect filters from the Filter page
                             var filters = {

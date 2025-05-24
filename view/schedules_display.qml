@@ -613,6 +613,30 @@ Page {
                             border.color: "#e0e0e0"
                             radius: 4
 
+                            // Define these properties once at the Rectangle level
+                            property string columnName: {
+                                switch(model.column) {
+                                    case 1: return "sunday_type";
+                                    case 2: return "monday_type";
+                                    case 3: return "tuesday_type";
+                                    case 4: return "wednesday_type";
+                                    case 5: return "thursday_type";
+                                    case 6: return "friday_type";
+                                    case 7: return "saturday_type";
+                                    default: return "";
+                                }
+                            }
+
+                            property string itemType: {
+                                if (columnName && model.row !== undefined) {
+                                    let rowData = parent.parent.model.rows[model.row];
+                                    if (rowData && rowData[columnName]) {
+                                        return rowData[columnName];
+                                    }
+                                }
+                                return "";
+                            }
+
                             color: {
                                 if (model.column === 0) {
                                     return "#d1d5db"; // Time slot column
@@ -622,33 +646,32 @@ Page {
                                     return "#ffffff"; // Empty cell
                                 }
 
-                                // Get the type information for color coding
-                                let columnName = "";
-                                switch(model.column) {
-                                    case 1: columnName = "sunday_type"; break;
-                                    case 2: columnName = "monday_type"; break;
-                                    case 3: columnName = "tuesday_type"; break;
-                                    case 4: columnName = "wednesday_type"; break;
-                                    case 5: columnName = "thursday_type"; break;
-                                    case 6: columnName = "friday_type"; break;
-                                    case 7: columnName = "saturday_type"; break;
-                                }
-
-                                let itemType = "";
-                                if (columnName && model.row !== undefined) {
-                                    // Access the type data from the model
-                                    let rowData = parent.parent.model.rows[model.row];
-                                    if (rowData && rowData[columnName]) {
-                                        itemType = rowData[columnName];
-                                    }
-                                }
-
-                                // Color based on item type
                                 switch(itemType) {
                                     case "lecture": return "#b0e8ff";
                                     case "lab": return "#abffc6";
                                     case "tutorial": return "#edc8ff";
                                     default: return "#64748BFF";
+                                }
+                            }
+
+                            // Hover tooltip
+                            ToolTip {
+                                id: sessionTooltip
+                                text: itemType || "No session type"
+                                visible: sessionMouseArea.containsMouse && itemType !== ""
+                                delay: 500
+                                timeout: 3000
+
+                                background: Rectangle {
+                                    color: "#374151"
+                                    radius: 4
+                                    border.color: "#4b5563"
+                                }
+
+                                contentItem: Text {
+                                    text: sessionTooltip.text
+                                    color: "white"
+                                    font.pixelSize: 12
                                 }
                             }
 
@@ -664,6 +687,12 @@ Page {
                                 color: "#000000"
                                 clip: true
                                 elide: Text.ElideRight
+                            }
+
+                            MouseArea {
+                                id: sessionMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
                             }
                         }
                     }
