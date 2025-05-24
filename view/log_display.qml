@@ -234,7 +234,7 @@ Window {
         }
     }
 
-    Component.onDestruction: {
+    onClosing: {
         if (logDisplayController) {
             logDisplayController.setLogWindowOpen(false);
         }
