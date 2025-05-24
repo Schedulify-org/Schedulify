@@ -28,6 +28,17 @@ Popup {
     property int windowEndHour: 9
     property int windowEndMinute: 0
 
+    property string errorMessage: ""
+
+    // Timer to clear error message
+    Timer {
+        id: errorMessageTimer
+        interval: 3000 // 3 seconds
+        onTriggered: {
+            errorMessage = ""
+        }
+    }
+
     // Window picker helpers
     function getFormattedStartTime() {
         return String(windowStartHour).padStart(2, '0') + ":" + String(windowStartMinute).padStart(2, '0');
@@ -270,14 +281,33 @@ Popup {
                     anchors.margins: 10
                     spacing: 15
 
+                    // Error message
+                    Rectangle {
+                        id: errorMessageContainer
+                        width: parent.width
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        height: errorMessage === "" ? 0 : 40
+                        visible: errorMessage !== ""
+                        color: "#fef2f2"
+                        radius: 4
+                        border.color: "#fecaca"
+
+                        Label {
+                            anchors.centerIn: parent
+                            text: errorMessage
+                            color: "#dc2626"
+                            font.pixelSize: 14
+                        }
+                    }
+
                     // Blocked time slots list
                     ScrollView {
                         width: parent.width
-                        height: parent.height - 120
+                        height: errorMessage === "" ? parent.height - 120 : parent.height - 175
                         anchors.horizontalCenter: parent.horizontalCenter
 
                         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
                         Column {
                             width: parent.width
@@ -751,11 +781,28 @@ Popup {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                blockedTimesModel.append({
-                                    "day": daySelector.currentText,
-                                    "startTime": getFormattedStartTime(),
-                                    "endTime": getFormattedEndTime()
-                                })
+                                let exist = false;
+                                for (let i = 0; i < blockedTimesModel.count; i++) {
+                                    const item = blockedTimesModel.get(i);
+                                    if (item.day === daySelector.currentText) {
+                                        if (item.startTime === getFormattedStartTime()) {
+                                            if (item.endTime === getFormattedEndTime()) {
+                                                exist = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (!exist) {
+                                    blockedTimesModel.append({
+                                        "day": daySelector.currentText,
+                                        "startTime": getFormattedStartTime(),
+                                        "endTime": getFormattedEndTime()
+                                    })
+                                } else {
+                                    errorMessage = "Block time already exist"
+                                    errorMessageTimer.restart()
+                                }
                             }
                         }
                     }
