@@ -248,7 +248,7 @@ Page {
                         horizontalCenter: browseButton.horizontalCenter
                         topMargin: 16
                     }
-                    text: "Supported formats: TXT"
+                    text: "Supported formats: TXT & XLSX"
                     font.pixelSize: 12
                     color: "#9ca3af"
                 }
