@@ -12,8 +12,8 @@ Page {
     background: Rectangle { color: "#ffffff" }
 
     property var controller: schedulesDisplayController
-    property int currentIndex: controller.currentScheduleIndex
-    property int totalSchedules: controller.getScheduleCount()
+    property int currentIndex: controller ? controller.currentScheduleIndex : 0
+    property int totalSchedules: controller ? controller.getScheduleCount() : 0
     property int numDays: 7
 
     // Minimum constraints
@@ -344,6 +344,12 @@ Page {
             // Handle both filters and blocked times
             console.log("Filters:", filters)
             console.log("Blocked Times:", blockedTimes)
+
+            if (controller) {
+                controller.applyFilters(filters);
+            } else {
+                console.error("Controller is null, cannot apply filters!");
+            }
         }
     }
 
@@ -371,8 +377,8 @@ Page {
                 Rectangle {
                     id: prevButton
                     radius: 4
-                    color: prevMouseArea.containsMouse && currentIndex > 0 ? "#35455c" :
-                            currentIndex > 0 ? "#1f2937" : "#9ca3af"  // Gray when disabled
+                    color: controller && controller.currentScheduleIndex > 0 && prevMouseArea.containsMouse ? "#35455c" :
+                            controller && controller.currentScheduleIndex > 0 ? "#1f2937" : "#9ca3af"
                     implicitWidth: 50
                     implicitHeight: 40
                     Layout.alignment: Qt.AlignLeft
@@ -380,7 +386,7 @@ Page {
                     Text {
                         text: "←"
                         anchors.centerIn: parent
-                        color: currentIndex > 0 ? "white" : "#6b7280"  // Muted color when disabled
+                        color: controller && controller.currentScheduleIndex > 0 ? "white" : "#6b7280"
                         font.pixelSize: 20
                         font.bold: true
                     }
@@ -388,12 +394,12 @@ Page {
                     MouseArea {
                         id: prevMouseArea
                         anchors.fill: parent
-                        hoverEnabled: currentIndex > 0  // Only enable hover when clickable
-                        cursorShape: currentIndex > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: currentIndex > 0  // Only enable clicking when there's a previous schedule
+                        hoverEnabled: controller && controller.currentScheduleIndex > 0
+                        cursorShape: controller && controller.currentScheduleIndex > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        enabled: controller && controller.currentScheduleIndex > 0
                         onClicked: {
-                            if (currentIndex > 0) {  // Extra safety check
-                                controller.setCurrentScheduleIndex(currentIndex - 1)
+                            if (controller && controller.currentScheduleIndex > 0) {
+                                controller.setCurrentScheduleIndex(controller.currentScheduleIndex - 1)
                             }
                         }
                     }
@@ -415,9 +421,11 @@ Page {
 
                     Label {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "Schedule " + (currentIndex + 1) + " of " + totalSchedules
+                        text: controller && controller.getScheduleCount() > 0
+                            ? "Schedule " + (controller.currentScheduleIndex + 1) + " of " + controller.getScheduleCount()
+                            : "No schedules available"
                         font.pixelSize: 15
-                        color: "#3a3e45"
+                        color: controller && controller.getScheduleCount() > 0 ? "#3a3e45" : "red"
                     }
                 }
 
@@ -429,8 +437,8 @@ Page {
                 Rectangle {
                     id: nextButton
                     radius: 4
-                    color: nextMouseArea.containsMouse && currentIndex < totalSchedules - 1 ? "#35455c" :
-                            currentIndex < totalSchedules - 1 ? "#1f2937" : "#9ca3af"  // Gray when disabled
+                    color: controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1 && nextMouseArea.containsMouse ? "#35455c" :
+                            controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1 ? "#1f2937" : "#9ca3af"
                     implicitWidth: 50
                     implicitHeight: 40
                     Layout.alignment: Qt.AlignRight
@@ -438,7 +446,7 @@ Page {
                     Text {
                         text: "→"
                         anchors.centerIn: parent
-                        color: currentIndex < totalSchedules - 1 ? "white" : "#6b7280"  // Muted color when disabled
+                        color: controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1 ? "white" : "#6b7280"
                         font.pixelSize: 20
                         font.bold: true
                     }
@@ -446,16 +454,17 @@ Page {
                     MouseArea {
                         id: nextMouseArea
                         anchors.fill: parent
-                        hoverEnabled: currentIndex < totalSchedules - 1  // Only enable hover when clickable
-                        cursorShape: currentIndex < totalSchedules - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        enabled: currentIndex < totalSchedules - 1  // Only enable clicking when there's a next schedule
+                        hoverEnabled: controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1
+                        cursorShape: controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1 ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        enabled: controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1
                         onClicked: {
-                            if (currentIndex < totalSchedules - 1) {  // Extra safety check
-                                controller.setCurrentScheduleIndex(currentIndex + 1)
+                            if (controller && controller.currentScheduleIndex < controller.getScheduleCount() - 1) {
+                                controller.setCurrentScheduleIndex(controller.currentScheduleIndex + 1)
                             }
                         }
                     }
                 }
+
             }
 
             // Scrollable table container - adapts to available space

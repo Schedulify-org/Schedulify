@@ -86,8 +86,7 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::Qml
         Qt6::QuickLayouts
         Qt6::PrintSupport
-        Qt6::QuickControls2
-)
+        Qt6::QuickControls2)
 
 set_target_properties(SchedGUI PROPERTIES
         ${BUNDLE_ID_OPTION}
