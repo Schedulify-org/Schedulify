@@ -1,22 +1,128 @@
 #include "schedules_display.h"
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
-        : ControllerManager(parent), m_scheduleModel(new ScheduleModel(this)) {
+        : ControllerManager(parent),
+          m_scheduleModel(new ScheduleModel(this)),
+          m_scheduleFilter(new ScheduleFilter(this)) {
     modelConnection = ModelAccess::getModel();
+    connect(this, &SchedulesDisplayController::filtersApplied,this, [this]() {
+                emit m_scheduleModel->scheduleDataChanged();
+    });
 }
 
 SchedulesDisplayController::~SchedulesDisplayController() {
     delete modelConnection;
+    delete m_scheduleFilter;
 }
 
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
-    m_schedules = schedules;
-    m_scheduleModel->loadSchedules(schedules);
+    m_originalSchedules = schedules;
+    m_filteredSchedules = schedules; // Initially, filtered = original
+    m_scheduleModel->loadSchedules(m_filteredSchedules);
 }
 
+// NEW: Apply filters and blocked times from QML
+void SchedulesDisplayController::applyFiltersAndBlockedTimes(const QVariantMap& filterData, const QVariantList& blockedTimes) {
+    // Convert QVariantMap to FilterCriteria
+    ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
+
+    // TODO: Handle blocked times (you can implement this based on your needs)
+    // For now, we'll focus on the filtering
+
+    // Apply filters to original schedules
+    applyFiltersToSchedules(criteria);
+
+    // Update the model with filtered data
+    m_scheduleModel->loadSchedules(m_filteredSchedules);
+
+    // Emit signal to notify UI
+    emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
+                        static_cast<int>(m_originalSchedules.size()));
+}
+
+// NEW: Preview filters (optional - for real-time preview)
+void SchedulesDisplayController::previewFilters(const QVariantMap& filterData) {
+    // Same as applyFiltersAndBlockedTimes but without saving state permanently
+    ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
+
+    // Apply filters temporarily
+    std::vector<InformativeSchedule> previewSchedules = m_scheduleFilter->filterSchedules(m_originalSchedules, criteria);
+
+    // Update model temporarily
+    m_scheduleModel->loadSchedules(previewSchedules);
+}
+
+// NEW: Clear all filters
+void SchedulesDisplayController::clearFilters() {
+    m_filteredSchedules = m_originalSchedules;
+    m_scheduleModel->loadSchedules(m_filteredSchedules);
+    emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
+                        static_cast<int>(m_originalSchedules.size()));
+}
+
+// Helper: Apply filters to schedules
+void SchedulesDisplayController::applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria) {
+    m_filteredSchedules = m_scheduleFilter->filterSchedules(m_originalSchedules, criteria);
+}
+
+// Helper: Convert QVariantMap from QML to FilterCriteria
+ScheduleFilter::FilterCriteria SchedulesDisplayController::convertQVariantToFilterCriteria(const QVariantMap& filterData) {
+    ScheduleFilter::FilterCriteria criteria;
+
+    // Days to Study Filter (serves as Active Days filter)
+    if (filterData.contains("daysToStudy")) {
+        QVariantMap daysToStudyData = filterData["daysToStudy"].toMap();
+        criteria.daysToStudyEnabled = daysToStudyData["enabled"].toBool();
+        if (criteria.daysToStudyEnabled) {
+            criteria.daysToStudyValue = daysToStudyData["value"].toInt();
+        }
+    }
+
+    // Total Gaps Filter
+    if (filterData.contains("totalGaps")) {
+        QVariantMap totalGapsData = filterData["totalGaps"].toMap();
+        criteria.totalGapsEnabled = totalGapsData["enabled"].toBool();
+        if (criteria.totalGapsEnabled) {
+            criteria.totalGapsValue = totalGapsData["value"].toInt();
+        }
+    }
+
+    // Max Gaps Time Filter
+    if (filterData.contains("maxGapsTime")) {
+        QVariantMap maxGapsTimeData = filterData["maxGapsTime"].toMap();
+        criteria.maxGapsTimeEnabled = maxGapsTimeData["enabled"].toBool();
+        if (criteria.maxGapsTimeEnabled) {
+            criteria.maxGapsTimeValue = maxGapsTimeData["value"].toInt();
+        }
+    }
+
+    // Average Day Start Filter
+    if (filterData.contains("avgDayStart")) {
+        QVariantMap avgDayStartData = filterData["avgDayStart"].toMap();
+        criteria.avgDayStartEnabled = avgDayStartData["enabled"].toBool();
+        if (criteria.avgDayStartEnabled) {
+            criteria.avgDayStartHour = avgDayStartData["hour"].toInt();
+            criteria.avgDayStartMinute = avgDayStartData["minute"].toInt();
+        }
+    }
+
+    // Average Day End Filter
+    if (filterData.contains("avgDayEnd")) {
+        QVariantMap avgDayEndData = filterData["avgDayEnd"].toMap();
+        criteria.avgDayEndEnabled = avgDayEndData["enabled"].toBool();
+        if (criteria.avgDayEndEnabled) {
+            criteria.avgDayEndHour = avgDayEndData["hour"].toInt();
+            criteria.avgDayEndMinute = avgDayEndData["minute"].toInt();
+        }
+    }
+
+    return criteria;
+}
+
+// Existing methods remain unchanged
 void SchedulesDisplayController::saveScheduleAsCSV() {
     int currentIndex = m_scheduleModel->currentScheduleIndex();
-    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_schedules.size())) {
+    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {
         QString fileName = QFileDialog::getSaveFileName(nullptr,
                                                         "Save Schedule as CSV",
                                                         QDir::homePath() + "/" + generateFilename("",
@@ -24,15 +130,15 @@ void SchedulesDisplayController::saveScheduleAsCSV() {
                                                         "CSV Files (*.csv)");
         if (!fileName.isEmpty()) {
             modelConnection->executeOperation(ModelOperation::SAVE_SCHEDULE,
-                                              &m_schedules[currentIndex], fileName.toLocal8Bit().constData());
+                                              &m_filteredSchedules[currentIndex], fileName.toLocal8Bit().constData());
         }
     }
 }
 
 void SchedulesDisplayController::printScheduleDirectly() {
     int currentIndex = m_scheduleModel->currentScheduleIndex();
-    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_schedules.size())) {
-        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[currentIndex], "");
+    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {
+        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_filteredSchedules[currentIndex], "");
     }
 }
 

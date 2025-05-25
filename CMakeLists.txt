@@ -41,6 +41,8 @@ set(PROJECT_SOURCES
         controller/include/main_controller.h
         controller/include/controller_manager.h
         controller/models/course_model.h
+        controller/models/schedule_model.cpp
+        controller/models/schedule_model.h
         controller/include/file_input.h
         controller/include/course_selection.h
         controller/include/schedules_display.h
@@ -58,8 +60,8 @@ set(PROJECT_SOURCES
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
         model/src/main/model_access.cpp
-        controller/models/schedule_model.cpp
-        controller/models/schedule_model.h
+        controller/models/schedule_filter.h
+        controller/models/schedule_filter.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -96,7 +98,7 @@ set_target_properties(SchedGUI PROPERTIES
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE FALSE
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)

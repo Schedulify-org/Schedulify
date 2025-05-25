@@ -334,12 +334,21 @@ Page {
         }
     }
 
-    PreferenceMenu {
+    MainPreferencePopup {
         id: preferenceMenu
         parent: Overlay.overlay
 
-        onSaveAndClose: function(filters, blockedTimes) {
-            // Handle filters and blocked times
+        // ADD THESE SIGNAL CONNECTIONS:
+        onFiltersApplied: function(filterData, blockedTimes) {
+            if (controller) {
+                controller.applyFiltersAndBlockedTimes(filterData, blockedTimes)
+            }
+        }
+
+        onFiltersChanged: function(filterData) {
+            if (controller) {
+                controller.previewFilters(filterData)
+            }
         }
     }
 
