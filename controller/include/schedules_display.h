@@ -71,7 +71,6 @@ signals:
     void currentScheduleIndexChanged();
     void scheduleCountChanged();
     void filtersChanged();
-    void navigateBack();
     void screenshotSaved(const QString& path);
     void screenshotFailed();
     void scheduleChanged();

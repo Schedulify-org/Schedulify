@@ -15,10 +15,7 @@ void SchedulesDisplayController::loadScheduleData(
 {
     qDebug() << "[Schedulify] Loaded" << schedules.size() << "schedules";
     m_allSchedules = schedules;
-
-    // Initialize m_schedules with all schedules when loaded
-    // This ensures that schedules are displayed by default before any filters are applied.
-    m_schedules = m_allSchedules; // <--- ADD THIS LINE
+    m_schedules = m_allSchedules;
 
     m_filteredIndices.resize(schedules.size());
     std::iota(m_filteredIndices.begin(), m_filteredIndices.end(), 0);
@@ -76,8 +73,6 @@ int SchedulesDisplayController::getScheduleCount() const {
 
 void SchedulesDisplayController::applyFilters(const QVariantMap& filters) {
     ScheduleFilters newFilters;
-    // Keep track of which filters are actually being applied
-    // newFilters.clear(); // Ensure all default values are set for newFilters
 
     if (filters.isEmpty()) {
         clearFilters();
@@ -121,38 +116,9 @@ void SchedulesDisplayController::clearFilters() {
     emit scheduleChanged();
 }
 
-
 bool SchedulesDisplayController::hasFilters() const {
     return m_filtersActive;
 }
-
-// void SchedulesDisplayController::applyScheduleFilters() {
-//     if (!m_filtersActive) return;
-//
-//     m_schedules.clear();
-//     m_filteredIndices.clear();
-//
-//     for (size_t i = 0; i < m_allSchedules.size(); ++i) {
-//         const InformativeSchedule& schedule = m_allSchedules[i];
-//         bool passes = true;
-//
-//         if (m_currentFilters.maxDaysToStudy < 7 && m_currentFilters.maxDaysToStudy > 0) {
-//             passes &= passesMaxDaysFilter(schedule, m_currentFilters.maxDaysToStudy);
-//         }
-//
-//
-//
-//         if (passes) {
-//             m_schedules.push_back(schedule);
-//             m_filteredIndices.push_back(i);
-//         }
-//     }
-//
-//     if (m_currentScheduleIndex >= static_cast<int>(m_schedules.size())) {
-//         setCurrentScheduleIndex(0);
-//     }
-//     // emit filtersChanged();
-// }
 
 void SchedulesDisplayController::applyScheduleFilters() {
     if (!m_filtersActive) return;
