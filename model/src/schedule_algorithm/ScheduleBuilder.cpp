@@ -2,6 +2,34 @@
 
 using namespace std;
 
+// Helper function to extract all sessions from a CourseSelection
+vector<const Session*> ScheduleBuilder::getSessions(const CourseSelection& selection) const {
+    vector<const Session*> sessions;
+
+    // Add all sessions from lecture group
+    if (selection.lecture) {
+        for (const auto& session : selection.lecture->sessions) {
+            sessions.push_back(&session);
+        }
+    }
+
+    // Add all sessions from tutorial group
+    if (selection.tutorial) {
+        for (const auto& session : selection.tutorial->sessions) {
+            sessions.push_back(&session);
+        }
+    }
+
+    // Add all sessions from lab group
+    if (selection.lab) {
+        for (const auto& session : selection.lab->sessions) {
+            sessions.push_back(&session);
+        }
+    }
+
+    return sessions;
+}
+
 // Checks if there is a time conflict between two CourseSelections
 bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) const {
     vector<const Session*> aSessions = getSessions(a); // Extract sessions from selection a

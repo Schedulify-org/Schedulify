@@ -96,21 +96,54 @@ vector<Course> parseCourseDB(const string& path) {
         line_number++;
         c.teacher = line;
 
-        // 4. Session lines
+        // 4. Session lines - NEW STRUCTURE
         while (getline(file, line)) {
             line_number++;
             if (line.empty() || line == "$$$$") break;
 
             try {
                 if (line.rfind("L S", 0) == 0) {
-                    auto lectures = parseMultipleSessions(line.substr(2));
-                    c.Lectures.insert(c.Lectures.end(), lectures.begin(), lectures.end());
+                    // Create a new Group for lectures
+                    Group lectureGroup;
+                    lectureGroup.type = "Lecture";
+
+                    // Parse all sessions in this line and add them to the group
+                    auto sessions = parseMultipleSessions(line.substr(2));
+                    lectureGroup.sessions = sessions;
+
+                    // Only add the group if it has valid sessions
+                    if (!lectureGroup.sessions.empty()) {
+                        c.Lectures.push_back(lectureGroup);
+                    }
+
                 } else if (line.rfind("T S", 0) == 0) {
-                    auto tirgul = parseMultipleSessions(line.substr(2));
-                    c.Tirgulim.insert(c.Tirgulim.end(), tirgul.begin(), tirgul.end());
+                    // Create a new Group for tirgulim
+                    Group tirgulGroup;
+                    tirgulGroup.type = "Tutorial";
+
+                    // Parse all sessions in this line and add them to the group
+                    auto sessions = parseMultipleSessions(line.substr(2));
+                    tirgulGroup.sessions = sessions;
+
+                    // Only add the group if it has valid sessions
+                    if (!tirgulGroup.sessions.empty()) {
+                        c.Tirgulim.push_back(tirgulGroup);
+                    }
+
                 } else if (line.rfind("M S", 0) == 0) {
-                    auto labs = parseMultipleSessions(line.substr(2));
-                    c.labs.insert(c.labs.end(), labs.begin(), labs.end());
+                    // Create a new Group for labs
+                    Group labGroup;
+                    labGroup.type = "Lab";
+
+                    // Parse all sessions in this line and add them to the group
+                    auto sessions = parseMultipleSessions(line.substr(2));
+                    labGroup.sessions = sessions;
+
+                    // Only add the group if it has valid sessions
+                    if (!labGroup.sessions.empty()) {
+                        c.labs.push_back(labGroup);
+                    }
+
                 } else {
                     ostringstream message;
                     message << "Unknown session format at line " << line_number << ": " << line;
@@ -127,6 +160,7 @@ vector<Course> parseCourseDB(const string& path) {
                 Logger::get().logError(message.str());
             }
         }
+
         if (validateID(c.raw_id)) {
             courseDB[c.id] = c;
             course_count++;
@@ -137,21 +171,26 @@ vector<Course> parseCourseDB(const string& path) {
         Logger::get().logError("No valid courses found in the input.");
         return {};
     } else {
-        for (const auto& pair : courseDB) {
-            int courseId = pair.first;
-            const Course& course = pair.second;
+        // Check for courses with no sessions and remove them
+        auto it = courseDB.begin();
+        while (it != courseDB.end()) {
+            const Course& course = it->second;
             if (course.Lectures.empty() && course.Tirgulim.empty() && course.labs.empty()) {
-                courseDB.erase(courseId);
-                course_count--;
                 ostringstream message;
-                message << "Course: " << courseId << "Have no Sessions and therefore has been deleted";
+                message << "Course: " << it->first << " has no sessions and therefore has been deleted";
                 Logger::get().logError(message.str());
+                it = courseDB.erase(it);
+                course_count--;
+            } else {
+                ++it;
             }
         }
+
         if (course_count == 0) {
             Logger::get().logError("No valid courses found in the input.");
             return {};
         }
+
         ostringstream message;
         message << "Successfully parsed " << course_count << " courses.";
         Logger::get().logInfo(message.str());
@@ -239,7 +278,6 @@ Session parseSingleSession(const string& line) {
 // Parses multiple sessions from string like "S,1,... S,2,..."
 vector<Session> parseMultipleSessions(string line) {
     vector<Session> sessions;
-    line = line.substr(1); // remove "L", "T", or "M"
 
     size_t pos;
     while ((pos = line.find(" S,")) != string::npos) {

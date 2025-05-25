@@ -14,6 +14,9 @@
 
 using namespace std;
 
+
+
+// Function declarations
 bool isValidTime(const string& time);
 
 // Parses full course DB from input stream - returns all courses without filtering

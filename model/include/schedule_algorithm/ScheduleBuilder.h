@@ -7,7 +7,6 @@
 #include "schedule_algorithm/TimeUtils.h"
 #include "schedule_algorithm/getSession.h"
 #include "logger/logger.h"
-#include "schedule_algorithm/TimeUtils.h"
 
 #include <vector>
 
@@ -23,5 +22,8 @@ private:
         vector<Schedule>& results);
 
     bool hasConflict(const CourseSelection& a, const CourseSelection& b) const;
+
+    // Helper function to extract all individual sessions from a CourseSelection
+    vector<const Session*> getSessions(const CourseSelection& selection) const;
 };
 #endif // SCHEDULE_BUILDER_H

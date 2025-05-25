@@ -1,0 +1,21 @@
+130525_17-13-30: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+130525_17-13-30: [INFO   ] Successfully parsed 3 courses.
+130525_17-13-30: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.courseOutput.json
+130525_17-13-30: [INFO   ] COURSES finished successfully
+130525_17-13-30: [INFO   ] directory: C:\Users\nick\Desktop\Schedulify
+130525_17-13-30: [INFO   ] Successfully parsed 3 courses.
+130525_17-13-30: [INFO   ] Starting schedule generation for 1 courses.
+130525_17-13-30: [INFO   ] Generated 1 valid combinations for course ID 83533
+130525_17-13-30: [INFO   ] Generated 1 combinations for course ID 83533
+130525_17-13-30: [INFO   ] Finished schedule generation. Total valid schedules: 1
+130525_17-13-30: [INFO   ] output finish, can be seen in C:\Users\nick\Desktop\Schedulify/data/V1.schedOutput.json
+130525_17-13-30: [INFO   ] SCHEDULES finished successfully
+130525_17-13-36: [INFO   ] Successfully parsed 3 courses.
+130525_17-13-40: [INFO   ] Starting schedule generation for 3 courses.
+130525_17-13-40: [INFO   ] Generated 100 valid combinations for course ID 10003
+130525_17-13-40: [INFO   ] Generated 100 combinations for course ID 10003
+130525_17-13-40: [INFO   ] Generated 100 valid combinations for course ID 10002
+130525_17-13-40: [INFO   ] Generated 100 combinations for course ID 10002
+130525_17-13-40: [INFO   ] Generated 100 valid combinations for course ID 10001
+130525_17-13-40: [INFO   ] Generated 100 combinations for course ID 10001
+130525_17-13-42: [INFO   ] Finished schedule generation. Total valid schedules: 518400

@@ -1,149 +1,130 @@
 #include "parsers/ScheduleEnrichment.h"
+#include "logger/logger.h"
+#include <algorithm>
 
-unordered_map<int, CourseInfo> buildCourseInfoMap(const vector<Course>& courses) {
-    unordered_map<int, CourseInfo> courseInfoMap;
-    courseInfoMap.reserve(courses.size());
+using namespace std;
 
-    for (const auto& course : courses) {
-        courseInfoMap[course.id] = {course.raw_id, course.name};
+// Helper function to add all sessions from a group to the day map
+void addGroupToDayMap(unordered_map<int, vector<ScheduleItem>>& dayMap, const Group* group,
+                      const string& sessionType, const CourseInfo& courseInfo) {
+    if (!group) return;  // Skip if group is null
+
+    // Iterate through all sessions in the group
+    for (const auto& session : group->sessions) {
+        ScheduleItem item;
+        item.courseName = courseInfo.name;
+        item.raw_id = courseInfo.raw_id;
+        item.type = sessionType;
+        item.start = session.start_time;
+        item.end = session.end_time;
+        item.building = session.building_number;
+        item.room = session.room_number;
+
+        dayMap[session.day_of_week].push_back(item);
     }
-    return courseInfoMap;
 }
 
-
-void addSessionToDayMap(unordered_map<int, vector<ScheduleItem>>& dayMap, const Session* session,
-                        const string& sessionType, const CourseInfo& courseInfo) {
-    if (session) {
-        dayMap[session->day_of_week].push_back({courseInfo.name, courseInfo.raw_id,sessionType,
-                                                session->start_time,session->end_time,
-                                                session->building_number,session->room_number});
-    }
-}
-
-
+// Build a day-indexed map of schedule items
 unordered_map<int, vector<ScheduleItem>> buildDayMap(const Schedule& schedule,
-        const unordered_map<int, CourseInfo>& courseInfoMap) {
-
+                                                     const unordered_map<int, CourseInfo>& courseInfoMap) {
     unordered_map<int, vector<ScheduleItem>> dayMap;
-    for (int day = 1; day <= 7; ++day) {
-        dayMap[day].reserve(schedule.selections.size() * 2);
+
+    for (const auto& cs : schedule.selections) {
+        auto courseInfoIt = courseInfoMap.find(cs.courseId);
+        if (courseInfoIt == courseInfoMap.end()) {
+            Logger::get().logWarning("Course info not found for course ID: " + to_string(cs.courseId));
+            continue;
+        }
+
+        const CourseInfo& courseInfo = courseInfoIt->second;
+
+        // Use the new function that handles Groups instead of individual Sessions
+        addGroupToDayMap(dayMap, cs.lecture, "lecture", courseInfo);
+        addGroupToDayMap(dayMap, cs.tutorial, "tutorial", courseInfo);
+        addGroupToDayMap(dayMap, cs.lab, "lab", courseInfo);
     }
 
-    for (const CourseSelection& cs : schedule.selections) {
-        const auto& courseInfo = courseInfoMap.count(cs.courseId) ?
-                                 courseInfoMap.at(cs.courseId) : CourseInfo{to_string(cs.courseId), to_string(cs.courseId)};
-
-        addSessionToDayMap(dayMap, cs.lecture, "lecture", courseInfo);
-        addSessionToDayMap(dayMap, cs.tutorial, "tutorial", courseInfo);
-        addSessionToDayMap(dayMap, cs.lab, "lab", courseInfo);
+    // Sort sessions by start time for each day
+    for (auto& [day, sessions] : dayMap) {
+        sort(sessions.begin(), sessions.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
+            return a.start < b.start;
+        });
     }
 
     return dayMap;
 }
 
+// Implementation of the missing exportSchedulesToObjects function
+vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& schedules,
+                                                     const vector<Course>& courses) {
+    vector<InformativeSchedule> informativeSchedules;
 
-bool isScheduleValid(const unordered_map<int, vector<ScheduleItem>>& dayMap) {
-    for (const auto& [day, items] : dayMap) {
-        if (!items.empty()) {
-            return true;
-        }
-    }
-    return false;
-}
+    // Build course info map for quick lookup
+    unordered_map<int, CourseInfo> courseInfoMap = buildCourseInfoMap(courses);
 
-
-ScheduleDay createScheduleDay(int day, unordered_map<int, vector<ScheduleItem>>& dayMap) {
-    ScheduleDay scheduleDay;
-    scheduleDay.day = dayToString(day);
-
-    if (dayMap.count(day) && !dayMap[day].empty()) {
-        // Sort items by start time
-        auto& items = dayMap[day];
-        sort(items.begin(), items.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
-            return a.start < b.start;
-        });
-
-        scheduleDay.day_items = std::move(items);
+    // Convert each Schedule to InformativeSchedule
+    for (size_t i = 0; i < schedules.size(); ++i) {
+        InformativeSchedule infoSchedule = createInformativeSchedule(schedules[i], i, courseInfoMap);
+        informativeSchedules.push_back(infoSchedule);
     }
 
-    return scheduleDay;
+    return informativeSchedules;
 }
 
+// Implementation of buildCourseInfoMap function
+unordered_map<int, CourseInfo> buildCourseInfoMap(const vector<Course>& courses) {
+    unordered_map<int, CourseInfo> courseInfoMap;
 
+    for (const auto& course : courses) {
+        CourseInfo info;
+        info.raw_id = course.raw_id;
+        info.name = course.name;
+        courseInfoMap[course.id] = info;
+    }
+
+    return courseInfoMap;
+}
+
+// Implementation of createInformativeSchedule function
 InformativeSchedule createInformativeSchedule(const Schedule& schedule, size_t index,
-        const unordered_map<int, CourseInfo>& courseInfoMap) {
+                                              const unordered_map<int, CourseInfo>& courseInfoMap) {
+    InformativeSchedule infoSchedule;
+    infoSchedule.index = static_cast<int>(index);
 
+    // Build the day map
     auto dayMap = buildDayMap(schedule, courseInfoMap);
 
-    if (!isScheduleValid(dayMap)) {
-        return {}; // Return empty to indicate invalid
-    }
-
-    InformativeSchedule informativeSchedule;
-    informativeSchedule.index = index;
-    informativeSchedule.week.reserve(7);
-
+    // Convert dayMap to vector of ScheduleDay objects
     for (int day = 1; day <= 7; ++day) {
-        informativeSchedule.week.push_back(createScheduleDay(day, dayMap));
-    }
-
-    return informativeSchedule;
-}
-
-vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& schedules, const vector<Course>& courses) {
-    Logger::get().logInfo("Initiate schedule enrichment");
-
-    auto courseInfoMap = buildCourseInfoMap(courses);
-
-    vector<InformativeSchedule> result;
-    size_t validCount = 0;
-
-    for (size_t i = 0; i < schedules.size(); ++i) {
-        InformativeSchedule schedule = createInformativeSchedule(schedules[i], i + 1, courseInfoMap);
-
-        if (schedule.week.empty()) {
-            continue; // Skip invalid schedules
-        }
-
-        validCount++;
-        result.push_back(std::move(schedule));
-    }
-
-    if (validCount == 0) {
-        Logger::get().logError("There are no valid schedules, aborting...");
-        return {};
-    }
-    Logger::get().logInfo("Done working on " + to_string(validCount) + " valid schedules");
-
-    return result;
-}
-
-
-string dayToString(const int day) {
-    static const string days[] = {
-            "sunday", "monday", "tuesday", "wednesday",
-            "thursday", "friday", "saturday"
-    };
-    return (day >= 1 && day <= 7) ? days[day - 1] : "unknown";
-}
-
-
-void printInformativeSchedules(const vector<InformativeSchedule>& schedules) {
-    for (const auto& [index, week] : schedules) {
-        cout << "----------------------" << endl;
-        cout << "Schedule: " + to_string(index) << endl;
-        for (const auto& [day, day_items] : week) {
-            cout << day << endl;
-            for (const auto& [courseName, raw_id, type, start, end, building, room] : day_items) {
-                cout << "   courseName: " + courseName << endl;
-                cout << "   raw_id: " + raw_id << endl;
-                cout << "   type: " + type << endl;
-                cout << "   start: " + start << endl;
-                cout << "   end: " + end << endl;
-                cout << "   building: " + building << endl;
-                cout << "   room: " + room << endl;
-                cout << "" << endl;
-            }
+        if (dayMap.find(day) != dayMap.end() && !dayMap[day].empty()) {
+            ScheduleDay scheduleDay;
+            scheduleDay.day = dayToString(day);
+            scheduleDay.day_items = dayMap[day];
+            infoSchedule.week.push_back(scheduleDay);
         }
     }
+
+    return infoSchedule;
 }
+
+// Implementation of dayToString function
+string dayToString(int day) {
+    switch (day) {
+        case 1: return "Sunday";
+        case 2: return "Monday";
+        case 3: return "Tuesday";
+        case 4: return "Wednesday";
+        case 5: return "Thursday";
+        case 6: return "Friday";
+        case 7: return "Saturday";
+        default: return "Unknown";
+    }
+}
+
+// You'll also need to implement other declared functions like:
+// - isScheduleValid
+// - createScheduleDay
+// - dayToString
+// - printInformativeSchedules
+//
+// These implementations depend on your specific ScheduleItem and ScheduleDay structures

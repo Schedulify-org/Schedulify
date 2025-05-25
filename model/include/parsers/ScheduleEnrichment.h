@@ -22,15 +22,14 @@ vector<InformativeSchedule> exportSchedulesToObjects(const vector<Schedule>& sch
 // Creates a mapping from course IDs to CourseInfo objects.
 unordered_map<int, CourseInfo> buildCourseInfoMap(const vector<Course>& courses);
 
-// Adds a session to the day map if it exists.
-void addSessionToDayMap(unordered_map<int, vector<ScheduleItem>>& dayMap, const Session* session,
+// Adds all sessions from a group to the day map if the group exists.
+void addGroupToDayMap(unordered_map<int, vector<ScheduleItem>>& dayMap, const Group* group,
         const string& sessionType,
         const CourseInfo& courseInfo);
 
 // Builds a day map for a schedule.
 unordered_map<int, std::vector<ScheduleItem>> buildDayMap(const Schedule& schedule,
         const unordered_map<int, CourseInfo>& courseInfoMap);
-
 
 // checks if a schedule is valid.
 bool isScheduleValid(const unordered_map<int, vector<ScheduleItem>>& dayMap);
@@ -47,6 +46,5 @@ string dayToString(int day);
 
 // Prints informative schedules to the console.
 void printInformativeSchedules(const vector<InformativeSchedule>& schedules);
-
 
 #endif //SCHEDULE_ENRICHMENT_H

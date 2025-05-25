@@ -49,7 +49,6 @@ set(PROJECT_SOURCES
         model_interfaces.h
         model/main_model.cpp
         logger/logger.cpp
-        model/src/parsers/parseCoursesToJson.cpp
         model/src/parsers/parseCoursesToVector.cpp
         model/src/schedule_algorithm/CourseLegalComb.cpp
         model/src/schedule_algorithm/ScheduleBuilder.cpp
@@ -94,7 +93,7 @@ set_target_properties(SchedGUI PROPERTIES
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE FALSE
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)

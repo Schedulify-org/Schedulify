@@ -5,26 +5,32 @@
 #include <vector>
 
 using namespace std;
-
 class Session {
 public:
-    int day_of_week;
-    string start_time;
-    string end_time;
-    string building_number;
-    string room_number;
+    int day_of_week;        // יום בשבוע בין 1-7 (ראשון - ראשון)
+    string start_time;      // שעת התחלה של הלוח הזמנים
+    string end_time;        // שעת הסיום של הלוח הזמנים
+    string building_number; // מספר הבנין בו מתקיים המתוכן המופע
+    string room_number;     // מספר החדר בו מתקיים המתוכן המופע
+};
+
+class Group {
+public:
+    string type;                    // סוג הקבוצה: Lecture / tutorial / lab
+    vector<Session> sessions;       // הקבוצה חייבת להכיל לפחות session אחד
 };
 
 class Course {
 public:
     int id;
-    string raw_id;
-    string name;
-    string teacher;
-    vector<Session> Lectures;
-    vector<Session> Tirgulim;
-    vector<Session> labs;
+    string raw_id; // מזהה (קוד) של קורס
+    string name;                    // שם הקורס
+    string teacher;                 // שם המרצה
+    vector<Group> Lectures;         // רשימת הרצאות - נדרש לפחות קבוצה אחת עם הרצאה 1
+    vector<Group> Tirgulim;         // רשימת תרגולים - יכול להיות ריק
+    vector<Group> labs;
 };
+
 
 struct ScheduleItem {
     string courseName;

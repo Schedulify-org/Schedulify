@@ -27,7 +27,6 @@ add_executable(schedModelTest
         ../../logger/logger.cpp
         ../../logger/logger.h
 
-        ../../model/src/parsers/parseCoursesToJson.cpp
         ../../model/src/parsers/parseCoursesToVector.cpp
         ../../model/src/schedule_algorithm/CourseLegalComb.cpp
         ../../model/src/schedule_algorithm/ScheduleBuilder.cpp
