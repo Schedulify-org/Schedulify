@@ -17,11 +17,10 @@ SchedulesDisplayController::~SchedulesDisplayController() {
 
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
     m_originalSchedules = schedules;
-    m_filteredSchedules = schedules; // Initially, filtered = original
+    m_filteredSchedules = schedules;
     m_scheduleModel->loadSchedules(m_filteredSchedules);
 }
 
-// NEW: Apply filters and blocked times from QML
 void SchedulesDisplayController::applyFiltersAndBlockedTimes(const QVariantMap& filterData, const QVariantList& blockedTimes) {
     // Convert QVariantMap to FilterCriteria
     ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
@@ -40,19 +39,6 @@ void SchedulesDisplayController::applyFiltersAndBlockedTimes(const QVariantMap& 
                         static_cast<int>(m_originalSchedules.size()));
 }
 
-// NEW: Preview filters (optional - for real-time preview)
-void SchedulesDisplayController::previewFilters(const QVariantMap& filterData) {
-    // Same as applyFiltersAndBlockedTimes but without saving state permanently
-    ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
-
-    // Apply filters temporarily
-    std::vector<InformativeSchedule> previewSchedules = m_scheduleFilter->filterSchedules(m_originalSchedules, criteria);
-
-    // Update model temporarily
-    m_scheduleModel->loadSchedules(previewSchedules);
-}
-
-// NEW: Clear all filters
 void SchedulesDisplayController::clearFilters() {
     m_filteredSchedules = m_originalSchedules;
     m_scheduleModel->loadSchedules(m_filteredSchedules);
@@ -60,12 +46,10 @@ void SchedulesDisplayController::clearFilters() {
                         static_cast<int>(m_originalSchedules.size()));
 }
 
-// Helper: Apply filters to schedules
 void SchedulesDisplayController::applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria) {
     m_filteredSchedules = m_scheduleFilter->filterSchedules(m_originalSchedules, criteria);
 }
 
-// Helper: Convert QVariantMap from QML to FilterCriteria
 ScheduleFilter::FilterCriteria SchedulesDisplayController::convertQVariantToFilterCriteria(const QVariantMap& filterData) {
     ScheduleFilter::FilterCriteria criteria;
 

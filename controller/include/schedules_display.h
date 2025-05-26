@@ -46,28 +46,25 @@ public:
     Q_INVOKABLE void printScheduleDirectly();
     Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
-    // NEW: Filter methods called from QML
     Q_INVOKABLE void applyFiltersAndBlockedTimes(const QVariantMap& filterData, const QVariantList& blockedTimes);
-    Q_INVOKABLE void previewFilters(const QVariantMap& filterData); // Optional: for real-time preview
     Q_INVOKABLE void clearFilters();
 
     static QString generateFilename(const QString& basePath, int index, fileType type);
 
 signals:
+    void filtersApplied(int filteredCount, int totalCount);
     void screenshotSaved(const QString& path);
     void screenshotFailed();
-    void filtersApplied(int filteredCount, int totalCount);
 
 private:
+    std::vector<InformativeSchedule> m_filteredSchedules;
+    std::vector<InformativeSchedule> m_originalSchedules;
+    ScheduleFilter* m_scheduleFilter;
     ScheduleModel* m_scheduleModel;
-    std::vector<InformativeSchedule> m_originalSchedules; // Keep original data
-    std::vector<InformativeSchedule> m_filteredSchedules; // Filtered data
     IModel* modelConnection;
-    ScheduleFilter* m_scheduleFilter; // NEW: Filter instance
 
-    // Helper methods
-    void applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria);
     ScheduleFilter::FilterCriteria convertQVariantToFilterCriteria(const QVariantMap& filterData);
+    void applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria);
 };
 
 #endif // SCHEDULES_DISPLAY_H

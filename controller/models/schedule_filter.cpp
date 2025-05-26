@@ -5,8 +5,7 @@
 ScheduleFilter::ScheduleFilter(QObject *parent) : QObject(parent) {
 }
 
-std::vector<InformativeSchedule> ScheduleFilter::filterSchedules(
-        const std::vector<InformativeSchedule>& schedules,
+std::vector<InformativeSchedule> ScheduleFilter::filterSchedules(const std::vector<InformativeSchedule>& schedules,
         const FilterCriteria& criteria) {
 
     emit filteringStarted();
