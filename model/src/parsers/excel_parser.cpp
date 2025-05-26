@@ -155,7 +155,6 @@ Session ExcelCourseParser::parseSingleSession(const string& timeSlotStr, const s
     session.end_time = "";
     session.building_number = "";
     session.room_number = "";
-    session.teacher = teacher;
 
     if (timeSlotStr.empty()) return session;
 

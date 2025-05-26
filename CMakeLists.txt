@@ -74,7 +74,6 @@ set(PROJECT_SOURCES
         model/src/parsers/excel_parser.cpp
         model/src/parsers/parseToCsv.cpp
         model/src/parsers/printSchedule.cpp
-        model/src/parsers/ScheduleEnrichment.cpp
 
         # Parser headers
         model/include/parsers/excel_parser.h
