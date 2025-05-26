@@ -353,6 +353,28 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 continue;
             }
 
+            // **NEW: Check if timeSlot is empty or invalid - skip this row if so**
+            if (timeSlot.empty() || timeSlot.find("'") == string::npos) {
+                continue; // Skip rows without valid time slots
+            }
+
+            // **NEW: Parse sessions first to validate they have valid time slots**
+            vector<Session> sessions = parseMultipleSessions(timeSlot, room, teachers);
+
+            // **NEW: Check if any sessions were successfully parsed with valid times**
+            bool hasValidSessions = false;
+            for (const Session& session : sessions) {
+                if (session.day_of_week > 0 && !session.start_time.empty() && !session.end_time.empty()) {
+                    hasValidSessions = true;
+                    break;
+                }
+            }
+
+            // **NEW: Skip this row if no valid sessions were found**
+            if (!hasValidSessions) {
+                continue;
+            }
+
             // Create or update course
             if (courseMap.find(courseCode) == courseMap.end()) {
                 Course newCourse;
@@ -361,13 +383,11 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 } catch (...) {
                     newCourse.id = 0;
                 }
-                newCourse.raw_id = courseCode;  // ADD THIS LINE - Set the raw_id to the 5-digit course code
+                newCourse.raw_id = courseCode;
                 newCourse.name = courseName;
-                newCourse.teacher = teachers; // Set the teacher field for now
+                newCourse.teacher = teachers;
                 courseMap[courseCode] = newCourse;
             }
-
-            vector<Session> sessions = parseMultipleSessions(timeSlot, room, teachers);
 
             string groupKey = fullCode + "_" + normalizedSessionType;
 
@@ -377,26 +397,30 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 courseGroupMap[courseCode][groupKey] = newGroup;
             }
 
+            // **MODIFIED: Only add sessions that have valid times**
             for (const Session& session : sessions) {
-                if (session.day_of_week > 0) {
+                if (session.day_of_week > 0 && !session.start_time.empty() && !session.end_time.empty()) {
                     courseGroupMap[courseCode][groupKey].sessions.push_back(session);
                 }
             }
         }
 
-        // Convert groups to courses - USING CAPITAL LETTERS
+        // **FIXED: Convert groups to courses OUTSIDE the row loop - USING CAPITAL LETTERS**
         for (auto& [courseCode, course] : courseMap) {
             for (auto& [groupKey, group] : courseGroupMap[courseCode]) {
-                if (group.type == "lecture") {
-                    course.Lectures.push_back(group);  // Capital 'L'
-                } else if (group.type == "tutorial") {
-                    course.Tirgulim.push_back(group);  // Capital 'T'
-                } else if (group.type == "lab") {
-                    course.labs.push_back(group);      // lowercase 'l'
+                if (group.type == "lecture" && !group.sessions.empty()) {
+                    course.Lectures.push_back(group);
+                } else if (group.type == "tutorial" && !group.sessions.empty()) {
+                    course.Tirgulim.push_back(group);
+                } else if (group.type == "lab" && !group.sessions.empty()) {
+                    course.labs.push_back(group);
                 }
             }
 
-            courses.push_back(course);
+            // **UPDATED: Keep courses that have at least one valid lecture, tutorial, or lab**
+            if (!course.Lectures.empty() || !course.Tirgulim.empty() || !course.labs.empty()) {
+                courses.push_back(course);
+            }
         }
 
         doc.close();
