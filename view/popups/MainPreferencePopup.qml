@@ -30,8 +30,6 @@ Popup {
     property int windowEndHour: 9
     property int windowEndMinute: 0
 
-    property string errorMessage: ""
-
     function saveOriginalState() {
         originalFilterState = {
             daysToStudy: {
@@ -91,39 +89,6 @@ Popup {
         filterMenu.avgDayEndMinute = root.avgDayEndMinute
     }
 
-    onOpened: {
-        saveOriginalState()
-        updateFilterMenuFromState()
-    }
-
-    // Timer to clear error message
-    Timer {
-        id: errorMessageTimer
-        interval: 3000 // 3 seconds
-        onTriggered: {
-            errorMessage = ""
-        }
-    }
-
-    width: 400
-    height: 600
-    modal: true
-    focus: true
-    clip: true
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-
-    background: Rectangle {
-        color: "#1f2937"
-        border.color: "#d1d5db"
-        border.width: 1
-        radius: 6
-    }
-
-    x: (parent.width - width) / 2
-    y: (parent.height - height) / 2
-
-    property int currentPage: 0 // 0 = Block Times, 1 = Filter
-
     function getCurrentFilterData() {
         return {
             daysToStudy: {
@@ -150,6 +115,30 @@ Popup {
             }
         }
     }
+
+    onOpened: {
+        saveOriginalState()
+        updateFilterMenuFromState()
+    }
+
+    width: 400
+    height: 600
+    modal: true
+    focus: true
+    clip: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+
+    background: Rectangle {
+        color: "#1f2937"
+        border.color: "#d1d5db"
+        border.width: 1
+        radius: 6
+    }
+
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
+
+    property int currentPage: 0 // 0 = Block Times, 1 = Filter
 
     Column {
         width: parent.width
@@ -383,18 +372,11 @@ Popup {
                 windowStartMinute: root.windowStartMinute
                 windowEndHour: root.windowEndHour
                 windowEndMinute: root.windowEndMinute
-                errorMessage: root.errorMessage
 
                 onWindowStartHourChanged: root.windowStartHour = windowStartHour
                 onWindowStartMinuteChanged: root.windowStartMinute = windowStartMinute
                 onWindowEndHourChanged: root.windowEndHour = windowEndHour
                 onWindowEndMinuteChanged: root.windowEndMinute = windowEndMinute
-                onErrorMessageChanged: {
-                    root.errorMessage = errorMessage
-                    if (errorMessage !== "") {
-                        errorMessageTimer.restart()
-                    }
-                }
             }
 
             // Filter page

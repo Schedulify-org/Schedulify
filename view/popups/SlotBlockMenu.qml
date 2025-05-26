@@ -13,6 +13,15 @@ Item {
     property int windowEndMinute: 0
     property string errorMessage: ""
 
+    // Timer to clear error message
+    Timer {
+        id: errorMessageTimer
+        interval: 3000 // 3 seconds
+        onTriggered: {
+            errorMessage = ""
+        }
+    }
+
     // Timer to scroll to bottom after adding item
     Timer {
         id: scrollToBottomTimer
@@ -617,6 +626,9 @@ Item {
                         })
                     } else {
                         errorMessage = "Block time already exist"
+                        if (errorMessage !== "") {
+                            errorMessageTimer.restart()
+                        }
                     }
                 }
             }
