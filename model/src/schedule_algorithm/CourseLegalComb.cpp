@@ -21,6 +21,12 @@ vector<CourseSelection> CourseLegalComb::generate(const Course& course) const {
     vector<CourseSelection> combinations; // Resulting combinations of valid sessions
 
     try {
+        // CRITICAL FIX: Check if course has any lectures
+        if (course.Lectures.empty()) {
+            Logger::get().logWarning("Course ID " + to_string(course.id) + " has no lecture groups. Skipping course.");
+            return combinations; // Return empty if no lectures available
+        }
+
         // Iterate over all lecture groups in the course
         for (const auto& lectureGroup : course.Lectures) {
             const Group* lecPtr = &lectureGroup; // Pointer to the current lecture group
@@ -31,15 +37,27 @@ vector<CourseSelection> CourseLegalComb::generate(const Course& course) const {
                 continue;
             }
 
+            // CRITICAL FIX: Ensure lecture group has sessions
+            if (lecPtr->sessions.empty()) {
+                Logger::get().logWarning("Lecture group has no sessions for course ID " + to_string(course.id) + ". Skipping.");
+                continue;
+            }
+
             // Prepare list of tutorial group pointers
             vector<const Group*> tutorials;
             if (course.Tirgulim.empty()) {
                 // If no tutorials exist, allow null (optional) tutorial
                 tutorials.push_back(nullptr);
             } else {
-                // Add all tutorial group pointers
+                // Add all tutorial group pointers, but only those with sessions
                 for (const auto& t : course.Tirgulim) {
-                    tutorials.push_back(&t);
+                    if (!t.sessions.empty()) {  // FIXED: Only add tutorials with sessions
+                        tutorials.push_back(&t);
+                    }
+                }
+                // If no valid tutorials found, add nullptr to allow lecture-only combinations
+                if (tutorials.empty()) {
+                    tutorials.push_back(nullptr);
                 }
             }
 
@@ -49,9 +67,15 @@ vector<CourseSelection> CourseLegalComb::generate(const Course& course) const {
                 // If no labs exist, allow null (optional) lab
                 labs.push_back(nullptr);
             } else {
-                // Add all lab group pointers
+                // Add all lab group pointers, but only those with sessions
                 for (const auto& l : course.labs) {
-                    labs.push_back(&l);
+                    if (!l.sessions.empty()) {  // FIXED: Only add labs with sessions
+                        labs.push_back(&l);
+                    }
+                }
+                // If no valid labs found, add nullptr to allow combinations without labs
+                if (labs.empty()) {
+                    labs.push_back(nullptr);
                 }
             }
 
@@ -72,8 +96,12 @@ vector<CourseSelection> CourseLegalComb::generate(const Course& course) const {
                         continue;
                     }
 
-                    // If no conflicts, add this combination as valid
+                    // CRITICAL FIX: Always ensure we have a lecture in every combination
+                    // If no conflicts, add this combination as valid (lecture is mandatory)
                     combinations.push_back({course.id, lecPtr, tutorial, lab});
+                    Logger::get().logInfo("Added valid combination for course ID " + to_string(course.id) +
+                                          " - Lecture: YES, Tutorial: " + (tutorial ? "YES" : "NO") +
+                                          ", Lab: " + (lab ? "YES" : "NO"));
                 }
             }
         }
