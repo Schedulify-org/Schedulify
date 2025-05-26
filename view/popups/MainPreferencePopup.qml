@@ -73,13 +73,27 @@ Popup {
         root.avgDayEndHour = originalFilterState.avgDayEnd.hour
         root.avgDayEndMinute = originalFilterState.avgDayEnd.minute
 
-        if (controller) {
-            controller.previewFilters(originalFilterState)
-        }
+        updateFilterMenuFromState()
+    }
+
+    function updateFilterMenuFromState() {
+        filterMenu.daysToStudyEnabled = root.daysToStudyEnabled
+        filterMenu.daysToStudyValue = root.daysToStudyValue
+        filterMenu.totalGapsEnabled = root.totalGapsEnabled
+        filterMenu.totalGapsValue = root.totalGapsValue
+        filterMenu.maxGapsTimeEnabled = root.maxGapsTimeEnabled
+        filterMenu.maxGapsTimeValue = root.maxGapsTimeValue
+        filterMenu.avgDayStartEnabled = root.avgDayStartEnabled
+        filterMenu.avgDayStartHour = root.avgDayStartHour
+        filterMenu.avgDayStartMinute = root.avgDayStartMinute
+        filterMenu.avgDayEndEnabled = root.avgDayEndEnabled
+        filterMenu.avgDayEndHour = root.avgDayEndHour
+        filterMenu.avgDayEndMinute = root.avgDayEndMinute
     }
 
     onOpened: {
         saveOriginalState()
+        updateFilterMenuFromState()
     }
 
     // Timer to clear error message

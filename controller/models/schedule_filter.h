@@ -10,7 +10,7 @@ Q_OBJECT
 
 public:
     explicit ScheduleFilter(QObject *parent = nullptr);
-    ~ScheduleFilter() = default;
+    ~ScheduleFilter() override = default;
 
     struct FilterCriteria {
         // Days to Study Filter (also serves as Active Days - max days with courses)
@@ -37,11 +37,9 @@ public:
     };
 
     // Main filtering method
-    std::vector<InformativeSchedule> filterSchedules(
-        const std::vector<InformativeSchedule>& schedules, 
-        const FilterCriteria& criteria);
+    vector<InformativeSchedule> filterSchedules(const vector<InformativeSchedule>& schedules,
+                                                const FilterCriteria& criteria);
 
-    // Individual filter methods
     static int countActiveDays(const InformativeSchedule& schedule);
     static bool meetsDaysToStudyCriteria(const InformativeSchedule& schedule, const FilterCriteria& criteria);
     static bool meetsTotalGapsCriteria(const InformativeSchedule& schedule, const FilterCriteria& criteria);
