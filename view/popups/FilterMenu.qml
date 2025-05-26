@@ -817,6 +817,52 @@ Item {
                     }
                 }
             }
+
+            // Reset Filters Button
+            Item {
+                width: parent.width
+                height: 60
+
+                Rectangle {
+                    id: resetFiltersButton
+                    width: parent.width
+                    height: 50
+                    anchors.centerIn: parent
+                    color: resetMouseArea.containsMouse ? "#dc2626" : "#ef4444"
+                    radius: 6
+                    border.color: "#dc2626"
+                    border.width: 1
+
+                    Text {
+                        text: "Reset All Filters"
+                        font.pixelSize: 16
+                        font.bold: true
+                        color: "#ffffff"
+                        anchors.centerIn: parent
+                    }
+
+                    MouseArea {
+                        id: resetMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.daysToStudyEnabled = false
+                            root.daysToStudyValue = 7
+                            root.totalGapsEnabled = false
+                            root.totalGapsValue = 0
+                            root.maxGapsTimeEnabled = false
+                            root.maxGapsTimeValue = 90
+                            root.avgDayStartEnabled = false
+                            root.avgDayStartHour = 8
+                            root.avgDayStartMinute = 0
+                            root.avgDayEndEnabled = false
+                            root.avgDayEndHour = 17
+                            root.avgDayEndMinute = 0
+                        }
+                    }
+                }
+            }
         }
     }
 }
