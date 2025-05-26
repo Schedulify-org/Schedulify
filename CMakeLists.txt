@@ -10,8 +10,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(COURSEDBINPUT="/data/V1.0CourseDB.txt")
+
 add_compile_definitions(OUTPUTPATH="/data/V1.schedOutput.json")
+
 add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
+
 add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 if(APPLE)
@@ -106,10 +109,6 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include
         ${CMAKE_CURRENT_SOURCE_DIR}/model
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/main
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/parsers
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/schedule_algorithm
-        ${CMAKE_CURRENT_SOURCE_DIR}/logger
 )
 
 # Link Qt libraries and OpenXLSX
@@ -142,15 +141,6 @@ set_target_properties(SchedGUI PROPERTIES
         MACOSX_BUNDLE TRUE
         WIN32_EXECUTABLE FALSE
 )
-
-# Optional: Copy Excel file to build directory if you have one
-# Uncomment and modify the path if you want to include an Excel file with your application
-# add_custom_command(TARGET SchedGUI POST_BUILD
-#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-#         "${CMAKE_SOURCE_DIR}/EngineeringV2.xlsx"
-#         "$<TARGET_FILE_DIR:SchedGUI>/EngineeringV2.xlsx"
-#         COMMENT "Copying Excel file to build directory"
-# )
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(SchedGUI)

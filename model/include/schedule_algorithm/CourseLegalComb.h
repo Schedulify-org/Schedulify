@@ -8,12 +8,8 @@
 
 class CourseLegalComb {
 public:
-    // Generates all valid combinations of session groups for a given course
-    vector<CourseSelection> generate(const Course& course) const;
-
+    static vector<CourseSelection> generate(const Course& course) ;
 private:
-    // Helper function to check if two groups have conflicting sessions
-    bool hasGroupConflict(const Group& group1, const Group& group2) const;
+    static bool hasGroupConflict(const Group* group1, const Group* group2) ;
 };
-
-#endif //COURSELEGALCOMB_H
+#endif
