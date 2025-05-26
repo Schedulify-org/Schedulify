@@ -1,5 +1,5 @@
 #include "controller_manager.h"
-#include "main_controller.h" // Include the main controller header
+#include "main_controller.h"
 
 // Initialize static member
 MainController* ControllerManager::s_mainController = nullptr;

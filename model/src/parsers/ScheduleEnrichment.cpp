@@ -1,4 +1,4 @@
-#include "parsers/ScheduleEnrichment.h"
+#include "ScheduleEnrichment.h"
 
 unordered_map<int, CourseInfo> buildCourseInfoMap(const vector<Course>& courses) {
     unordered_map<int, CourseInfo> courseInfoMap;

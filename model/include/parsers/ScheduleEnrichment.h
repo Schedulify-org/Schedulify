@@ -2,8 +2,8 @@
 #define SCHEDULE_ENRICHMENT_H
 
 #include "model_interfaces.h"
-#include "main/inner_structs.h"
-#include "logger/logger.h"
+#include "inner_structs.h"
+#include "logger.h"
 
 #include <vector>
 #include <string>

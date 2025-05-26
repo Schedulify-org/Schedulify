@@ -2,11 +2,10 @@
 #define SCHEDULES_DISPLAY_H
 
 #include "controller_manager.h"
-#include "main/model_access.h"
+#include "model_access.h"
 #include "model_interfaces.h"
-#include "models/schedule_model.h"
-#include "models/schedule_filter.h"
-
+#include "schedule_model.h"
+#include "schedule_filter.h"
 
 #include <QObject>
 #include <QVariant>

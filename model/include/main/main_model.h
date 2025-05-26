@@ -2,13 +2,13 @@
 #define MAIN_MODEL_H
 
 #include "model_interfaces.h"
-#include "main/model_access.h"
-#include "schedule_algorithm/ScheduleBuilder.h"
-#include "parsers/parseCoursesToVector.h"
-#include "parsers/ScheduleEnrichment.h"
-#include "parsers/printSchedule.h"
-#include "parsers/parseToCsv.h"
-#include "logger/logger.h"
+#include "model_access.h"
+#include "ScheduleBuilder.h"
+#include "parseCoursesToVector.h"
+#include "ScheduleEnrichment.h"
+#include "printSchedule.h"
+#include "parseToCsv.h"
+#include "logger.h"
 
 #include <vector>
 #include <string>

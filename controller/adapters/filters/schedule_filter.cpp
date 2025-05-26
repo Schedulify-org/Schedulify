@@ -1,6 +1,4 @@
 #include "schedule_filter.h"
-#include <algorithm>
-#include <QDebug>
 
 ScheduleFilter::ScheduleFilter(QObject *parent) : QObject(parent) {
 }

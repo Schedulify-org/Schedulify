@@ -2,7 +2,8 @@
 #define PARSE_COURSES_TO_JSON
 
 #include "model_interfaces.h"
-#include "schedule_algorithm/ScheduleBuilder.h"
+#include "ScheduleBuilder.h"
+#include "logger.h"
 
 #include <algorithm>
 #include <iomanip>

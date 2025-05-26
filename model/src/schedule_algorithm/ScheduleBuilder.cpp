@@ -1,4 +1,4 @@
-#include "schedule_algorithm/ScheduleBuilder.h"
+#include "ScheduleBuilder.h"
 
 using namespace std;
 

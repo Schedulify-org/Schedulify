@@ -1,4 +1,4 @@
-#include "main/main_model.h"
+#include "main_model.h"
 
 // this is the main model to run Schedulify 2.0
 

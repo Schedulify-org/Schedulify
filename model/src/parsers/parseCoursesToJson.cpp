@@ -1,5 +1,4 @@
-#include "parsers/parseCoursesToJson.h"
-#include "logger/logger.h"
+#include "parseCoursesToJson.h"
 
 bool exportCoursesToJson(const vector<Course>& courses, const string& outputPath) {
     ofstream outFile(outputPath);

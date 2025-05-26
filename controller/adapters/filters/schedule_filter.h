@@ -1,8 +1,11 @@
 #ifndef SCHEDULE_FILTER_H
 #define SCHEDULE_FILTER_H
 
+#include <algorithm>
 #include <QObject>
+#include <QDebug>
 #include <vector>
+
 #include "model_interfaces.h"
 
 class ScheduleFilter : public QObject {
