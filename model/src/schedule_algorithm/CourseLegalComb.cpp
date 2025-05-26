@@ -21,7 +21,6 @@ vector<CourseSelection> CourseLegalComb::generate(const Course& course) const {
     vector<CourseSelection> combinations; // Resulting combinations of valid sessions
 
     try {
-        // CRITICAL FIX: Check if course has any lectures
         if (course.Lectures.empty()) {
             Logger::get().logWarning("Course ID " + to_string(course.id) + " has no lecture groups. Skipping course.");
             return combinations; // Return empty if no lectures available
