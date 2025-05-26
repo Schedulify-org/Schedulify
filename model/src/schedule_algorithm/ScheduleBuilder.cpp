@@ -2,36 +2,10 @@
 
 using namespace std;
 
-// Helper function to extract all sessions from a CourseSelection
-vector<const Session*> ScheduleBuilder::getSessions(const CourseSelection& selection) const {
-    vector<const Session*> sessions;
-
-    // Add all sessions from lecture group
-    if (selection.lecture) {
-        for (const auto& session : selection.lecture->sessions) {
-            sessions.push_back(&session);
-        }
-    }
-
-    // Add all sessions from tutorial group
-    if (selection.tutorial) {
-        for (const auto& session : selection.tutorial->sessions) {
-            sessions.push_back(&session);
-        }
-    }
-
-    // Add all sessions from lab group
-    if (selection.lab) {
-        for (const auto& session : selection.lab->sessions) {
-            sessions.push_back(&session);
-        }
-    }
-
-    return sessions;
-}
+unordered_map<int, CourseInfo> ScheduleBuilder::courseInfoMap;
 
 // Checks if there is a time conflict between two CourseSelections
-bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) const {
+bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) {
     vector<const Session*> aSessions = getSessions(a); // Extract sessions from selection a
     vector<const Session*> bSessions = getSessions(b); // Extract sessions from selection b
 
@@ -49,19 +23,16 @@ bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelectio
 void ScheduleBuilder::backtrack(int currentCourse,
                                 const vector<vector<CourseSelection>>& allOptions,
                                 vector<CourseSelection>& currentCombination,
-                                vector<Schedule>& results) {
+                                vector<InformativeSchedule>& results) {
     try {
-        // Base case: All courses have been processed, save the current schedule
         if (currentCourse == allOptions.size()) {
-            results.push_back({currentCombination});
+            results.push_back(convertToInformativeSchedule(currentCombination, results.size()));
             return;
         }
 
-        // Try each course selection option for the current course
         for (const auto& option : allOptions[currentCourse]) {
             bool conflict = false;
 
-            // Check for conflicts with the selections already made
             for (const auto& selected : currentCombination) {
                 if (hasConflict(option, selected)) {
                     conflict = true;
@@ -69,27 +40,27 @@ void ScheduleBuilder::backtrack(int currentCourse,
                 }
             }
 
-            // If no conflict, continue to the next course
             if (!conflict) {
-                currentCombination.push_back(option); // Choose this option
-                backtrack(currentCourse + 1, allOptions, currentCombination, results); // Recurse
-                currentCombination.pop_back(); // Backtrack
+                currentCombination.push_back(option);
+                backtrack(currentCourse + 1, allOptions, currentCombination, results);
+                currentCombination.pop_back();
             }
         }
     } catch (const exception& e) {
-        // Log any exceptions that occur during backtracking
         Logger::get().logError("Exception in ScheduleBuilder::backtrack: " + string(e.what()));
     }
 }
 
 // Public method to build all possible valid schedules from a list of courses
-vector<Schedule> ScheduleBuilder::build(const vector<Course>& courses) {
+vector<InformativeSchedule> ScheduleBuilder::build(const vector<Course>& courses) {
     Logger::get().logInfo("Starting schedule generation for " + to_string(courses.size()) + " courses.");
 
-    vector<Schedule> results; // Final list of all valid schedules
+    vector<InformativeSchedule> results;
     try {
-        CourseLegalComb generator; // Helper to generate valid session combinations
-        vector<vector<CourseSelection>> allOptions; // All valid options per course
+        buildCourseInfoMap(courses);
+
+        CourseLegalComb generator;
+        vector<vector<CourseSelection>> allOptions;
 
         // Generate combinations for each course
         for (const auto& course : courses) {
@@ -98,8 +69,8 @@ vector<Schedule> ScheduleBuilder::build(const vector<Course>& courses) {
             allOptions.push_back(std::move(combinations)); // Store the combinations
         }
 
-        vector<CourseSelection> current; // Temporary list for current schedule
-        backtrack(0, allOptions, current, results); // Start recursive backtracking
+        vector<CourseSelection> current;
+        backtrack(0, allOptions, current, results);
 
         Logger::get().logInfo("Finished schedule generation. Total valid schedules: " + to_string(results.size()));
     } catch (const exception& e) {
@@ -107,5 +78,108 @@ vector<Schedule> ScheduleBuilder::build(const vector<Course>& courses) {
         Logger::get().logError("Exception in ScheduleBuilder::build: " + string(e.what()));
     }
 
-    return results; // Return all valid generated schedules
+    return results;
+}
+
+// Helper method to build course info map
+void ScheduleBuilder::buildCourseInfoMap(const vector<Course>& courses) {
+    courseInfoMap.clear();
+    for (const auto& course : courses) {
+        courseInfoMap[course.id] = {course.raw_id, course.name};
+    }
+}
+
+// Converts a vector of CourseSelections to an InformativeSchedule
+InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<CourseSelection>& selections, int index) const {
+    InformativeSchedule schedule;
+    schedule.index = index;
+
+    try {
+        map<int, vector<ScheduleItem>> daySchedules;
+
+        const vector<string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+
+        for (const auto& selection : selections) {
+
+            if (selection.lectureGroup) {
+                processGroupSessions(selection, selection.lectureGroup, "Lecture", daySchedules);
+            }
+
+            if (selection.tutorialGroup) {
+                processGroupSessions(selection, selection.tutorialGroup, "Tutorial", daySchedules);
+            }
+
+            if (selection.labGroup) {
+                processGroupSessions(selection, selection.labGroup, "Lab", daySchedules);
+            }
+        }
+
+        for (int day = 0; day < 7; day++) {
+            if (daySchedules.find(day) != daySchedules.end()) {
+                auto& dayItems = daySchedules[day];
+                sort(dayItems.begin(), dayItems.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
+                    return TimeUtils::toMinutes(a.start) < TimeUtils::toMinutes(b.start);
+                });
+
+                ScheduleDay scheduleDay;
+                scheduleDay.day = dayNames[day];
+                scheduleDay.day_items = dayItems;
+
+                schedule.week.push_back(scheduleDay);
+            }
+        }
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception in convertToInformativeSchedule: " + string(e.what()));
+        schedule.week.clear();
+    }
+
+    return schedule;
+}
+
+// Helper method to process all sessions in a group and add them to the day schedules
+void ScheduleBuilder::processGroupSessions(const CourseSelection& selection,
+                                           const Group* group,
+                                           const string& sessionType,
+                                           map<int, vector<ScheduleItem>>& daySchedules) {
+    if (!group) return;
+
+    try {
+        string courseName = getCourseNameById(selection.courseId);
+        string courseRawId = getCourseRawIdById(selection.courseId);
+
+        for (const auto& session : group->sessions) {
+            ScheduleItem item;
+            item.courseName = courseName;
+            item.raw_id = courseRawId;
+            item.type = sessionType;
+            item.start = session.start_time;
+            item.end = session.end_time;
+            item.building = session.building_number;
+            item.room = session.room_number;
+
+            daySchedules[session.day_of_week].push_back(item);
+        }
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception in processGroupSessions: " + string(e.what()));
+    }
+}
+
+string ScheduleBuilder::getCourseNameById(int courseId) {
+    auto it = courseInfoMap.find(courseId);
+    if (it != courseInfoMap.end()) {
+        return it->second.name;
+    }
+    Logger::get().logWarning("Course ID " + to_string(courseId) + " not found in course info map");
+    return "Unknown Course";
+}
+
+string ScheduleBuilder::getCourseRawIdById(int courseId) {
+    auto it = courseInfoMap.find(courseId);
+    if (it != courseInfoMap.end()) {
+        return it->second.raw_id;
+    }
+    Logger::get().logWarning("Course ID " + to_string(courseId) + " not found in course info map");
+    return "UNKNOWN";
 }

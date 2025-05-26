@@ -1,36 +1,32 @@
-#ifndef GETSESSION_H
-#define GETSESSION_H
+#ifndef GET_SESSION_H
+#define GET_SESSION_H
 
-#include "main/inner_structs.h"
+#pragma once
+
 #include "model_interfaces.h"
+
 #include <vector>
 
-// Inline function to extract all individual sessions from a CourseSelection
-inline std::vector<const Session*> getSessions(const CourseSelection& cs) {
-    std::vector<const Session*> sessions;
+inline vector<const Session*> getSessions(const CourseSelection& cs) {
+    vector<const Session*> sessions;
 
-    // Add all sessions from lecture group
-    if (cs.lecture) {
-        for (const auto& session : cs.lecture->sessions) {
+    if (cs.lectureGroup) {
+        for (const auto& session : cs.lectureGroup->sessions) {
             sessions.push_back(&session);
         }
     }
-
-    // Add all sessions from tutorial group
-    if (cs.tutorial) {
-        for (const auto& session : cs.tutorial->sessions) {
+    if (cs.tutorialGroup) {
+        for (const auto& session : cs.tutorialGroup->sessions) {
             sessions.push_back(&session);
         }
     }
-
-    // Add all sessions from lab group
-    if (cs.lab) {
-        for (const auto& session : cs.lab->sessions) {
+    if (cs.labGroup) {
+        for (const auto& session : cs.labGroup->sessions) {
             sessions.push_back(&session);
         }
     }
-
     return sessions;
 }
 
-#endif // GETSESSION_Hx
+
+#endif //GET_SESSION_H

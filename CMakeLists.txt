@@ -55,7 +55,6 @@ set(PROJECT_SOURCES
         model/src/schedule_algorithm/TimeUtils.cpp
         model/src/parsers/parseToCsv.cpp
         model/src/parsers/printSchedule.cpp
-        model/src/parsers/ScheduleEnrichment.cpp
         model/src/main/model_access.cpp
 )
 

@@ -19,19 +19,13 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
     }
 
     ScheduleBuilder builder;
-    vector<Schedule> schedules = builder.build(userInput);
+    vector<InformativeSchedule> schedules = builder.build(userInput);
 
     if (schedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");
     }
 
-    vector<InformativeSchedule> informativeSchedules = exportSchedulesToObjects(schedules, userInput);
-
-    if (informativeSchedules.empty()) {
-        Logger::get().logError("unable to generate schedules, aborting process");
-    }
-
-    return informativeSchedules;
+    return schedules;
 }
 
 void Model::saveSchedule(const InformativeSchedule& infoSchedule, const string& path) {
