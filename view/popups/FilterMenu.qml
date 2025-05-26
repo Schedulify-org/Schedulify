@@ -20,38 +20,6 @@ Item {
     property int avgDayEndHour: 17
     property int avgDayEndMinute: 0
 
-    // SIGNALS: Alert MainPreferencePopup when filters change
-    signal filtersChanged(var filterData)
-
-    // Helper function to emit filter changes
-    function emitFiltersChanged() {
-        const filterData = {
-            daysToStudy: {
-                enabled: daysToStudyEnabled,
-                value: daysToStudyValue
-            },
-            totalGaps: {
-                enabled: totalGapsEnabled,
-                value: totalGapsValue
-            },
-            maxGapsTime: {
-                enabled: maxGapsTimeEnabled,
-                value: maxGapsTimeValue
-            },
-            avgDayStart: {
-                enabled: avgDayStartEnabled,
-                hour: avgDayStartHour,
-                minute: avgDayStartMinute
-            },
-            avgDayEnd: {
-                enabled: avgDayEndEnabled,
-                hour: avgDayEndHour,
-                minute: avgDayEndMinute
-            }
-        };
-        filtersChanged(filterData)
-    }
-
     ScrollView {
         anchors.fill: parent
         anchors.margins: 20
@@ -98,7 +66,6 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             daysToStudyEnabled = !daysToStudyEnabled
-                            root.emitFiltersChanged()
                         }
 
 
@@ -150,7 +117,6 @@ Item {
                                 onClicked: {
                                     if (daysToStudyValue > 1) {
                                         daysToStudyValue--
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -186,7 +152,6 @@ Item {
                                 onClicked: {
                                     if (daysToStudyValue < 7) {
                                         daysToStudyValue++
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -232,7 +197,6 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             totalGapsEnabled = !totalGapsEnabled
-                            root.emitFiltersChanged()
                         }
                     }
                 }
@@ -282,7 +246,6 @@ Item {
                                 onClicked: {
                                     if (totalGapsValue > 0) {
                                         totalGapsValue--
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -317,7 +280,6 @@ Item {
                                 enabled: totalGapsEnabled
                                 onClicked: {
                                     totalGapsValue++
-                                    root.emitFiltersChanged()
                                 }
                             }
                         }
@@ -362,7 +324,6 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             root.maxGapsTimeEnabled = !root.maxGapsTimeEnabled
-                            root.emitFiltersChanged()
                         }
                     }
                 }
@@ -422,7 +383,6 @@ Item {
                                 onClicked: {
                                     if (root.maxGapsTimeValue > 90) {
                                         root.maxGapsTimeValue -= 5
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -457,7 +417,6 @@ Item {
                                 enabled: root.maxGapsTimeEnabled
                                 onClicked: {
                                     root.maxGapsTimeValue += 5
-                                    root.emitFiltersChanged()
                                 }
                             }
                         }
@@ -502,7 +461,6 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             root.avgDayStartEnabled = !root.avgDayStartEnabled
-                            root.emitFiltersChanged()
                         }
                     }
                 }
@@ -554,7 +512,6 @@ Item {
                                     enabled: root.avgDayStartEnabled
                                     onClicked: {
                                         root.avgDayStartHour = (root.avgDayStartHour + 1) % 24
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -578,7 +535,6 @@ Item {
                                     enabled: root.avgDayStartEnabled
                                     onClicked: {
                                         root.avgDayStartHour = root.avgDayStartHour > 0 ? root.avgDayStartHour - 1 : 23
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -634,7 +590,6 @@ Item {
                                     enabled: root.avgDayStartEnabled
                                     onClicked: {
                                         root.avgDayStartMinute = (root.avgDayStartMinute + 15) % 60
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -658,7 +613,6 @@ Item {
                                     enabled: root.avgDayStartEnabled
                                     onClicked: {
                                         root.avgDayStartMinute = root.avgDayStartMinute >= 15 ? root.avgDayStartMinute - 15 : 45
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -704,7 +658,6 @@ Item {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             root.avgDayEndEnabled = !root.avgDayEndEnabled
-                            root.emitFiltersChanged()
                         }
                     }
                 }
@@ -756,7 +709,6 @@ Item {
                                     enabled: root.avgDayEndEnabled
                                     onClicked: {
                                         root.avgDayEndHour = (root.avgDayEndHour + 1) % 24
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -780,7 +732,6 @@ Item {
                                     enabled: root.avgDayEndEnabled
                                     onClicked: {
                                         root.avgDayEndHour = root.avgDayEndHour > 0 ? root.avgDayEndHour - 1 : 23
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -836,7 +787,6 @@ Item {
                                     enabled: root.avgDayEndEnabled
                                     onClicked: {
                                         root.avgDayEndMinute = (root.avgDayEndMinute + 15) % 60
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }
@@ -860,7 +810,6 @@ Item {
                                     enabled: root.avgDayEndEnabled
                                     onClicked: {
                                         root.avgDayEndMinute = root.avgDayEndMinute >= 15 ? root.avgDayEndMinute - 15 : 45
-                                        root.emitFiltersChanged()
                                     }
                                 }
                             }

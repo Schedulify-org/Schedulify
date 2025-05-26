@@ -7,7 +7,6 @@ Popup {
     id: root
 
     signal filtersApplied(var filterData, var blockedTimes)
-    signal filtersChanged(var filterData) // Real-time filter changes
 
     // Filter states
     property bool daysToStudyEnabled: false
@@ -384,8 +383,7 @@ Popup {
                 }
             }
 
-            // In MainPreferencePopup.qml, replace the incomplete onFiltersChanged handler:
-
+            // Filter page
             FilterMenu {
                 id: filterMenu
                 anchors.fill: parent
@@ -404,26 +402,6 @@ Popup {
                 avgDayEndEnabled: root.avgDayEndEnabled
                 avgDayEndHour: root.avgDayEndHour
                 avgDayEndMinute: root.avgDayEndMinute
-
-                // FIXED: Complete filter change handler
-                onFiltersChanged: function(filterData) {
-                    // Update local properties
-                    root.daysToStudyEnabled = filterData.daysToStudy.enabled
-                    root.daysToStudyValue = filterData.daysToStudy.value
-                    root.totalGapsEnabled = filterData.totalGaps.enabled
-                    root.totalGapsValue = filterData.totalGaps.value
-                    root.maxGapsTimeEnabled = filterData.maxGapsTime.enabled
-                    root.maxGapsTimeValue = filterData.maxGapsTime.value
-                    root.avgDayStartEnabled = filterData.avgDayStart.enabled
-                    root.avgDayStartHour = filterData.avgDayStart.hour
-                    root.avgDayStartMinute = filterData.avgDayStart.minute
-                    root.avgDayEndEnabled = filterData.avgDayEnd.enabled
-                    root.avgDayEndHour = filterData.avgDayEnd.hour
-                    root.avgDayEndMinute = filterData.avgDayEnd.minute
-
-                    // EMIT SIGNAL: Real-time filter changes to schedule_display
-                    root.filtersChanged(filterData)
-                }
 
                 // Keep existing change handlers for backward compatibility
                 onDaysToStudyEnabledChanged: root.daysToStudyEnabled = daysToStudyEnabled

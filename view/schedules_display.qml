@@ -344,12 +344,6 @@ Page {
                 controller.applyFiltersAndBlockedTimes(filterData, blockedTimes)
             }
         }
-
-        onFiltersChanged: function(filterData) {
-            if (controller) {
-                controller.previewFilters(filterData)
-            }
-        }
     }
 
     Rectangle{
