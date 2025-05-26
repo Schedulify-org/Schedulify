@@ -31,7 +31,7 @@ void FileInputController::loadFile() {
     string filePath;
 
     if (!selectedFilePath.isEmpty()) {
-        filePath = selectedFilePath.toLocal8Bit().constData();
+        filePath = selectedFilePath.toUtf8().constData();
     } else {
         Logger::get().logError("No file path available");
         emit invalidFileFormat();
@@ -79,7 +79,8 @@ void FileInputController::handleFileSelected(const QString &filePath) {
         selectedFilePath = filePath;
         Logger::get().logError(selectedFilePath.toStdString());
 
-        QString fileName = filePath.split('/').last().split('\\').last();
+        QFileInfo fileInfo(filePath);
+        QString fileName = fileInfo.fileName();
         emit fileNameChanged(fileName);
         emit fileSelected(true);
     }
