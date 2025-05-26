@@ -31,10 +31,12 @@ FetchContent_MakeAvailable(OpenXLSX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
 
-include_directories(model/include controller/include logger)
+include_directories(model/include controller/include logger model/include/parsers)
 
 set(PROJECT_SOURCES
         main.cpp
+
+        # Controller files
         controller/main_controller.cpp
         controller/src/controller_manager.cpp
         controller/models/course_model.cpp
@@ -44,6 +46,7 @@ set(PROJECT_SOURCES
         controller/src/log_display.cpp
         controller/src/ScheduleGenerator.cpp
 
+        # Controller headers
         controller/include/ScheduleGenerator.h
         controller/include/main_controller.h
         controller/include/controller_manager.h
@@ -53,19 +56,39 @@ set(PROJECT_SOURCES
         controller/include/schedules_display.h
         controller/include/log_display.h
 
+        # Model interface
         model_interfaces.h
+
+        # Model implementation files
         model/main_model.cpp
+        model/src/main/model_access.cpp
+
+        # Logger
         logger/logger.cpp
+
+        # Parser files
         model/src/parsers/parseCoursesToVector.cpp
-        model/src/schedule_algorithm/CourseLegalComb.cpp
-        model/src/schedule_algorithm/ScheduleBuilder.cpp
-        model/src/schedule_algorithm/TimeUtils.cpp
+        model/src/parsers/excel_parser.cpp
         model/src/parsers/parseToCsv.cpp
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
-        model/src/main/model_access.cpp
-        model/src/parsers/excel_parser.cpp
-        model/src/parsers/excel_parser.cpp
+
+        # Parser headers
+        model/include/parsers/excel_parser.h
+        model/include/parsers/parseCoursesToVector.h
+
+        # Schedule algorithm files
+        model/src/schedule_algorithm/CourseLegalComb.cpp
+        model/src/schedule_algorithm/ScheduleBuilder.cpp
+        model/src/schedule_algorithm/TimeUtils.cpp
+
+        # Schedule algorithm headers
+        model/include/schedule_algorithm/ScheduleBuilder.h
+        model/include/schedule_algorithm/CourseLegalComb.h
+        model/include/schedule_algorithm/TimeUtils.h
+
+        # Main model header
+        model/include/main/main_model.h
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -83,6 +106,10 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include
         ${CMAKE_CURRENT_SOURCE_DIR}/model
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/main
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/parsers
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/schedule_algorithm
+        ${CMAKE_CURRENT_SOURCE_DIR}/logger
 )
 
 # Link Qt libraries and OpenXLSX

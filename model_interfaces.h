@@ -11,7 +11,8 @@ public:
     string start_time;      // שעת התחלה של הלוח הזמנים
     string end_time;        // שעת הסיום של הלוח הזמנים
     string building_number; // מספר הבנין בו מתקיים המתוכן המופע
-    string room_number;     // מספר החדר בו מתקיים המתוכן המופע
+    string room_number;
+    string teacher;
 };
 
 class Group {
@@ -24,8 +25,8 @@ class Course {
 public:
     int id;
     string raw_id; // מזהה (קוד) של קורס
-    string name;                    // שם הקורס
-    string teacher;                 // שם המרצה
+    string name;
+    string teacher;
     vector<Group> Lectures;         // רשימת הרצאות - נדרש לפחות קבוצה אחת עם הרצאה 1
     vector<Group> Tirgulim;         // רשימת תרגולים - יכול להיות ריק
     vector<Group> labs;

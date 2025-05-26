@@ -1,6 +1,9 @@
 #ifndef EXCEL_PARSER_H
 #define EXCEL_PARSER_H
 
+// Include OpenXLSX first to avoid conflicts
+#include <OpenXLSX.hpp>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -9,35 +12,31 @@
 #include <unordered_map>
 #include <sstream>
 #include <algorithm>
-#include <OpenXLSX.hpp>
+
+// Only include Windows headers if absolutely necessary and use guards
+#ifdef _WIN32
+// Avoid conflicts by defining these before including Windows headers
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+// Avoid the std::byte conflict
+#define byte win_byte_override
+#include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#include <locale>
+#undef byte
+#undef WIN32_LEAN_AND_MEAN
+#undef NOMINMAX
+#endif
+
+#include "model_interfaces.h"
 
 using namespace std;
 using namespace OpenXLSX;
-
-class Session {
-public:
-    int day_of_week;
-    string start_time;
-    string end_time;
-    string building_number;
-    string room_number;
-    string teacher;
-};
-
-class Group {
-public:
-    string type;
-    vector<Session> sessions;
-};
-
-class Course {
-public:
-    int id;
-    string name;
-    vector<Group> lectures;
-    vector<Group> tirgulim;
-    vector<Group> labs;
-};
 
 class ExcelCourseParser {
 private:

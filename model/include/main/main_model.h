@@ -9,7 +9,7 @@
 #include "parsers/printSchedule.h"
 #include "parsers/parseToCsv.h"
 #include "logger/logger.h"
-
+#include "parsers/excel_parser.h"
 #include <vector>
 #include <string>
 #include <iostream>
