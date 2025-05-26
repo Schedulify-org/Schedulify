@@ -10,17 +10,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_definitions(COURSEDBINPUT="/data/V1.0CourseDB.txt")
-
 add_compile_definitions(OUTPUTPATH="/data/V1.schedOutput.json")
-
 add_compile_definitions(OUTPUTCOURSEPATH="/data/V1.courseOutput.json")
-
 add_compile_definitions(USERINPUT="/data/userInput.txt")
 
 if(APPLE)
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 endif()
+
+# Fetch OpenXLSX for Excel file parsing
+include(FetchContent)
+FetchContent_Declare(
+        OpenXLSX
+        GIT_REPOSITORY https://github.com/troldal/OpenXLSX.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(OpenXLSX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
 
@@ -57,6 +64,8 @@ set(PROJECT_SOURCES
         model/src/parsers/printSchedule.cpp
         model/src/parsers/ScheduleEnrichment.cpp
         model/src/main/model_access.cpp
+        model/src/parsers/excel_parser.cpp
+        model/src/parsers/excel_parser.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -76,7 +85,7 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include
 )
 
-# Link Qt libraries
+# Link Qt libraries and OpenXLSX
 target_link_libraries(SchedGUI PRIVATE
         Qt6::Core
         Qt6::Gui
@@ -86,7 +95,18 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::QuickLayouts
         Qt6::PrintSupport
         Qt6::QuickControls2
+        OpenXLSX::OpenXLSX
 )
+
+# Enable UTF-8 support on Windows for Excel file handling
+if(WIN32)
+    if(MSVC)
+        target_compile_options(SchedGUI PRIVATE /utf-8)
+    else()
+        # For MinGW/GCC
+        target_compile_options(SchedGUI PRIVATE -finput-charset=utf-8 -fexec-charset=utf-8)
+    endif()
+endif()
 
 set_target_properties(SchedGUI PROPERTIES
         ${BUNDLE_ID_OPTION}
@@ -95,6 +115,15 @@ set_target_properties(SchedGUI PROPERTIES
         MACOSX_BUNDLE TRUE
         WIN32_EXECUTABLE FALSE
 )
+
+# Optional: Copy Excel file to build directory if you have one
+# Uncomment and modify the path if you want to include an Excel file with your application
+# add_custom_command(TARGET SchedGUI POST_BUILD
+#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#         "${CMAKE_SOURCE_DIR}/EngineeringV2.xlsx"
+#         "$<TARGET_FILE_DIR:SchedGUI>/EngineeringV2.xlsx"
+#         COMMENT "Copying Excel file to build directory"
+# )
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(SchedGUI)

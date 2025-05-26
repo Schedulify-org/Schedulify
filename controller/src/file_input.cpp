@@ -15,7 +15,7 @@ void FileInputController::handleUploadAndContinue() {
             nullptr,
             "Select Course Input File",
             QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-            "Text Files (*.txt)"
+            "Supported files (*.txt *.xlsx)"
     );
 
     if (fileName.isEmpty()) {
@@ -64,9 +64,9 @@ void FileInputController::loadFile() {
 
 void FileInputController::handleFileSelected(const QString &filePath) {
 
-    if (!filePath.endsWith(".txt", Qt::CaseInsensitive)) {
+    if (!(filePath.endsWith(".txt", Qt::CaseInsensitive) || filePath.endsWith(".xlsx", Qt::CaseInsensitive))) {
         emit invalidFileFormat();
-        Logger::get().logError("Invalid file type. only txt file are allowed");
+        Logger::get().logError("Invalid file type. Only .txt and .xlsx files are allowed");
         return;
     }
 
