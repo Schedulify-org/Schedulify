@@ -9,6 +9,14 @@
 #include "parsers/parseToCsv.h"
 #include "logger/logger.h"
 #include "parsers/excel_parser.h"
+#include "model_access.h"
+#include "ScheduleBuilder.h"
+#include "parseCoursesToVector.h"
+#include "ScheduleEnrichment.h"
+#include "printSchedule.h"
+#include "parseToCsv.h"
+#include "logger.h"
+
 #include <vector>
 #include <string>
 #include <iostream>

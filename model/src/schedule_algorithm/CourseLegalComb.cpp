@@ -1,7 +1,4 @@
-#include "schedule_algorithm/CourseLegalComb.h"
-#include "schedule_algorithm/TimeUtils.h"
-#include "parsers/parseCoursesToVector.h"
-#include "logger/logger.h"
+#include "CourseLegalComb.h"
 
 // Generates all valid combinations of groups (lecture, tutorial, lab) for a given course
 vector<CourseSelection> CourseLegalComb::generate(const Course& course) {

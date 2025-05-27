@@ -2,6 +2,7 @@
 #define MODEL_FACTORY_H
 
 #include "model_interfaces.h"
+#include "main_model.h"
 
 class ModelAccess {
 public:

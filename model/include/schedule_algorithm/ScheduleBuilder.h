@@ -7,6 +7,11 @@
 #include "schedule_algorithm/TimeUtils.h"
 #include "schedule_algorithm/getSession.h"
 #include "logger/logger.h"
+#include "CourseLegalComb.h"
+#include "inner_structs.h"
+#include "getSession.h"
+#include "TimeUtils.h"
+#include "logger.h"
 
 #include <unordered_map>
 #include <algorithm>

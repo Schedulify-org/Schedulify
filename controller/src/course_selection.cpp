@@ -1,3 +1,4 @@
+#include "main_controller.h"
 #include "course_selection.h"
 
 CourseSelectionController::CourseSelectionController(QObject *parent)
@@ -148,7 +149,7 @@ void CourseSelectionController::deselectCourse(int index) {
     selectedCourses.erase(selectedCourses.begin() + index);
     selectedIndices.erase(selectedIndices.begin() + index);
 
-    // Update the models
+    // Update the adapters
     m_selectedCoursesModel->populateCoursesData(selectedCourses);
 
     // Emit our custom signal to notify QML of selection change
