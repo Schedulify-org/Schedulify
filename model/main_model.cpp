@@ -1,41 +1,33 @@
-#include "main/main_model.h"
-#include "parsers/excel_parser.h"  // ADD THIS INCLUDE
-#include <algorithm>
-#include <cctype>
+#include "main_model.h"
 
-// Helper function to get file extension
-std::string getFileExtension(const std::string& filename) {
+string Model::getFileExtension(const string& filename) {
     size_t dot = filename.find_last_of(".");
-    if (dot == std::string::npos) {
+    if (dot == string::npos) {
         return "";
     }
-    std::string ext = filename.substr(dot + 1);
+    string ext = filename.substr(dot + 1);
     // Convert to lowercase for case-insensitive comparison
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
     return ext;
 }
 
-// UPDATED generateCourses method
 vector<Course> Model::generateCourses(const string& path) {
     vector<Course> courses;
 
-    // Determine file type and use appropriate parser
-    std::string extension = getFileExtension(path);
+    string extension = getFileExtension(path);
 
     if (extension == "xlsx") {
-        // Use Excel parser for .xlsx files
         Logger::get().logInfo("Parsing Excel file: " + path);
         ExcelCourseParser excelParser;
         courses = excelParser.parseExcelFile(path);
     }
     else if (extension == "txt") {
-        // Use existing text parser for .txt files
         Logger::get().logInfo("Parsing text file: " + path);
         courses = parseCourseDB(path);
     }
     else {
         Logger::get().logError("Unsupported file format: " + extension + ". Supported formats: .txt, .xlsx");
-        return courses; // Return empty vector
+        return courses;
     }
 
     if (courses.empty()) {
@@ -47,7 +39,6 @@ vector<Course> Model::generateCourses(const string& path) {
     return courses;
 }
 
-// REST OF YOUR METHODS REMAIN THE SAME
 vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userInput) {
     if (userInput.empty() || userInput.size() > 7) {
         Logger::get().logError("invalid amount of courses, aborting...");
@@ -84,7 +75,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 return &lastGeneratedCourses;
             } else {
                 Logger::get().logError("File not found, aborting...");
-                return nullptr;  // CHANGED: return nullptr instead of {}
+                return nullptr;
             }
 
         case ModelOperation::GENERATE_SCHEDULES:
@@ -94,7 +85,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 return &lastGeneratedSchedules;
             } else {
                 Logger::get().logError("unable to generate schedules, aborting...");
-                return nullptr;  // CHANGED: return nullptr instead of {}
+                return nullptr;
             }
 
         case ModelOperation::SAVE_SCHEDULE:

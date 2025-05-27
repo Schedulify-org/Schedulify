@@ -1,22 +1,17 @@
 #ifndef MAIN_MODEL_H
 #define MAIN_MODEL_H
 
-#include "model_interfaces.h"
-#include "main/model_access.h"
-#include "schedule_algorithm/ScheduleBuilder.h"
-#include "parsers/parseCoursesToVector.h"
-#include "parsers/printSchedule.h"
-#include "parsers/parseToCsv.h"
-#include "logger/logger.h"
-#include "parsers/excel_parser.h"
-#include "model_access.h"
-#include "ScheduleBuilder.h"
 #include "parseCoursesToVector.h"
-#include "ScheduleEnrichment.h"
+#include "model_interfaces.h"
+#include "ScheduleBuilder.h"
 #include "printSchedule.h"
+#include "excel_parser.h"
+#include "model_access.h"
 #include "parseToCsv.h"
 #include "logger.h"
 
+#include <algorithm>
+#include <cctype>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -37,10 +32,17 @@ public:
 
 private:
     Model() {}
+
     static vector<Course> generateCourses(const string& path);
+
     static vector<InformativeSchedule> generateSchedules(const vector<Course>& userInput);
+
     static void saveSchedule(const InformativeSchedule& infoSchedule, const string& path);
+
     static void printSchedule(const InformativeSchedule& infoSchedule);
+
+    // Helper function to get file extension
+    static string getFileExtension(const string& filename);
 
     vector<Course> lastGeneratedCourses;
     vector<InformativeSchedule> lastGeneratedSchedules;

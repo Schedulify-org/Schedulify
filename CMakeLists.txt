@@ -27,9 +27,11 @@ FetchContent_MakeAvailable(OpenXLSX)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
 
 set(PROJECT_SOURCES
+        # main
         ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model_interfaces.h
 
+        # Controller headers
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/main_controller.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/controller_manager.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/file_input.h
@@ -38,31 +40,7 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/log_display.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/ScheduleGenerator.h
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.h
-
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters/schedule_filter.h
-        main.cpp
-
-        # Controller files
-        controller/main_controller.cpp
-        controller/src/controller_manager.cpp
-        controller/models/course_model.cpp
-        controller/src/file_input.cpp
-        controller/src/course_selection.cpp
-        controller/src/schedules_display.cpp
-        controller/src/log_display.cpp
-        controller/src/ScheduleGenerator.cpp
-
-        # Controller headers
-        controller/include/ScheduleGenerator.h
-        controller/include/main_controller.h
-        controller/include/controller_manager.h
-        controller/models/course_model.h
-        controller/include/file_input.h
-        controller/include/course_selection.h
-        controller/include/schedules_display.h
-        controller/include/log_display.h
+        # Controller code
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/main_controller.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/controller_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/file_input.cpp
@@ -74,50 +52,24 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.cpp
 
-        # Model interface
-        model_interfaces.h
+        # controller adapters
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters/schedule_filter.h
 
-        # Model implementation files
-        model/main_model.cpp
-        model/src/main/model_access.cpp
-
-        # Logger
-        logger/logger.cpp
-
-        # Parser files
-        model/src/parsers/parseCoursesToVector.cpp
-        model/src/parsers/excel_parser.cpp
-        model/src/parsers/parseToCsv.cpp
-        model/src/parsers/printSchedule.cpp
-
-        # Parser headers
-        model/include/parsers/excel_parser.h
-        model/include/parsers/parseCoursesToVector.h
-
-        # Schedule algorithm files
-        model/src/schedule_algorithm/CourseLegalComb.cpp
-        model/src/schedule_algorithm/ScheduleBuilder.cpp
-        model/src/schedule_algorithm/TimeUtils.cpp
-
-        # Schedule algorithm headers
-        model/include/schedule_algorithm/ScheduleBuilder.h
-        model/include/schedule_algorithm/CourseLegalComb.h
-        model/include/schedule_algorithm/TimeUtils.h
-
-        # Main model header
-        model/include/main/main_model.h
         ${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.cpp
 
+        # main model code
         ${CMAKE_CURRENT_SOURCE_DIR}/model/main_model.cpp
-
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/main/model_access.cpp
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/parseCoursesToJson.cpp
+        # model parsers
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/parseCoursesToVector.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/parseToCsv.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/excel_parser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/printSchedule.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/ScheduleEnrichment.cpp
 
+        # algorithm
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/CourseLegalComb.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/ScheduleBuilder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/TimeUtils.cpp

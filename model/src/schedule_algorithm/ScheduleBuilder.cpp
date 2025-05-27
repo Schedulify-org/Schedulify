@@ -1,7 +1,5 @@
 #include "ScheduleBuilder.h"
 
-using namespace std;
-
 unordered_map<int, CourseInfo> ScheduleBuilder::courseInfoMap;
 
 // Checks if there is a time conflict between two CourseSelections

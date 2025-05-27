@@ -1,7 +1,5 @@
 #include "TimeUtils.h"
 
-using namespace std;
-
 // Converts a time string in the format "HH:MM" to total minutes since midnight
 int TimeUtils::toMinutes(const std::string& t) {
     try {

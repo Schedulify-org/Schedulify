@@ -1,9 +1,7 @@
 #ifndef EXCEL_PARSER_H
 #define EXCEL_PARSER_H
 
-// Include OpenXLSX first to avoid conflicts
 #include <OpenXLSX.hpp>
-
 #include <iostream>
 #include <vector>
 #include <string>
@@ -13,16 +11,13 @@
 #include <sstream>
 #include <algorithm>
 
-// Only include Windows headers if absolutely necessary and use guards
 #ifdef _WIN32
-// Avoid conflicts by defining these before including Windows headers
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-// Avoid the std::byte conflict
 #define byte win_byte_override
 #include <windows.h>
 #include <io.h>
