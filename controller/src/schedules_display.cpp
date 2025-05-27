@@ -103,7 +103,6 @@ ScheduleFilter::FilterCriteria SchedulesDisplayController::convertQVariantToFilt
     return criteria;
 }
 
-// Existing methods remain unchanged
 void SchedulesDisplayController::saveScheduleAsCSV() {
     int currentIndex = m_scheduleModel->currentScheduleIndex();
     if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {

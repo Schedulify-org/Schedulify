@@ -18,7 +18,7 @@ public:
     ~ScheduleModel() override = default;
 
     // Schedule management
-    void loadSchedules(const std::vector<InformativeSchedule>& schedules);
+    void loadSchedules(const vector<InformativeSchedule>& schedules);
 
     // Properties
     int currentScheduleIndex() const { return m_currentScheduleIndex; }
@@ -39,7 +39,7 @@ signals:
     void scheduleDataChanged();
 
 private:
-    std::vector<InformativeSchedule> m_schedules;
+    vector<InformativeSchedule> m_schedules;
     int m_currentScheduleIndex;
 };
 
