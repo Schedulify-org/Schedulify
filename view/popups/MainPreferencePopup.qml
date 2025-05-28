@@ -138,7 +138,7 @@ Popup {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
-    property int currentPage: 0 // 0 = Block Times, 1 = Filter
+    property int currentPage: 0
 
     Column {
         width: parent.width
@@ -176,7 +176,6 @@ Popup {
                         radius: 4
                     }
 
-                    // Custom content with SVG icon
                     contentItem: Item {
                         anchors.fill: parent
 

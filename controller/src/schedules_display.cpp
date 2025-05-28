@@ -21,20 +21,13 @@ void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeS
     m_scheduleModel->loadSchedules(m_filteredSchedules);
 }
 
-void SchedulesDisplayController::applyFiltersAndBlockedTimes(const QVariantMap& filterData, const QVariantList& blockedTimes) {
-    // Convert QVariantMap to FilterCriteria
+void SchedulesDisplayController::applyFilters(const QVariantMap& filterData) {
     ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
 
-    // TODO: Handle blocked times (you can implement this based on your needs)
-    // For now, we'll focus on the filtering
-
-    // Apply filters to original schedules
     applyFiltersToSchedules(criteria);
 
-    // Update the model with filtered data
     m_scheduleModel->loadSchedules(m_filteredSchedules);
 
-    // Emit signal to notify UI
     emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
                         static_cast<int>(m_originalSchedules.size()));
 }

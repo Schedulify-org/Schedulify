@@ -312,7 +312,7 @@ Page {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: preferenceMenu.open()
+                    onClicked: filterMenu.open()
                 }
             }
         }
@@ -342,15 +342,14 @@ Page {
         }
     }
 
-    // preference menu link
-    MainPreferencePopup {
-        id: preferenceMenu
+    // filter menu link
+    FilterMenu {
+        id: filterMenu
         parent: Overlay.overlay
 
-        // ADD THESE SIGNAL CONNECTIONS:
-        onFiltersApplied: function(filterData, blockedTimes) {
+        onFiltersApplied: function(filterData) {
             if (controller) {
-                controller.applyFiltersAndBlockedTimes(filterData, blockedTimes)
+                controller.applyFilters(filterData)
             }
         }
     }

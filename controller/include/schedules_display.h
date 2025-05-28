@@ -45,7 +45,7 @@ public:
     Q_INVOKABLE void printScheduleDirectly();
     Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
-    Q_INVOKABLE void applyFiltersAndBlockedTimes(const QVariantMap& filterData, const QVariantList& blockedTimes);
+    Q_INVOKABLE void applyFilters(const QVariantMap& filterData);
     Q_INVOKABLE void clearFilters();
 
     static QString generateFilename(const QString& basePath, int index, fileType type);

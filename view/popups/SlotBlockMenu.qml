@@ -3,8 +3,10 @@ import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Basic
 
-Item {
+Popup {
     id: root
+
+    signal blocksApplied(var blockedTimes)
 
     // Properties
     property int windowStartHour: 8
@@ -12,6 +14,23 @@ Item {
     property int windowEndHour: 9
     property int windowEndMinute: 0
     property string errorMessage: ""
+
+    width: 400
+    height: 600
+    modal: true
+    focus: true
+    clip: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+
+    background: Rectangle {
+        color: "#1f2937"
+        border.color: "#d1d5db"
+        border.width: 1
+        radius: 6
+    }
+
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
 
     // Timer to clear error message
     Timer {
@@ -88,6 +107,90 @@ Item {
         anchors.fill: parent
         anchors.margins: 10
         spacing: 15
+
+        // Header
+        Rectangle {
+            width: parent.width
+            height: 60
+            color: "transparent"
+
+            Item {
+                anchors.fill: parent
+                anchors.margins: 10
+
+                Text {
+                    text: "Set Blocked Time"
+                    font.pixelSize: 20
+                    font.bold: true
+                    color: "#ffffff"
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                }
+
+                Button {
+                    id: saveAndCloseBtn
+                    width: 40
+                    height: 40
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.right: parent.right
+
+                    background: Rectangle {
+                        color: "transparent"
+                        radius: 4
+                    }
+
+                    // Custom content with SVG icon
+                    contentItem: Item {
+                        anchors.fill: parent
+
+                        // SVG Icon
+                        Image {
+                            id: saveIcon
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            source: "qrc:/icons/ic-save.svg"
+                            sourceSize.width: 22
+                            sourceSize.height: 22
+                        }
+
+                        // Hover tooltip
+                        ToolTip {
+                            id: saveTooltip
+                            text: "Save Preference & Close"
+                            visible: saveMouseArea.containsMouse
+                            delay: 500
+                            timeout: 3000
+
+                            background: Rectangle {
+                                color: "#374151"
+                                radius: 4
+                                border.color: "#4b5563"
+                            }
+
+                            contentItem: Text {
+                                text: saveTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: saveMouseArea
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        hoverEnabled: true
+                        onClicked: {
+                            var blockedTimes = getBlockedTimes()
+
+                            root.blocksApplied(blockedTimes)
+                            root.close()
+                        }
+                    }
+                }
+            }
+        }
 
         // Error message
         Rectangle {
