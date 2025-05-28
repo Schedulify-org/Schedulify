@@ -111,6 +111,10 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
             if (selection.labGroup) {
                 processGroupSessions(selection, selection.labGroup, "Lab", daySchedules);
             }
+
+            if (selection.blockGroup) {
+                processGroupSessions(selection, selection.blockGroup, "Block", daySchedules);
+            }
         }
 
         for (int day = 0; day < 7; day++) {
@@ -148,6 +152,7 @@ void ScheduleBuilder::processGroupSessions(const CourseSelection& selection,
         string courseRawId = getCourseRawIdById(selection.courseId);
 
         for (const auto& session : group->sessions) {
+
             ScheduleItem item;
             item.courseName = courseName;
             item.raw_id = courseRawId;

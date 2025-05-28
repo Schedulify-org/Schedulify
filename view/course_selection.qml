@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Basic
+import "popups"
 import "."
 
 Page {
@@ -34,6 +35,16 @@ Page {
         }
     }
 
+    // slot block menu link
+    SlotBlockMenu {
+        id: slotBlockMenu
+        parent: Overlay.overlay
+
+        onBlocksApplied: function(blockedTimes) {
+
+        }
+    }
+
     Rectangle {
         id: root
         anchors.fill: parent
@@ -62,7 +73,7 @@ Page {
                     height: 40
                     anchors {
                         left: parent.left
-                        leftMargin: 16
+                        leftMargin: 15
                         verticalCenter: parent.verticalCenter
                     }
                     background: Rectangle {
@@ -85,7 +96,7 @@ Page {
                     }
                 }
 
-                // Screen Title
+                // Page Title
                 Label {
                     id: titleLabel
                     text: "Available Courses"
@@ -175,12 +186,70 @@ Page {
                 }
 
                 Button {
+                    id: blocksButton
+                    width: 40
+                    height: 40
+                    anchors {
+                        right: logButtonB.left
+                        rightMargin: 10
+                        verticalCenter: parent.verticalCenter
+                    }
+
+                    background: Rectangle {
+                        color: preferenceMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                        radius: 10
+                    }
+
+                    contentItem: Item {
+                        anchors.fill: parent
+
+                        Image {
+                            id: preferenceIcon
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            source: "qrc:/icons/ic-preference.svg"
+                            sourceSize.width: 22
+                            sourceSize.height: 22
+                        }
+
+                        ToolTip {
+                            id: preferenceTooltip
+                            text: "Set Schedule Preference"
+                            visible: preferenceMouseArea.containsMouse
+                            delay: 500
+                            timeout: 3000
+
+                            background: Rectangle {
+                                color: "#374151"
+                                radius: 4
+                                border.color: "#4b5563"
+                            }
+
+                            contentItem: Text {
+                                text: preferenceTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: preferenceMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: slotBlockMenu.open()
+                    }
+                }
+
+                Button {
                     id: generateButton
                     width: 180
                     height: 40
                     anchors {
-                        right: parent.right
-                        rightMargin: 25 + logButtonB.width
+                        right: blocksButton.left
+                        rightMargin: 10
                         verticalCenter: parent.verticalCenter
                     }
                     visible: selectedCoursesRepeater.count > 0

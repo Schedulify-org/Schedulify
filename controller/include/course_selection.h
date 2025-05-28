@@ -26,6 +26,7 @@ Q_OBJECT
     Q_PROPERTY(CourseModel* courseModel READ courseModel CONSTANT)
     Q_PROPERTY(CourseModel* selectedCoursesModel READ selectedCoursesModel CONSTANT)
     Q_PROPERTY(CourseModel* filteredCourseModel READ filteredCourseModel CONSTANT)
+    Q_PROPERTY(CourseModel* blocksModel READ blocksModel CONSTANT)
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
@@ -34,6 +35,7 @@ public:
     [[nodiscard]] CourseModel* courseModel() const { return m_courseModel; }
     [[nodiscard]] CourseModel* selectedCoursesModel() const { return m_selectedCoursesModel; }
     [[nodiscard]] CourseModel* filteredCourseModel() const { return m_filteredCourseModel; }
+    [[nodiscard]] CourseModel* blocksModel() const { return m_blockTimes; }
 
     void initiateCoursesData(const vector<Course>& courses);
 
@@ -45,7 +47,7 @@ public:
     Q_INVOKABLE void deselectCourse(int index);
 
 private slots:
-    void onSchedulesGenerated(std::vector<InformativeSchedule>* schedules);
+    void onSchedulesGenerated(vector<InformativeSchedule>* schedules);
 
 signals:
     void selectionChanged();
@@ -55,9 +57,11 @@ private:
     CourseModel* m_courseModel;
     CourseModel* m_selectedCoursesModel;
     CourseModel* m_filteredCourseModel;
+    CourseModel* m_blockTimes;
     vector<Course> allCourses;
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
+    vector<Course> blockTimes;
     vector<int> selectedIndices;
     vector<int> filteredIndicesMap;
     IModel* modelConnection;

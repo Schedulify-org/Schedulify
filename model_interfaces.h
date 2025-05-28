@@ -38,6 +38,7 @@ public:
     vector<Group> Lectures;
     vector<Group> Tirgulim;
     vector<Group> labs;
+    vector<Group> blocks;
 };
 
 struct ScheduleItem {
@@ -57,6 +58,11 @@ struct ScheduleDay {
 
 struct InformativeSchedule {
     int index;
+    int amount_days = 0;
+    int amount_gaps = 0;
+    int gaps_time = 0;
+    int avg_start = 0;
+    int avg_end = 0;
     vector<ScheduleDay> week;
 };
 

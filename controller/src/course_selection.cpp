@@ -43,9 +43,9 @@ void CourseSelectionController::generateSchedules() {
     if (selectedCourses.empty()) {
         return;
     }
-
     // Create a worker thread for the operation
     workerThread = new QThread();
+    selectedCourses.push_back({99999, "99999", "Block Time", "", {}, {}, {}, {{SessionType::BLOCK, {{2, "10:00", "12:00", "999", "99"}, {3, "10:00", "12:00", "999", "99"}}}}});
     auto* worker = new ScheduleGenerator(modelConnection, selectedCourses);
     worker->moveToThread(workerThread);
 
@@ -81,7 +81,7 @@ void CourseSelectionController::generateSchedules() {
     });
 }
 
-void CourseSelectionController::onSchedulesGenerated(std::vector<InformativeSchedule>* schedules) {
+void CourseSelectionController::onSchedulesGenerated(vector<InformativeSchedule>* schedules) {
     // Get the main QML engine
     auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
     if (engine && !engine->rootObjects().isEmpty()) {
@@ -116,7 +116,7 @@ void CourseSelectionController::toggleCourseSelection(int index) {
     }
 
     // Check if the course is already selected
-    auto it = std::find(selectedIndices.begin(), selectedIndices.end(), index);
+    auto it = find(selectedIndices.begin(), selectedIndices.end(), index);
 
     if (it != selectedIndices.end()) {
         // Course is already selected, remove it

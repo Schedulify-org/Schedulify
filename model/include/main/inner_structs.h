@@ -8,6 +8,7 @@ struct CourseSelection {
     const Group* lectureGroup;
     const Group* tutorialGroup;  // nullptr if none
     const Group* labGroup;       // nullptr if none
+    const Group* blockGroup;       // nullptr if none
 };
 
 struct CourseInfo {

@@ -81,7 +81,7 @@ Page {
                 height: 40
                 anchors {
                     left: parent.left
-                    leftMargin: 16
+                    leftMargin: 15
                     verticalCenter: parent.verticalCenter
                 }
                 background: Rectangle {
@@ -198,9 +198,9 @@ Page {
                 width: 40
                 height: 40
                 anchors {
-                    right: parent.right
-                    rightMargin: 25 + logButtonC.width
+                    right: logButtonC.left
                     verticalCenter: parent.verticalCenter
+                    rightMargin: 10
                 }
 
                 property bool isExportEnabled: scheduleModel && totalSchedules > 0
@@ -263,9 +263,9 @@ Page {
                 width: 40
                 height: 40
                 anchors {
-                    right: parent.right
-                    rightMargin: 35 + exportButton.width + logButtonC.width
+                    right: exportButton.left
                     verticalCenter: parent.verticalCenter
+                    rightMargin: 10
                 }
 
                 background: Rectangle {
@@ -634,15 +634,18 @@ Page {
                                                         let slotEnd = parseInt(slot.split("-")[1].split(":")[0]);
 
                                                         if (hour >= slotStart && hour < slotEnd) {
-                                                            rows[rowIndex][dayName] +=
-                                                                (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                                "<b style='font-size:" + Math.max(minTextSize, dynamicTextSize - 1) + "px'>" + item.courseName + "</b> ("
-                                                                + item.raw_id + ")" + "<br>" +
-                                                                "Building: " + item.building + ", Room: " + item.room;
-
-                                                            if (!rows[rowIndex][dayName + "_type"] ||
-                                                                (item.type === "lecture") ||
-                                                                (item.type === "lab" && rows[rowIndex][dayName + "_type"] === "tutorial")) {
+                                                            if (item.type === "Block") {
+                                                                rows[rowIndex][dayName] +=
+                                                                    (rows[rowIndex][dayName] ? "\n\n" : "") +
+                                                                    "<b style='font-size:" + Math.max(minTextSize, dynamicTextSize + 2) + "px'>" + item.courseName + "</b>";
+                                                            } else {
+                                                                rows[rowIndex][dayName] +=
+                                                                    (rows[rowIndex][dayName] ? "\n\n" : "") +
+                                                                    "<b style='font-size:" + Math.max(minTextSize, dynamicTextSize - 1) + "px'>" + item.courseName + "</b> ("
+                                                                    + item.raw_id + ")" + "<br>" +
+                                                                    "Building: " + item.building + ", Room: " + item.room;
+                                                            }
+                                                            if (!rows[rowIndex][dayName + "_type"]) {
                                                                 rows[rowIndex][dayName + "_type"] = item.type;
                                                             }
                                                         }
@@ -699,6 +702,7 @@ Page {
                                         case "Lecture": return "#b0e8ff";
                                         case "Lab": return "#abffc6";
                                         case "Tutorial": return "#edc8ff";
+                                        case "Block": return "#414142";
                                         default: return "#64748BFF";
                                     }
                                 }
@@ -732,7 +736,7 @@ Page {
                                     font.pixelSize: Math.max(minTextSize, dynamicTextSize)
                                     textFormat: Text.RichText
                                     text: model.display ? String(model.display) : ""
-                                    color: "#000000"
+                                    color: itemType === "Block" ? "#ffffff": "#000000"
                                     clip: true
                                     elide: Text.ElideRight
                                 }
