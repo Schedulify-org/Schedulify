@@ -99,7 +99,6 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
         const vector<string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
         for (const auto& selection : selections) {
-
             if (selection.lectureGroup) {
                 processGroupSessions(selection, selection.lectureGroup, "Lecture", daySchedules);
             }
@@ -118,23 +117,31 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
         }
 
         for (int day = 0; day < 7; day++) {
-            if (daySchedules.find(day) != daySchedules.end()) {
-                auto& dayItems = daySchedules[day];
+            ScheduleDay scheduleDay;
+            scheduleDay.day = dayNames[day];
+
+            int algorithmDay = day + 1;
+
+            if (daySchedules.find(algorithmDay) != daySchedules.end()) {
+                auto& dayItems = daySchedules[algorithmDay];
                 sort(dayItems.begin(), dayItems.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
                     return TimeUtils::toMinutes(a.start) < TimeUtils::toMinutes(b.start);
                 });
-
-                ScheduleDay scheduleDay;
-                scheduleDay.day = dayNames[day];
                 scheduleDay.day_items = dayItems;
-
-                schedule.week.push_back(scheduleDay);
             }
+
+            schedule.week.push_back(scheduleDay);
         }
 
     } catch (const exception& e) {
         Logger::get().logError("Exception in convertToInformativeSchedule: " + string(e.what()));
         schedule.week.clear();
+        const vector<string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+        for (int day = 0; day < 7; day++) {
+            ScheduleDay scheduleDay;
+            scheduleDay.day = dayNames[day];
+            schedule.week.push_back(scheduleDay);
+        }
     }
 
     return schedule;
