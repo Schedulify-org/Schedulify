@@ -5,13 +5,9 @@
 
 struct CourseSelection {
     int courseId;
-    const Session* lecture;
-    const Session* tutorial; // nullptr if none
-    const Session* lab;      // nullptr if none
-};
-
-struct Schedule {
-    vector<CourseSelection> selections;
+    const Group* lectureGroup;
+    const Group* tutorialGroup;  // nullptr if none
+    const Group* labGroup;       // nullptr if none
 };
 
 struct CourseInfo {

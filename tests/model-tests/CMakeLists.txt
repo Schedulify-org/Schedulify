@@ -27,14 +27,12 @@ add_executable(schedModelTest
         ../../logger/logger.cpp
         ../../logger/logger.h
 
-        ../../model/src/parsers/parseCoursesToJson.cpp
         ../../model/src/parsers/parseCoursesToVector.cpp
         ../../model/src/schedule_algorithm/CourseLegalComb.cpp
         ../../model/src/schedule_algorithm/ScheduleBuilder.cpp
         ../../model/src/schedule_algorithm/TimeUtils.cpp
         ../../model/src/parsers/parseToCsv.cpp
         ../../model/src/parsers/printSchedule.cpp
-        ../../model/src/parsers/ScheduleEnrichment.cpp
         ../../model/src/main/model_access.cpp
         ../../model/main_model.cpp
 

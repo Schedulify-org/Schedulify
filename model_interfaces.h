@@ -5,7 +5,6 @@
 #include <vector>
 
 using namespace std;
-
 class Session {
 public:
     int day_of_week;
@@ -15,16 +14,23 @@ public:
     string room_number;
 };
 
+class Group {
+public:
+    string type;
+    vector<Session> sessions;
+};
+
 class Course {
 public:
     int id;
     string raw_id;
     string name;
     string teacher;
-    vector<Session> Lectures;
-    vector<Session> Tirgulim;
-    vector<Session> labs;
+    vector<Group> Lectures;
+    vector<Group> Tirgulim;
+    vector<Group> labs;
 };
+
 
 struct ScheduleItem {
     string courseName;

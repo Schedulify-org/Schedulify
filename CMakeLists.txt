@@ -22,12 +22,24 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 endif()
 
+# Fetch OpenXLSX for Excel file parsing
+include(FetchContent)
+FetchContent_Declare(
+        OpenXLSX
+        GIT_REPOSITORY https://github.com/troldal/OpenXLSX.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(OpenXLSX)
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
 
-include_directories(model/include controller/include logger)
+include_directories(model/include controller/include logger model/include/parsers)
 
 set(PROJECT_SOURCES
         main.cpp
+
+        # Controller files
         controller/main_controller.cpp
         controller/src/controller_manager.cpp
         controller/models/course_model.cpp
@@ -37,6 +49,7 @@ set(PROJECT_SOURCES
         controller/src/log_display.cpp
         controller/src/ScheduleGenerator.cpp
 
+        # Controller headers
         controller/include/ScheduleGenerator.h
         controller/include/main_controller.h
         controller/include/controller_manager.h
@@ -46,18 +59,38 @@ set(PROJECT_SOURCES
         controller/include/schedules_display.h
         controller/include/log_display.h
 
+        # Model interface
         model_interfaces.h
+
+        # Model implementation files
         model/main_model.cpp
+        model/src/main/model_access.cpp
+
+        # Logger
         logger/logger.cpp
-        model/src/parsers/parseCoursesToJson.cpp
+
+        # Parser files
         model/src/parsers/parseCoursesToVector.cpp
+        model/src/parsers/excel_parser.cpp
+        model/src/parsers/parseToCsv.cpp
+        model/src/parsers/printSchedule.cpp
+
+        # Parser headers
+        model/include/parsers/excel_parser.h
+        model/include/parsers/parseCoursesToVector.h
+
+        # Schedule algorithm files
         model/src/schedule_algorithm/CourseLegalComb.cpp
         model/src/schedule_algorithm/ScheduleBuilder.cpp
         model/src/schedule_algorithm/TimeUtils.cpp
-        model/src/parsers/parseToCsv.cpp
-        model/src/parsers/printSchedule.cpp
-        model/src/parsers/ScheduleEnrichment.cpp
-        model/src/main/model_access.cpp
+
+        # Schedule algorithm headers
+        model/include/schedule_algorithm/ScheduleBuilder.h
+        model/include/schedule_algorithm/CourseLegalComb.h
+        model/include/schedule_algorithm/TimeUtils.h
+
+        # Main model header
+        model/include/main/main_model.h
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -77,7 +110,7 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include
 )
 
-# Link Qt libraries
+# Link Qt libraries and OpenXLSX
 target_link_libraries(SchedGUI PRIVATE
         Qt6::Core
         Qt6::Gui
@@ -87,14 +120,25 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::QuickLayouts
         Qt6::PrintSupport
         Qt6::QuickControls2
+        OpenXLSX::OpenXLSX
 )
+
+# Enable UTF-8 support on Windows for Excel file handling
+if(WIN32)
+    if(MSVC)
+        target_compile_options(SchedGUI PRIVATE /utf-8)
+    else()
+        # For MinGW/GCC
+        target_compile_options(SchedGUI PRIVATE -finput-charset=utf-8 -fexec-charset=utf-8)
+    endif()
+endif()
 
 set_target_properties(SchedGUI PROPERTIES
         ${BUNDLE_ID_OPTION}
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
         MACOSX_BUNDLE TRUE
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE FALSE
 )
 
 if(QT_VERSION_MAJOR EQUAL 6)

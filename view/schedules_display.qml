@@ -624,10 +624,9 @@ Page {
                                                     if (hour >= slotStart && hour < slotEnd) {
                                                         rows[rowIndex][dayName] +=
                                                             (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                            "<b style='font-size:13px'>" + item.courseName + "</b><br>" +
+                                                            "<b style='font-size:12px'>" + item.courseName + "</b><br>" +
                                                             item.raw_id + " - " + item.type + "<br>" +
-                                                            item.start + " - " + item.end + "<br>" +
-                                                            "Building: " + item.building + ", Room: " + item.room;
+                                                            "Building: " + item.building +  "<br>" + " Room: " + item.room;
                                                     }
                                                 }
                                             }
@@ -653,14 +652,16 @@ Page {
 
                             Text {
                                 anchors.fill: parent
+                                anchors.margins: 4
                                 wrapMode: Text.WordWrap
                                 verticalAlignment: Text.AlignVCenter
                                 horizontalAlignment: Text.AlignHCenter
-                                padding: 6
-                                font.pixelSize: 11
+                                font.pixelSize: 10
                                 textFormat: Text.RichText
                                 text: model.display ? String(model.display) : ""
                                 color: "#000000"
+                                clip: true
+                                elide: Text.ElideRight
                             }
                         }
 
@@ -709,4 +710,3 @@ Page {
         }
     }
 }
-

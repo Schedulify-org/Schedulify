@@ -15,7 +15,7 @@ void FileInputController::handleUploadAndContinue() {
             nullptr,
             "Select Course Input File",
             QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-            "Text Files (*.txt)"
+            "Supported files (*.txt *.xlsx)"
     );
 
     if (fileName.isEmpty()) {
@@ -31,7 +31,7 @@ void FileInputController::loadFile() {
     string filePath;
 
     if (!selectedFilePath.isEmpty()) {
-        filePath = selectedFilePath.toLocal8Bit().constData();
+        filePath = selectedFilePath.toUtf8().constData();
     } else {
         Logger::get().logError("No file path available");
         emit invalidFileFormat();
@@ -64,9 +64,9 @@ void FileInputController::loadFile() {
 
 void FileInputController::handleFileSelected(const QString &filePath) {
 
-    if (!filePath.endsWith(".txt", Qt::CaseInsensitive)) {
+    if (!(filePath.endsWith(".txt", Qt::CaseInsensitive) || filePath.endsWith(".xlsx", Qt::CaseInsensitive))) {
         emit invalidFileFormat();
-        Logger::get().logError("Invalid file type. only txt file are allowed");
+        Logger::get().logError("Invalid file type. Only .txt and .xlsx files are allowed");
         return;
     }
 
@@ -77,7 +77,10 @@ void FileInputController::handleFileSelected(const QString &filePath) {
         return;
     } else {
         selectedFilePath = filePath;
-        QString fileName = filePath.split('/').last().split('\\').last();
+        Logger::get().logError(selectedFilePath.toStdString());
+
+        QFileInfo fileInfo(filePath);
+        QString fileName = fileInfo.fileName();
         emit fileNameChanged(fileName);
         emit fileSelected(true);
     }
