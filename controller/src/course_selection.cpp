@@ -6,6 +6,7 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         , m_courseModel(new CourseModel(this))
         , m_selectedCoursesModel(new CourseModel(this))
         , m_filteredCourseModel(new CourseModel(this))
+        , m_blocksModel(new CourseModel(this))
         , workerThread(nullptr)
 {
     modelConnection = ModelAccess::getModel();
@@ -17,7 +18,6 @@ CourseSelectionController::~CourseSelectionController() {
 
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
     if (courses.empty()) {
-        // Navigate to course selection screen
         Logger::get().logError("Empty courses vector provided to initiateCoursesData");
     } else {
         // Initialize the course model with the data
@@ -36,17 +36,140 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         selectedCourses.clear();
         selectedIndices.clear();
         m_selectedCoursesModel->populateCoursesData(selectedCourses);
+
+        // Clear block times
+        userBlockTimes.clear();
+        blockTimes.clear();
+        updateBlockTimesModel();
     }
+}
+
+void CourseSelectionController::addBlockTime(const QString& day, const QString& startTime, const QString& endTime) {
+    // Check if this block time already exists
+    for (const auto& blockTime : userBlockTimes) {
+        if (blockTime.day == day && blockTime.startTime == startTime && blockTime.endTime == endTime) {
+            emit errorMessage("This block time already exists");
+            return;
+        }
+    }
+
+    // Validate time format and logic
+    if (startTime >= endTime) {
+        emit errorMessage("Start time must be before end time");
+        return;
+    }
+
+    // Add the new block time
+    userBlockTimes.emplace_back(day, startTime, endTime);
+    updateBlockTimesModel();
+
+    emit blockTimesChanged();
+}
+
+void CourseSelectionController::removeBlockTime(int index) {
+    if (index < 0 || index >= static_cast<int>(userBlockTimes.size())) {
+        Logger::get().logError("Invalid block time index for removal");
+        return;
+    }
+
+    userBlockTimes.erase(userBlockTimes.begin() + index);
+    updateBlockTimesModel();
+
+    emit blockTimesChanged();
+}
+
+void CourseSelectionController::clearAllBlockTimes() {
+    userBlockTimes.clear();
+    updateBlockTimesModel();
+    emit blockTimesChanged();
+}
+
+void CourseSelectionController::updateBlockTimesModel() {
+    blockTimes.clear();
+
+    for (size_t i = 0; i < userBlockTimes.size(); ++i) {
+        const BlockTime& blockTime = userBlockTimes[i];
+        Course blockCourse = createBlockTimeCourse(blockTime, static_cast<int>(i) + 90000);
+        blockTimes.push_back(blockCourse);
+    }
+
+    m_blocksModel->populateCoursesData(blockTimes);
+}
+
+Course CourseSelectionController::createBlockTimeCourse(const BlockTime& blockTime, int id) {
+    // Create a Course object to represent the block time for display purposes
+    // We'll use the course fields for display:
+    // - raw_id will show the time range
+    // - name will show "Blocked Time"
+    // - teacher can show the day for additional info
+
+    Course blockCourse;
+    blockCourse.id = id;
+    blockCourse.raw_id = (blockTime.startTime + " - " + blockTime.endTime).toStdString();
+    blockCourse.name = "Blocked Time"; // Fixed: should always be "Blocked Time"
+    blockCourse.teacher = blockTime.day.toStdString(); // Day info moved to teacher field
+
+    // Clear all group vectors
+    blockCourse.Lectures.clear();
+    blockCourse.Tirgulim.clear();
+    blockCourse.labs.clear();
+    blockCourse.blocks.clear();
+
+    // Create a block group with the blocked time session
+    Group blockGroup = createBlockGroup(blockTime);
+    blockCourse.blocks.push_back(blockGroup);
+
+    return blockCourse;
+}
+
+Group CourseSelectionController::createBlockGroup(const BlockTime& blockTime) {
+    Group blockGroup;
+    blockGroup.type = SessionType::BLOCK;
+
+    // Create a session that represents the blocked time
+    Session blockSession;
+    blockSession.day_of_week = getDayNumber(blockTime.day);
+    blockSession.start_time = blockTime.startTime.toStdString();
+    blockSession.end_time = blockTime.endTime.toStdString();
+    blockSession.building_number = "BLOCKED";
+    blockSession.room_number = "BLOCK";
+
+    blockGroup.sessions.push_back(blockSession);
+
+    return blockGroup;
+}
+
+int CourseSelectionController::getDayNumber(const QString& dayName) {
+    if (dayName == "Sunday") return 1;
+    if (dayName == "Monday") return 2;
+    if (dayName == "Tuesday") return 3;
+    if (dayName == "Wednesday") return 4;
+    if (dayName == "Thursday") return 5;
+    if (dayName == "Friday") return 6;
+    if (dayName == "Saturday") return 7;
+    return 1;
 }
 
 void CourseSelectionController::generateSchedules() {
     if (selectedCourses.empty()) {
+        emit errorMessage("Please select at least one course");
         return;
     }
+
     // Create a worker thread for the operation
     workerThread = new QThread();
-    selectedCourses.push_back({99999, "99999", "Block Time", "", {}, {}, {}, {{SessionType::BLOCK, {{2, "10:00", "12:00", "999", "99"}, {3, "10:00", "12:00", "999", "99"}}}}});
-    auto* worker = new ScheduleGenerator(modelConnection, selectedCourses);
+
+    // Combine selected courses with block times
+    vector<Course> coursesToProcess = selectedCourses;
+
+    // Add user-defined block times as courses
+    for (size_t i = 0; i < userBlockTimes.size(); ++i) {
+        const auto& blockTime = userBlockTimes[i];
+        Course blockCourse = createBlockTimeCourse(blockTime, 99000 + static_cast<int>(i));
+        coursesToProcess.push_back(blockCourse);
+    }
+
+    auto* worker = new ScheduleGenerator(modelConnection, coursesToProcess);
     worker->moveToThread(workerThread);
 
     // Connect signals/slots
@@ -96,13 +219,12 @@ void CourseSelectionController::onSchedulesGenerated(vector<InformativeSchedule>
         auto* schedule_controller =
                 qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
 
-
         schedule_controller->loadScheduleData(*schedules);
 
         // Navigate to schedules display screen
         goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
     } else {
-        emit errorMessage("There are no valid schedule for your selected courses");
+        emit errorMessage("There are no valid schedules for your selected courses and block times");
     }
 
     // Reset worker thread pointer
@@ -142,14 +264,11 @@ void CourseSelectionController::deselectCourse(int index) {
         return;
     }
 
-    // Find the corresponding index in the main course list
-    int mainIndex = selectedIndices[index];
-
     // Remove from selected courses
     selectedCourses.erase(selectedCourses.begin() + index);
     selectedIndices.erase(selectedIndices.begin() + index);
 
-    // Update the adapters
+    // Update the selected courses model
     m_selectedCoursesModel->populateCoursesData(selectedCourses);
 
     // Emit our custom signal to notify QML of selection change
@@ -186,7 +305,7 @@ void CourseSelectionController::filterCourses(const QString& searchText) {
             teacherName.contains(searchLower))
         {
             filteredCourses.push_back(course);
-            filteredIndicesMap.push_back(i); // Store the original index
+            filteredIndicesMap.push_back(static_cast<int>(i)); // Store the original index
         }
     }
 
@@ -201,7 +320,7 @@ void CourseSelectionController::resetFilter() {
 
     // Rebuild the index map
     for (size_t i = 0; i < allCourses.size(); ++i) {
-        filteredIndicesMap.push_back(i);
+        filteredIndicesMap.push_back(static_cast<int>(i));
     }
 
     // Update the filtered model

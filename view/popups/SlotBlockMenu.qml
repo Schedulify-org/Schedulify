@@ -6,27 +6,36 @@ import QtQuick.Controls.Basic
 Popup {
     id: root
 
-    signal blocksApplied(var blockedTimes)
+    signal blockTimeAdded(string day, string startTime, string endTime)
 
     // Properties
-    property int windowStartHour: 8
-    property int windowStartMinute: 0
-    property int windowEndHour: 9
-    property int windowEndMinute: 0
+    property int startHour: 8
+    property int endHour: 9
     property string errorMessage: ""
 
     width: 400
-    height: 600
+    height: 350
     modal: true
     focus: true
     clip: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
     background: Rectangle {
-        color: "#1f2937"
+        color: "#ffffff"
         border.color: "#d1d5db"
         border.width: 1
-        radius: 6
+        radius: 8
+
+        // Drop shadow effect
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -2
+            color: "transparent"
+            border.color: "#00000020"
+            border.width: 1
+            radius: 10
+            z: -1
+        }
     }
 
     x: (parent.width - width) / 2
@@ -35,159 +44,101 @@ Popup {
     // Timer to clear error message
     Timer {
         id: errorMessageTimer
-        interval: 3000 // 3 seconds
+        interval: 3000
         onTriggered: {
             errorMessage = ""
         }
     }
 
-    // Timer to scroll to bottom after adding item
-    Timer {
-        id: scrollToBottomTimer
-        interval: 50 // Small delay to allow layout update
-        onTriggered: {
-            scrollView.scrollToBottom();
-        }
-    }
-
     // Helper functions
-    function getFormattedStartTime() {
-        return String(windowStartHour).padStart(2, '0') + ":" + String(windowStartMinute).padStart(2, '0');
+    function getFormattedTime(hour) {
+        return String(hour).padStart(2, '0') + ":00";
     }
 
-    function getFormattedEndTime() {
-        return String(windowEndHour).padStart(2, '0') + ":" + String(windowEndMinute).padStart(2, '0');
-    }
-
-    function timeToMinutes(hour, minute) {
-        return hour * 60 + minute;
-    }
-
-    function validateEndTime() {
-        var startMinutes = timeToMinutes(windowStartHour, windowStartMinute);
-        var endMinutes = timeToMinutes(windowEndHour, windowEndMinute);
-
-        if (endMinutes <= startMinutes) {
-            // Set end time to start time + 15 minutes
-            var newEndMinutes = startMinutes + 15;
-            windowEndHour = Math.floor(newEndMinutes / 60) % 24;
-            windowEndMinute = newEndMinutes % 60;
-        }
-    }
-
-    function validateStartTime() {
-        var startMinutes = timeToMinutes(windowStartHour, windowStartMinute);
-        var endMinutes = timeToMinutes(windowEndHour, windowEndMinute);
-
-        if (startMinutes >= endMinutes) {
-            // Set start time to end time - 15 minutes
-            var newStartMinutes = endMinutes - 15;
-            if (newStartMinutes < 0) {
-                newStartMinutes += 24 * 60; // Handle day wraparound
+    function validateTimes() {
+        if (endHour <= startHour) {
+            endHour = startHour + 1;
+            if (endHour > 23) {
+                endHour = 23;
+                startHour = 22;
             }
-            windowStartHour = Math.floor(newStartMinutes / 60) % 24;
-            windowStartMinute = newStartMinutes % 60;
         }
     }
 
-    function getBlockedTimes() {
-        var blockedTimes = []
-        for (var i = 0; i < blockedTimesModel.count; i++) {
-            var item = blockedTimesModel.get(i)
-            blockedTimes.push({
-                day: item.day,
-                startTime: item.startTime,
-                endTime: item.endTime
-            })
+    function addBlockTime() {
+        // Validate inputs
+        if (daySelector.currentIndex < 0) {
+            errorMessage = "Please select a day";
+            errorMessageTimer.restart();
+            return;
         }
-        return blockedTimes
+
+        validateTimes();
+
+        var day = daySelector.currentText;
+        var startTime = getFormattedTime(startHour);
+        var endTime = getFormattedTime(endHour);
+
+        // Emit signal with the block time data
+        root.blockTimeAdded(day, startTime, endTime);
+
+        // Reset form
+        daySelector.currentIndex = 0;
+        startHour = 8;
+        endHour = 9;
+        errorMessage = "";
+
+        // Close popup
+        root.close();
     }
 
     Column {
         anchors.fill: parent
-        anchors.margins: 10
-        spacing: 15
+        anchors.margins: 20
+        spacing: 20
 
         // Header
-        Rectangle {
+        Row {
             width: parent.width
-            height: 60
-            color: "transparent"
+            spacing: 10
+
+            Text {
+                text: "Add Block Time"
+                font.pixelSize: 20
+                font.bold: true
+                color: "#1f2937"
+                anchors.verticalCenter: parent.verticalCenter
+            }
 
             Item {
-                anchors.fill: parent
-                anchors.margins: 10
+                width: parent.width - 200
+            }
 
-                Text {
-                    text: "Set Blocked Time"
-                    font.pixelSize: 20
-                    font.bold: true
-                    color: "#ffffff"
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.left: parent.left
+            Button {
+                id: closeButton
+                width: 30
+                height: 30
+                anchors.verticalCenter: parent.verticalCenter
+
+                background: Rectangle {
+                    color: closeMouseArea.containsMouse ? "#f3f4f6" : "transparent"
+                    radius: 15
                 }
 
-                Button {
-                    id: saveAndCloseBtn
-                    width: 40
-                    height: 40
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: parent.right
+                contentItem: Text {
+                    text: "×"
+                    font.pixelSize: 20
+                    color: "#6b7280"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
 
-                    background: Rectangle {
-                        color: "transparent"
-                        radius: 4
-                    }
-
-                    // Custom content with SVG icon
-                    contentItem: Item {
-                        anchors.fill: parent
-
-                        // SVG Icon
-                        Image {
-                            id: saveIcon
-                            anchors.centerIn: parent
-                            width: 24
-                            height: 24
-                            source: "qrc:/icons/ic-save.svg"
-                            sourceSize.width: 22
-                            sourceSize.height: 22
-                        }
-
-                        // Hover tooltip
-                        ToolTip {
-                            id: saveTooltip
-                            text: "Save Preference & Close"
-                            visible: saveMouseArea.containsMouse
-                            delay: 500
-                            timeout: 3000
-
-                            background: Rectangle {
-                                color: "#374151"
-                                radius: 4
-                                border.color: "#4b5563"
-                            }
-
-                            contentItem: Text {
-                                text: saveTooltip.text
-                                color: "white"
-                                font.pixelSize: 12
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        id: saveMouseArea
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        hoverEnabled: true
-                        onClicked: {
-                            var blockedTimes = getBlockedTimes()
-
-                            root.blocksApplied(blockedTimes)
-                            root.close()
-                        }
-                    }
+                MouseArea {
+                    id: closeMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.close()
+                    cursorShape: Qt.PointingHandCursor
                 }
             }
         }
@@ -196,7 +147,6 @@ Popup {
         Rectangle {
             id: errorMessageContainer
             width: parent.width
-            anchors.horizontalCenter: parent.horizontalCenter
             height: errorMessage === "" ? 0 : 40
             visible: errorMessage !== ""
             color: "#fef2f2"
@@ -211,143 +161,44 @@ Popup {
             }
         }
 
-        // Blocked time slots list
-        ScrollView {
-            id: scrollView
+        // Day selection
+        Column {
             width: parent.width
-            height: errorMessage === "" ? parent.height - 120 : parent.height - 175
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
-
-            // scroll to bottom on new item
-            function scrollToBottom() {
-                if (contentItem && contentItem.contentHeight > height) {
-                    contentItem.contentY = contentItem.contentHeight - height;
-                }
-            }
-
-            Column {
-                id: blockedTimesColumn
-                width: scrollView.width
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 10
-
-                Repeater {
-                    model: ListModel {
-                        id: blockedTimesModel
-
-                        onCountChanged: {
-                            if (count > 0) {
-                                scrollToBottomTimer.start();
-                            }
-                        }
-                    }
-
-                    delegate: Item {
-                        width: blockedTimesColumn.width
-                        height: 60
-
-                        Rectangle {
-                            width: parent.width - 20
-                            height: 60
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: "#374151"
-                            radius: 4
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 10
-
-                                Column {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    spacing: 2
-
-                                    Text {
-                                        text: model.day
-                                        font.pixelSize: 14
-                                        font.bold: true
-                                        color: "#ffffff"
-                                    }
-
-                                    Text {
-                                        text: model.startTime + " - " + model.endTime
-                                        font.pixelSize: 12
-                                        color: "#9ca3af"
-                                    }
-                                }
-
-                                Item {
-                                    Layout.fillWidth: true
-                                }
-
-                                Image {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    width: 24
-                                    height: 24
-                                    source: "qrc:/icons/ic-delete.svg"
-                                    sourceSize.width: 22
-                                    sourceSize.height: 22
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            blockedTimesModel.remove(index)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Add new blocked time section
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: "#374151"
-            anchors.horizontalCenter: parent.horizontalCenter
-        }
-
-        // Input row with day selector and time pickers
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8
 
-            // Day selector
-            Rectangle {
-                width: 120
-                height: 40
+            Label {
+                text: "Day"
+                font.pixelSize: 14
+                font.bold: true
                 color: "#374151"
-                radius: 4
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 45
+                color: "#f9fafb"
+                radius: 6
                 border.width: 1
-                border.color: "#4b5563"
+                border.color: "#d1d5db"
 
                 ComboBox {
                     id: daySelector
                     anchors.fill: parent
                     model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-                    // Style the ComboBox
                     background: Rectangle {
-                        color: "#374151"
-                        radius: 4
-                        border.width: 1
-                        border.color: "#4b5563"
+                        color: "transparent"
+                        radius: 6
                     }
 
                     contentItem: Text {
                         text: daySelector.displayText
-                        font.pixelSize: 12
-                        color: "#ffffff"
-                        horizontalAlignment: Text.AlignHCenter
+                        font.pixelSize: 14
+                        color: "#1f2937"
+                        horizontalAlignment: Text.AlignLeft
                         verticalAlignment: Text.AlignVCenter
-                        leftPadding: 10
-                        rightPadding: 25
+                        leftPadding: 12
+                        rightPadding: 30
                     }
 
                     popup: Popup {
@@ -357,10 +208,10 @@ Popup {
                         padding: 1
 
                         background: Rectangle {
-                            color: "#374151"
+                            color: "#ffffff"
                             border.width: 1
-                            border.color: "#4b5563"
-                            radius: 4
+                            border.color: "#d1d5db"
+                            radius: 6
                         }
 
                         contentItem: ListView {
@@ -371,168 +222,134 @@ Popup {
 
                             delegate: ItemDelegate {
                                 width: daySelector.width
-                                height: 30
+                                height: 40
 
                                 background: Rectangle {
-                                    color: parent.hovered ? "#4b5563" : "#374151"
-                                    radius: 2
+                                    color: parent.hovered ? "#f3f4f6" : "#ffffff"
+                                    radius: 4
                                 }
 
                                 contentItem: Text {
                                     text: modelData
-                                    font.pixelSize: 12
-                                    color: "#ffffff"
-                                    horizontalAlignment: Text.AlignHCenter
+                                    font.pixelSize: 14
+                                    color: "#1f2937"
+                                    horizontalAlignment: Text.AlignLeft
                                     verticalAlignment: Text.AlignVCenter
+                                    leftPadding: 12
                                 }
                             }
                         }
                     }
 
-                    // Style the dropdown indicator
                     indicator: Text {
-                        x: daySelector.width - width - 5
+                        x: daySelector.width - width - 10
                         y: daySelector.topPadding + (daySelector.availableHeight - height) / 2
                         text: "▼"
-                        font.pixelSize: 8
-                        color: "#ffffff"
+                        font.pixelSize: 10
+                        color: "#6b7280"
                     }
                 }
             }
+        }
 
-            // Start Time Picker
-            Rectangle {
-                width: 100
-                height: 40
-                color: "#374151"
-                radius: 4
-                border.width: 1
-                border.color: "#4b5563"
+        // Time selection
+        Row {
+            width: parent.width
+            spacing: 20
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 2
+            // Start time
+            Column {
+                width: (parent.width - 20) / 2
+                spacing: 8
 
-                    // Start Hour Controls
-                    Column {
-                        spacing: 2
+                Label {
+                    text: "Start Time"
+                    font.pixelSize: 14
+                    font.bold: true
+                    color: "#374151"
+                }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
+                Rectangle {
+                    width: parent.width
+                    height: 45
+                    color: "#f9fafb"
+                    radius: 6
+                    border.width: 1
+                    border.color: "#d1d5db"
 
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowStartHour = (windowStartHour + 1) % 24;
-                                    validateEndTime();
-                                }
-                            }
+                        // Hour display
+                        Text {
+                            text: String(startHour).padStart(2, '0') + ":00"
+                            font.pixelSize: 16
+                            color: "#1f2937"
+                            width: 50
+                            horizontalAlignment: Text.AlignHCenter
+                            anchors.verticalCenter: parent.verticalCenter
                         }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
+                        // Hour controls
+                        Column {
+                            spacing: 2
 
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
+                            Rectangle {
+                                width: 25
+                                height: 18
+                                color: upHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
+                                radius: 3
+                                border.width: 1
+                                border.color: "#d1d5db"
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowStartHour = windowStartHour > 0 ? windowStartHour - 1 : 23;
-                                    validateEndTime();
+                                Text {
+                                    text: "▲"
+                                    font.pixelSize: 10
+                                    color: "#374151"
+                                    anchors.centerIn: parent
+                                }
+
+                                MouseArea {
+                                    id: upHourMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (startHour < 23) {
+                                            startHour = startHour + 1;
+                                            validateTimes();
+                                        }
+                                    }
+                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
-                        }
-                    }
 
-                    Text {
-                        text: String(windowStartHour).padStart(2, '0')
-                        font.pixelSize: 12
-                        color: "#ffffff"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                            Rectangle {
+                                width: 25
+                                height: 18
+                                color: downHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
+                                radius: 3
+                                border.width: 1
+                                border.color: "#d1d5db"
 
-                    Text {
-                        text: ":"
-                        font.pixelSize: 14
-                        color: "#ffffff"
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: String(windowStartMinute).padStart(2, '0')
-                        font.pixelSize: 12
-                        color: "#ffffff"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    // Start Minute Controls
-                    Column {
-                        spacing: 2
-
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowStartMinute = (windowStartMinute + 15) % 60;
-                                    validateEndTime();
+                                Text {
+                                    text: "▼"
+                                    font.pixelSize: 10
+                                    color: "#374151"
+                                    anchors.centerIn: parent
                                 }
-                            }
-                        }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowStartMinute = windowStartMinute >= 15 ? windowStartMinute - 15 : 45;
-                                    validateEndTime();
+                                MouseArea {
+                                    id: downHourMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (startHour > 0) {
+                                            startHour = startHour - 1;
+                                            validateTimes();
+                                        }
+                                    }
+                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
                         }
@@ -540,147 +357,98 @@ Popup {
                 }
             }
 
-            // Separator
-            Text {
-                text: "-"
-                font.pixelSize: 16
-                color: "#ffffff"
-                anchors.verticalCenter: parent.verticalCenter
-            }
+            // End time
+            Column {
+                width: (parent.width - 20) / 2
+                spacing: 8
 
-            // End Time Picker
-            Rectangle {
-                width: 100
-                height: 40
-                color: "#374151"
-                radius: 4
-                border.width: 1
-                border.color: "#4b5563"
+                Label {
+                    text: "End Time"
+                    font.pixelSize: 14
+                    font.bold: true
+                    color: "#374151"
+                }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 2
+                Rectangle {
+                    width: parent.width
+                    height: 45
+                    color: "#f9fafb"
+                    radius: 6
+                    border.width: 1
+                    border.color: "#d1d5db"
 
-                    // End Hour Controls
-                    Column {
-                        spacing: 2
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: 5
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowEndHour = (windowEndHour + 1) % 24;
-                                    validateStartTime();
-                                }
-                            }
+                        // Hour display
+                        Text {
+                            text: String(endHour).padStart(2, '0') + ":00"
+                            font.pixelSize: 16
+                            color: "#1f2937"
+                            width: 50
+                            horizontalAlignment: Text.AlignHCenter
+                            anchors.verticalCenter: parent.verticalCenter
                         }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
+                        // Hour controls
+                        Column {
+                            spacing: 2
 
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
+                            Rectangle {
+                                width: 25
+                                height: 18
+                                color: upEndHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
+                                radius: 3
+                                border.width: 1
+                                border.color: "#d1d5db"
 
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowEndHour = windowEndHour > 0 ? windowEndHour - 1 : 23;
-                                    validateStartTime();
+                                Text {
+                                    text: "▲"
+                                    font.pixelSize: 10
+                                    color: "#374151"
+                                    anchors.centerIn: parent
+                                }
+
+                                MouseArea {
+                                    id: upEndHourMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (endHour < 23) {
+                                            endHour = endHour + 1;
+                                        }
+                                    }
+                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
-                        }
-                    }
 
-                    Text {
-                        text: String(windowEndHour).padStart(2, '0')
-                        font.pixelSize: 12
-                        color: "#ffffff"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                            Rectangle {
+                                width: 25
+                                height: 18
+                                color: downEndHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
+                                radius: 3
+                                border.width: 1
+                                border.color: "#d1d5db"
 
-                    Text {
-                        text: ":"
-                        font.pixelSize: 14
-                        color: "#ffffff"
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: String(windowEndMinute).padStart(2, '0')
-                        font.pixelSize: 12
-                        color: "#ffffff"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    // End Minute Controls
-                    Column {
-                        spacing: 2
-
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowEndMinute = (windowEndMinute + 15) % 60;
-                                    validateStartTime();
+                                Text {
+                                    text: "▼"
+                                    font.pixelSize: 10
+                                    color: "#374151"
+                                    anchors.centerIn: parent
                                 }
-                            }
-                        }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    windowEndMinute = windowEndMinute >= 15 ? windowEndMinute - 15 : 45;
-                                    validateStartTime();
+                                MouseArea {
+                                    id: downEndHourMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        if (endHour > 1) {
+                                            endHour = endHour - 1;
+                                            validateTimes();
+                                        }
+                                    }
+                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
                         }
@@ -689,50 +457,66 @@ Popup {
             }
         }
 
-        // Add blocked slot button
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
+        // Action buttons
+        Row {
             width: parent.width
-            height: 40
-            color: "#374151"
-            radius: 4
+            spacing: 12
+            anchors.horizontalCenter: parent.horizontalCenter
 
-            Text {
-                text: "+ Add Blocked Slot"
-                font.pixelSize: 14
-                font.bold: true
-                color: "#ffffff"
-                anchors.centerIn: parent
+            Button {
+                id: cancelButton
+                width: (parent.width - 12) / 2
+                height: 45
+
+                background: Rectangle {
+                    color: cancelMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
+                    radius: 6
+                    border.width: 1
+                    border.color: "#d1d5db"
+                }
+
+                contentItem: Text {
+                    text: "Cancel"
+                    font.pixelSize: 14
+                    color: "#374151"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: cancelMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.close()
+                    cursorShape: Qt.PointingHandCursor
+                }
             }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    let exist = false;
-                    for (let i = 0; i < blockedTimesModel.count; i++) {
-                        const item = blockedTimesModel.get(i);
-                        if (item.day === daySelector.currentText) {
-                            if (item.startTime === getFormattedStartTime()) {
-                                if (item.endTime === getFormattedEndTime()) {
-                                    exist = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (!exist) {
-                        blockedTimesModel.append({
-                            "day": daySelector.currentText,
-                            "startTime": getFormattedStartTime(),
-                            "endTime": getFormattedEndTime()
-                        })
-                    } else {
-                        errorMessage = "Block time already exist"
-                        if (errorMessage !== "") {
-                            errorMessageTimer.restart()
-                        }
-                    }
+            Button {
+                id: addButton
+                width: (parent.width - 12) / 2
+                height: 45
+
+                background: Rectangle {
+                    color: addMouseArea.containsMouse ? "#1d4ed8" : "#2563eb"
+                    radius: 6
+                }
+
+                contentItem: Text {
+                    text: "Add Block Time"
+                    font.pixelSize: 14
+                    font.bold: true
+                    color: "#ffffff"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                MouseArea {
+                    id: addMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: addBlockTime()
+                    cursorShape: Qt.PointingHandCursor
                 }
             }
         }
