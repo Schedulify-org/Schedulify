@@ -14,6 +14,16 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 endif()
 
+# Fetch OpenXLSX for Excel file parsing
+include(FetchContent)
+FetchContent_Declare(
+        OpenXLSX
+        GIT_REPOSITORY https://github.com/troldal/OpenXLSX.git
+        GIT_TAG        master
+        GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(OpenXLSX)
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
 
 set(PROJECT_SOURCES
@@ -81,7 +91,7 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/logger
 )
 
-# Link Qt libraries
+# Link Qt libraries and OpenXLSX
 target_link_libraries(SchedGUI PRIVATE
         Qt6::Core
         Qt6::Gui
@@ -91,7 +101,18 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::QuickLayouts
         Qt6::PrintSupport
         Qt6::QuickControls2
+        OpenXLSX::OpenXLSX
 )
+
+# Enable UTF-8 support on Windows for Excel file handling
+if(WIN32)
+    if(MSVC)
+        target_compile_options(SchedGUI PRIVATE /utf-8)
+    else()
+        # For MinGW/GCC
+        target_compile_options(SchedGUI PRIVATE -finput-charset=utf-8 -fexec-charset=utf-8)
+    endif()
+endif()
 
 set_target_properties(SchedGUI PROPERTIES
         ${BUNDLE_ID_OPTION}

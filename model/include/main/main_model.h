@@ -2,6 +2,7 @@
 #define MAIN_MODEL_H
 
 #include "model_interfaces.h"
+#include "excel_parser.h"
 #include "model_access.h"
 #include "ScheduleBuilder.h"
 #include "parseCoursesToVector.h"

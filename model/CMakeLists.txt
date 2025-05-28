@@ -22,7 +22,6 @@ set(SOURCES
         src/schedule_algorithm/CourseLegalComb.cpp
         src/schedule_algorithm/TimeUtils.cpp
         ../logger/logger.cpp
-        src/parsers/parseCoursesToJson.cpp
 )
 
 # Add executable target

@@ -1,19 +1,32 @@
-#ifndef SCHED_TESTS_GETSESSION_H
-#define SCHED_TESTS_GETSESSION_H
-
-#include "model_interfaces.h"
+#ifndef GET_SESSION_H
+#define GET_SESSION_H
 
 #pragma once
 
+#include "model_interfaces.h"
+
 #include <vector>
 
-inline std::vector<const Session*> getSessions(const CourseSelection& cs) {
-    std::vector<const Session*> sessions;
-    if (cs.lecture) sessions.push_back(cs.lecture);
-    if (cs.tutorial) sessions.push_back(cs.tutorial);
-    if (cs.lab) sessions.push_back(cs.lab);
+inline vector<const Session*> getSessions(const CourseSelection& cs) {
+    vector<const Session*> sessions;
+
+    if (cs.lectureGroup) {
+        for (const auto& session : cs.lectureGroup->sessions) {
+            sessions.push_back(&session);
+        }
+    }
+    if (cs.tutorialGroup) {
+        for (const auto& session : cs.tutorialGroup->sessions) {
+            sessions.push_back(&session);
+        }
+    }
+    if (cs.labGroup) {
+        for (const auto& session : cs.labGroup->sessions) {
+            sessions.push_back(&session);
+        }
+    }
     return sessions;
 }
 
 
-#endif //SCHED_TESTS_GETSESSION_H
+#endif //GET_SESSION_H

@@ -8,19 +8,38 @@
 #include "TimeUtils.h"
 #include "logger.h"
 
+#include <unordered_map>
+#include <algorithm>
 #include <vector>
+#include <map>
 
 class ScheduleBuilder {
 public:
-    vector<Schedule> build(const vector<Course>& courses);
+    vector<InformativeSchedule> build(const vector<Course>& courses);
 
 private:
-    void backtrack(
-        int index,
-        const vector<vector<CourseSelection>>& allOptions,
-        vector<CourseSelection>& current,
-        vector<Schedule>& results);
+    static unordered_map<int, CourseInfo> courseInfoMap;
 
-    bool hasConflict(const CourseSelection& a, const CourseSelection& b) const;
+    void backtrack(
+            int index,
+            const vector<vector<CourseSelection>>& allOptions,
+            vector<CourseSelection>& current,
+            vector<InformativeSchedule>& results);
+
+    static bool hasConflict(const CourseSelection& a, const CourseSelection& b) ;
+
+    InformativeSchedule convertToInformativeSchedule(const vector<CourseSelection>& selections, int index) const;
+
+    static void processGroupSessions(const CourseSelection& selection,
+                              const Group* group,
+                              const string& sessionType,
+                              map<int, vector<ScheduleItem>>& daySchedules) ;
+
+    static string getCourseNameById(int courseId) ;
+
+    static string getCourseRawIdById(int courseId) ;
+
+    static void buildCourseInfoMap(const vector<Course>& courses);
 };
+
 #endif // SCHEDULE_BUILDER_H
