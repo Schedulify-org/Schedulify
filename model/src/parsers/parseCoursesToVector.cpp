@@ -19,10 +19,11 @@ bool isValidTime(const string& time)  {
 
 // Parses full course DB from input stream
 vector<Course> parseCourseDB(const string& path) {
-    fstream file(path);
+    filesystem::path filePath(path);
+    fstream file(filePath);
     if (!file.is_open()) {
         ostringstream message;
-        message << "Cannot open file: " << path;
+        message << "Cannot open file: " << filePath;
         Logger::get().logError(message.str());
 
         return {};
