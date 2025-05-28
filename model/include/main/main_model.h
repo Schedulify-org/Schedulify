@@ -6,7 +6,6 @@
 #include "model_access.h"
 #include "ScheduleBuilder.h"
 #include "parseCoursesToVector.h"
-#include "ScheduleEnrichment.h"
 #include "printSchedule.h"
 #include "parseToCsv.h"
 #include "logger.h"

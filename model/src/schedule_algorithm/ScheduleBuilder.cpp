@@ -6,17 +6,16 @@ unordered_map<int, CourseInfo> ScheduleBuilder::courseInfoMap;
 
 // Checks if there is a time conflict between two CourseSelections
 bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) {
-    vector<const Session*> aSessions = getSessions(a); // Extract sessions from selection a
-    vector<const Session*> bSessions = getSessions(b); // Extract sessions from selection b
+    vector<const Session*> aSessions = getSessions(a);
+    vector<const Session*> bSessions = getSessions(b);
 
     // Compare each session in a with each session in b
     for (const auto* s1 : aSessions) {
         for (const auto* s2 : bSessions) {
-            // Return true immediately if any overlapping sessions are found
             if (TimeUtils::isOverlap(s1, s2)) return true;
         }
     }
-    return false; // No conflicts found
+    return false;
 }
 
 // Recursive backtracking function to build all valid schedules

@@ -697,9 +697,9 @@ Page {
                                     }
 
                                     switch(itemType) {
-                                        case "lecture": return "#b0e8ff";
-                                        case "lab": return "#abffc6";
-                                        case "tutorial": return "#edc8ff";
+                                        case "Lecture": return "#b0e8ff";
+                                        case "Lab": return "#abffc6";
+                                        case "Tutorial": return "#edc8ff";
                                         default: return "#64748BFF";
                                     }
                                 }

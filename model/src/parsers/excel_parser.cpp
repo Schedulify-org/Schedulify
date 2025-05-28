@@ -1,4 +1,4 @@
-#include "parsers/excel_parser.h"
+#include "excel_parser.h"
 
 // Constructor implementation
 ExcelCourseParser::ExcelCourseParser() {
@@ -8,16 +8,16 @@ ExcelCourseParser::ExcelCourseParser() {
     };
 
     sessionTypeMap = {
-            {"הרצאה", "lecture"},
-            {"תרגיל", "tutorial"},
-            {"מעבדה", "lab"},
-            {"ש.מחלקה", "unsupported"},
-            {"תגבור", "unsupported"},
-            {"הדרכה", "unsupported"},
-            {"קולוקויום רשות", "unsupported"},
-            {"רישום", "unsupported"},
-            {"תיזה", "unsupported"},
-            {"פרויקט", "unsupported"}
+            {"הרצאה", SessionType::LECTURE},
+            {"תרגיל", SessionType::TUTORIAL},
+            {"מעבדה", SessionType::LAB},
+            {"ש.מחלקה", SessionType::UNSUPPORTED},
+            {"תגבור", SessionType::UNSUPPORTED},
+            {"הדרכה", SessionType::UNSUPPORTED},
+            {"קולוקויום רשות", SessionType::UNSUPPORTED},
+            {"רישום", SessionType::UNSUPPORTED},
+            {"תיזה", SessionType::UNSUPPORTED},
+            {"פרויקט", SessionType::UNSUPPORTED}
     };
 }
 
@@ -254,11 +254,11 @@ Session ExcelCourseParser::parseSingleSession(const string& timeSlotStr, const s
     return session;
 }
 
-string ExcelCourseParser::getSessionType(const string& hebrewType) {
+SessionType ExcelCourseParser::getSessionType(const string& hebrewType) {
     if (sessionTypeMap.count(hebrewType)) {
         return sessionTypeMap[hebrewType];
     }
-    return "lecture";
+    return SessionType::LECTURE;
 }
 
 pair<string, string> ExcelCourseParser::parseCourseCode(const string& fullCode) {
@@ -348,9 +348,23 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
             auto [courseCode, groupCode] = parseCourseCode(fullCode);
             if (courseCode.empty()) continue;
 
-            string normalizedSessionType = getSessionType(sessionType);
-            if (normalizedSessionType == "unsupported") {
+            SessionType normalizedSessionType = getSessionType(sessionType);
+            string normalizedSessionTypeName;
+
+            if (normalizedSessionType == SessionType::UNSUPPORTED) {
                 continue;
+            }
+
+            switch (normalizedSessionType) {
+                case SessionType::LECTURE:
+                    normalizedSessionTypeName = "lecture";
+                    break;
+                case SessionType::TUTORIAL:
+                    normalizedSessionTypeName = "tutorial";
+                    break;
+                case SessionType::LAB:
+                    normalizedSessionTypeName = "lab";
+                    break;
             }
 
             // **NEW: Check if timeSlot is empty or invalid - skip this row if so**
@@ -389,7 +403,7 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 courseMap[courseCode] = newCourse;
             }
 
-            string groupKey = fullCode + "_" + normalizedSessionType;
+            string groupKey = fullCode + "_" + normalizedSessionTypeName;
 
             if (courseGroupMap[courseCode].find(groupKey) == courseGroupMap[courseCode].end()) {
                 Group newGroup;
@@ -408,11 +422,11 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
         // **FIXED: Convert groups to courses OUTSIDE the row loop - USING CAPITAL LETTERS**
         for (auto& [courseCode, course] : courseMap) {
             for (auto& [groupKey, group] : courseGroupMap[courseCode]) {
-                if (group.type == "lecture" && !group.sessions.empty()) {
+                if (group.type == SessionType::LECTURE && !group.sessions.empty()) {
                     course.Lectures.push_back(group);
-                } else if (group.type == "tutorial" && !group.sessions.empty()) {
+                } else if (group.type == SessionType::TUTORIAL && !group.sessions.empty()) {
                     course.Tirgulim.push_back(group);
-                } else if (group.type == "lab" && !group.sessions.empty()) {
+                } else if (group.type == SessionType::LAB && !group.sessions.empty()) {
                     course.labs.push_back(group);
                 }
             }

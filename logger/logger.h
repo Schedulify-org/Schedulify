@@ -17,7 +17,7 @@ using std::endl;
 
 enum class LogLevel {
     INFO,
-    ERROR,
+    ERR,
     WARNING,
     INITIATE
 };

@@ -105,7 +105,7 @@ vector<Course> parseCourseDB(const string& path) {
                 if (line.rfind("L S", 0) == 0) {
                     // Create a new Group for lectures
                     Group lectureGroup;
-                    lectureGroup.type = "Lecture";
+                    lectureGroup.type = SessionType::LECTURE;
 
                     // Parse all sessions in this line and add them to the group
                     auto sessions = parseMultipleSessions(line.substr(2));
@@ -119,7 +119,7 @@ vector<Course> parseCourseDB(const string& path) {
                 } else if (line.rfind("T S", 0) == 0) {
                     // Create a new Group for tirgulim
                     Group tirgulGroup;
-                    tirgulGroup.type = "Tutorial";
+                    tirgulGroup.type = SessionType::TUTORIAL;
 
                     // Parse all sessions in this line and add them to the group
                     auto sessions = parseMultipleSessions(line.substr(2));
@@ -133,7 +133,7 @@ vector<Course> parseCourseDB(const string& path) {
                 } else if (line.rfind("M S", 0) == 0) {
                     // Create a new Group for labs
                     Group labGroup;
-                    labGroup.type = "Lab";
+                    labGroup.type = SessionType::LAB;
 
                     // Parse all sessions in this line and add them to the group
                     auto sessions = parseMultipleSessions(line.substr(2));
