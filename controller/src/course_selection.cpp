@@ -84,50 +84,78 @@ void CourseSelectionController::clearAllBlockTimes() {
     emit blockTimesChanged();
 }
 
-void CourseSelectionController::updateBlockTimesModel() {
-    blockTimes.clear();
-
-    for (size_t i = 0; i < userBlockTimes.size(); ++i) {
-        const BlockTime& blockTime = userBlockTimes[i];
-        Course blockCourse = createBlockTimeCourse(blockTime, static_cast<int>(i) + 90000);
-        blockTimes.push_back(blockCourse);
-    }
-
-    m_blocksModel->populateCoursesData(blockTimes);
-}
-
-Course CourseSelectionController::createBlockTimeCourse(const BlockTime& blockTime, int id) {
+Course CourseSelectionController::createSingleBlockTimeCourse() {
     Course blockCourse;
-    blockCourse.id = id;
-    blockCourse.raw_id = (blockTime.startTime + " - " + blockTime.endTime).toStdString();
-    blockCourse.name = "Blocked Time";
-    blockCourse.teacher = blockTime.day.toStdString();
+    blockCourse.id = 90000; // Fixed ID for the single block course
+    blockCourse.raw_id = "TIME_BLOCKS";
+    blockCourse.name = "Time Block";
+    blockCourse.teacher = "System Generated";
 
+    // Clear all session type vectors
     blockCourse.Lectures.clear();
     blockCourse.Tirgulim.clear();
     blockCourse.labs.clear();
     blockCourse.blocks.clear();
 
-    Group blockGroup = createBlockGroup(blockTime);
+    // Create a single group containing all block times
+    Group blockGroup;
+    blockGroup.type = SessionType::BLOCK;
+
+    // Add all user block times as sessions to this single group
+    for (const auto& blockTime : userBlockTimes) {
+        Session blockSession;
+        blockSession.day_of_week = getDayNumber(blockTime.day);
+        blockSession.start_time = blockTime.startTime.toStdString();
+        blockSession.end_time = blockTime.endTime.toStdString();
+        blockSession.building_number = "BLOCKED";
+        blockSession.room_number = "BLOCK";
+
+        blockGroup.sessions.push_back(blockSession);
+    }
+
+    // Add the group to the course's blocks
     blockCourse.blocks.push_back(blockGroup);
 
     return blockCourse;
 }
 
-Group CourseSelectionController::createBlockGroup(const BlockTime& blockTime) {
-    Group blockGroup;
-    blockGroup.type = SessionType::BLOCK;
+void CourseSelectionController::updateBlockTimesModel() {
+    blockTimes.clear();
 
-    Session blockSession;
-    blockSession.day_of_week = getDayNumber(blockTime.day);
-    blockSession.start_time = blockTime.startTime.toStdString();
-    blockSession.end_time = blockTime.endTime.toStdString();
-    blockSession.building_number = "BLOCKED";
-    blockSession.room_number = "BLOCK";
+    // Create individual block course items for display purposes
+    // Even though we generate a single course for schedule generation,
+    // we still create individual display items for the UI
+    for (size_t i = 0; i < userBlockTimes.size(); ++i) {
+        const BlockTime& blockTime = userBlockTimes[i];
+        Course blockCourse;
+        blockCourse.id = static_cast<int>(i) + 90000;
+        blockCourse.raw_id = (blockTime.startTime + " - " + blockTime.endTime).toStdString();
+        blockCourse.name = "Blocked Time";
+        blockCourse.teacher = blockTime.day.toStdString(); // Store day in teacher field for display
 
-    blockGroup.sessions.push_back(blockSession);
+        blockCourse.Lectures.clear();
+        blockCourse.Tirgulim.clear();
+        blockCourse.labs.clear();
+        blockCourse.blocks.clear();
 
-    return blockGroup;
+        // Create a group for this block time
+        Group blockGroup;
+        blockGroup.type = SessionType::BLOCK;
+
+        Session blockSession;
+        blockSession.day_of_week = getDayNumber(blockTime.day);
+        blockSession.start_time = blockTime.startTime.toStdString();
+        blockSession.end_time = blockTime.endTime.toStdString();
+        blockSession.building_number = "BLOCKED";
+        blockSession.room_number = "BLOCK";
+
+        blockGroup.sessions.push_back(blockSession);
+        blockCourse.blocks.push_back(blockGroup);
+
+        blockTimes.push_back(blockCourse);
+    }
+
+    m_blocksModel->populateCoursesData(blockTimes);
 }
 
 int CourseSelectionController::getDayNumber(const QString& dayName) {
@@ -153,10 +181,9 @@ void CourseSelectionController::generateSchedules() {
     // Combine selected courses with block times
     vector<Course> coursesToProcess = selectedCourses;
 
-    // Add block times as courses
-    for (size_t i = 0; i < userBlockTimes.size(); ++i) {
-        const auto& blockTime = userBlockTimes[i];
-        Course blockCourse = createBlockTimeCourse(blockTime, 99000 + static_cast<int>(i));
+    // Add single block times course if there are any block times
+    if (!userBlockTimes.empty()) {
+        Course blockCourse = createSingleBlockTimeCourse();
         coursesToProcess.push_back(blockCourse);
     }
 

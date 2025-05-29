@@ -77,7 +77,7 @@ private:
     vector<Course> allCourses;
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
-    vector<Course> blockTimes; // This will store the block times as Course objects for display
+    vector<Course> blockTimes; // This will store the single block times course for display
     vector<BlockTime> userBlockTimes; // This stores the actual block time data
 
     vector<int> selectedIndices;
@@ -87,9 +87,10 @@ private:
 
     // Helper methods
     void updateBlockTimesModel();
-    Course createBlockTimeCourse(const BlockTime& blockTime, int id);
+    Course createSingleBlockTimeCourse(); // NEW: Creates a single course with all block times
     static int getDayNumber(const QString& dayName);
-    static Group createBlockGroup(const BlockTime& blockTime);
+
+    // REMOVED: createBlockTimeCourse and createBlockGroup methods are no longer needed
 };
 
 #endif //COURSE_SELECTION_H

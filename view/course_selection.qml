@@ -911,11 +911,12 @@ Page {
                             }
                             clip: true
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-                            Item {
+                            Column {
                                 id: blockTimesColumn
                                 width: blockScroll.width
-                                height: Math.max(blockScroll.height, Math.max(blockTimesRepeater.count * 68, emptyBlockState.height))
+                                spacing: 8
 
                                 Repeater {
                                     id: blockTimesRepeater
@@ -924,10 +925,10 @@ Page {
                                     Rectangle {
                                         width: blockTimesColumn.width
                                         height: 60
-                                        y: index * 68
-                                        radius: 6
-                                        color: "#fef3c7"
-                                        border.color: "#f59e0b"
+                                        radius: 4
+                                        color: "#fffbeb"
+                                        border.color: "#fbbf24"
+                                        border.width: 1
 
                                         Item {
                                             id: blockTimeContent
@@ -1013,12 +1014,10 @@ Page {
                                     }
                                 }
 
-                                // Empty state for block times
+                                // Empty block times
                                 Item {
-                                    id: emptyBlockState
-                                    anchors.centerIn: parent
-                                    width: parent.width
-                                    height: 80
+                                    width: blockTimesColumn.width
+                                    height: blockTimesRepeater.count === 0 ? 80 : 0
                                     visible: blockTimesRepeater.count === 0
 
                                     Item {
