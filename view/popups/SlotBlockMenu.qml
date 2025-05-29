@@ -12,9 +12,10 @@ Popup {
     property int startHour: 8
     property int endHour: 9
     property string errorMessage: ""
+    property bool entireDay: false
 
     width: 400
-    height: 350
+    height: 400
     modal: true
     focus: true
     clip: true
@@ -41,7 +42,6 @@ Popup {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
-    // Timer to clear error message
     Timer {
         id: errorMessageTimer
         interval: 3000
@@ -50,12 +50,17 @@ Popup {
         }
     }
 
-    // Helper functions
     function getFormattedTime(hour) {
         return String(hour).padStart(2, '0') + ":00";
     }
 
     function validateTimes() {
+        if (entireDay) {
+            startHour = 8;
+            endHour = 21;
+            return;
+        }
+
         if (endHour <= startHour) {
             endHour = startHour + 1;
             if (endHour > 23) {
@@ -66,7 +71,6 @@ Popup {
     }
 
     function addBlockTime() {
-        // Validate inputs
         if (daySelector.currentIndex < 0) {
             errorMessage = "Please select a day";
             errorMessageTimer.restart();
@@ -79,46 +83,61 @@ Popup {
         var startTime = getFormattedTime(startHour);
         var endTime = getFormattedTime(endHour);
 
-        // Emit signal with the block time data
         root.blockTimeAdded(day, startTime, endTime);
 
-        // Reset form
         daySelector.currentIndex = 0;
         startHour = 8;
         endHour = 9;
+        entireDay = false;
         errorMessage = "";
 
-        // Close popup
         root.close();
     }
 
-    Column {
-        anchors.fill: parent
-        anchors.margins: 20
-        spacing: 20
+    onEntireDayChanged: {
+        if (entireDay) {
+            startHour = 8;
+            endHour = 21;
+        }
+    }
+
+    Item {
+        id: contentContainer
+        anchors {
+            fill: parent
+            margins: 20
+        }
 
         // Header
-        Row {
-            width: parent.width
-            spacing: 10
+        Item {
+            id: headerSection
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
+            }
+            height: 40
 
             Text {
+                id: headerTitle
+                anchors {
+                    left: parent.left
+                    verticalCenter: parent.verticalCenter
+                }
                 text: "Add Block Time"
                 font.pixelSize: 20
                 font.bold: true
                 color: "#1f2937"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Item {
-                width: parent.width - 200
             }
 
             Button {
                 id: closeButton
+                anchors {
+                    right: parent.right
+                    verticalCenter: parent.verticalCenter
+                }
                 width: 30
                 height: 30
-                anchors.verticalCenter: parent.verticalCenter
 
                 background: Rectangle {
                     color: closeMouseArea.containsMouse ? "#f3f4f6" : "transparent"
@@ -146,7 +165,12 @@ Popup {
         // Error message
         Rectangle {
             id: errorMessageContainer
-            width: parent.width
+            anchors {
+                top: headerSection.bottom
+                topMargin: 20
+                left: parent.left
+                right: parent.right
+            }
             height: errorMessage === "" ? 0 : 40
             visible: errorMessage !== ""
             color: "#fef2f2"
@@ -162,11 +186,24 @@ Popup {
         }
 
         // Day selection
-        Column {
-            width: parent.width
-            spacing: 8
+        Item {
+            id: daySelectionSection
+            anchors {
+                top: errorMessageContainer.bottom
+                topMargin: errorMessage === "" ? 0 : 20
+                left: parent.left
+                right: parent.right
+            }
+            height: 75
 
             Label {
+                id: dayLabel
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                }
+                height: 22
                 text: "Day"
                 font.pixelSize: 14
                 font.bold: true
@@ -174,8 +211,14 @@ Popup {
             }
 
             Rectangle {
-                width: parent.width
-                height: 45
+                id: dayContainer
+                anchors {
+                    top: dayLabel.bottom
+                    topMargin: 8
+                    left: parent.left
+                    right: parent.right
+                    bottom: parent.bottom
+                }
                 color: "#f9fafb"
                 radius: 6
                 border.width: 1
@@ -208,7 +251,7 @@ Popup {
                         padding: 1
 
                         background: Rectangle {
-                            color: "#ffffff"
+                            color: "#415263"
                             border.width: 1
                             border.color: "#d1d5db"
                             radius: 6
@@ -223,19 +266,37 @@ Popup {
                             delegate: ItemDelegate {
                                 width: daySelector.width
                                 height: 40
+                                hoverEnabled: true
 
                                 background: Rectangle {
-                                    color: parent.hovered ? "#f3f4f6" : "#ffffff"
+                                    color: {
+                                        if (parent.pressed) return "#e5e7eb"
+                                        if (parent.hovered) return "#f3f4f6"
+                                        return "#ffffff"
+                                    }
                                     radius: 4
+                                    border.width: parent.activeFocus ? 1 : 0
+                                    border.color: "#3b82f6"
                                 }
 
                                 contentItem: Text {
                                     text: modelData
                                     font.pixelSize: 14
                                     color: "#1f2937"
+                                    font.weight: Font.Normal
                                     horizontalAlignment: Text.AlignLeft
                                     verticalAlignment: Text.AlignVCenter
                                     leftPadding: 12
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    onClicked: {
+                                        daySelector.currentIndex = index
+                                        daySelector.popup.close()
+                                    }
+                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
                         }
@@ -252,104 +313,323 @@ Popup {
             }
         }
 
-        // Time selection
-        Row {
-            width: parent.width
-            spacing: 20
+        // Time selection section
+        Item {
+            id: timeSelectionSection
+            anchors {
+                top: daySelectionSection.bottom
+                topMargin: 20
+                left: parent.left
+                right: parent.right
+            }
+            height: 100
 
-            // Start time
-            Column {
-                width: (parent.width - 20) / 2
-                spacing: 8
+            Label {
+                id: timeLabel
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    right: parent.right
+                }
+                height: 22
+                text: "Time Range"
+                font.pixelSize: 14
+                font.bold: true
+                color: "#374151"
+            }
 
-                Label {
-                    text: "Start Time"
-                    font.pixelSize: 14
-                    font.bold: true
-                    color: "#374151"
+            Item {
+                id: timeControlsContainer
+                anchors {
+                    top: timeLabel.bottom
+                    topMargin: 8
+                    left: parent.left
+                    right: entireDayToggleContainer.left
+                    rightMargin: 12
+                    bottom: parent.bottom
                 }
 
-                Rectangle {
-                    width: parent.width
-                    height: 45
-                    color: "#f9fafb"
-                    radius: 6
-                    border.width: 1
-                    border.color: "#d1d5db"
+                // Start time
+                Item {
+                    id: startTimeContainer
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        bottom: parent.bottom
+                    }
+                    width: (parent.width - 10) / 2
 
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
-
-                        // Hour display
-                        Text {
-                            text: String(startHour).padStart(2, '0') + ":00"
-                            font.pixelSize: 16
-                            color: "#1f2937"
-                            width: 50
-                            horizontalAlignment: Text.AlignHCenter
-                            anchors.verticalCenter: parent.verticalCenter
+                    Label {
+                        id: startTimeLabel
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
                         }
+                        height: 18
+                        text: "Start Time"
+                        font.pixelSize: 12
+                        color: "#6b7280"
+                    }
 
-                        // Hour controls
-                        Column {
-                            spacing: 2
+                    Rectangle {
+                        id: startTimeRect
+                        anchors {
+                            top: startTimeLabel.bottom
+                            topMargin: 4
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
+                        color: entireDay ? "#f3f4f6" : "#f9fafb"
+                        radius: 6
+                        border.width: 1
+                        border.color: "#d1d5db"
+                        opacity: entireDay ? 0.6 : 1.0
 
-                            Rectangle {
-                                width: 25
-                                height: 18
-                                color: upHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                radius: 3
-                                border.width: 1
-                                border.color: "#d1d5db"
+                        Item {
+                            id: startTimeContent
+                            anchors.centerIn: parent
+                            width: 80
+                            height: parent.height
 
-                                Text {
-                                    text: "▲"
-                                    font.pixelSize: 10
-                                    color: "#374151"
-                                    anchors.centerIn: parent
+                            // Hour display
+                            Text {
+                                id: startHourDisplay
+                                anchors {
+                                    left: parent.left
+                                    verticalCenter: parent.verticalCenter
                                 }
-
-                                MouseArea {
-                                    id: upHourMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        if (startHour < 23) {
-                                            startHour = startHour + 1;
-                                            validateTimes();
-                                        }
-                                    }
-                                    cursorShape: Qt.PointingHandCursor
-                                }
+                                width: 50
+                                text: String(startHour).padStart(2, '0') + ":00"
+                                font.pixelSize: 16
+                                color: entireDay ? "#9ca3af" : "#1f2937"
+                                horizontalAlignment: Text.AlignHCenter
                             }
 
-                            Rectangle {
+                            // Hour controls
+                            Item {
+                                id: startHourControls
+                                anchors {
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                }
                                 width: 25
-                                height: 18
-                                color: downHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                radius: 3
-                                border.width: 1
-                                border.color: "#d1d5db"
+                                height: 38
 
-                                Text {
-                                    text: "▼"
-                                    font.pixelSize: 10
-                                    color: "#374151"
-                                    anchors.centerIn: parent
+                                Rectangle {
+                                    id: startUpButton
+                                    anchors {
+                                        top: parent.top
+                                        left: parent.left
+                                        right: parent.right
+                                    }
+                                    height: 18
+                                    color: (!entireDay && upStartHourMouseArea.containsMouse) ? "#e5e7eb" : "#f3f4f6"
+                                    radius: 3
+                                    border.width: 1
+                                    border.color: "#d1d5db"
+                                    opacity: entireDay ? 0.5 : 1.0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "▲"
+                                        font.pixelSize: 10
+                                        color: entireDay ? "#9ca3af" : "#374151"
+                                    }
+
+                                    MouseArea {
+                                        id: upStartHourMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: !entireDay
+                                        enabled: !entireDay
+                                        onClicked: {
+                                            if (startHour < 23) {
+                                                startHour = startHour + 1;
+                                                validateTimes();
+                                            }
+                                        }
+                                        cursorShape: entireDay ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                    }
                                 }
 
-                                MouseArea {
-                                    id: downHourMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        if (startHour > 0) {
-                                            startHour = startHour - 1;
-                                            validateTimes();
-                                        }
+                                Rectangle {
+                                    id: startDownButton
+                                    anchors {
+                                        bottom: parent.bottom
+                                        left: parent.left
+                                        right: parent.right
                                     }
-                                    cursorShape: Qt.PointingHandCursor
+                                    height: 18
+                                    color: (!entireDay && downStartHourMouseArea.containsMouse) ? "#e5e7eb" : "#f3f4f6"
+                                    radius: 3
+                                    border.width: 1
+                                    border.color: "#d1d5db"
+                                    opacity: entireDay ? 0.5 : 1.0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "▼"
+                                        font.pixelSize: 10
+                                        color: entireDay ? "#9ca3af" : "#374151"
+                                    }
+
+                                    MouseArea {
+                                        id: downStartHourMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: !entireDay
+                                        enabled: !entireDay
+                                        onClicked: {
+                                            if (startHour > 0) {
+                                                startHour = startHour - 1;
+                                                validateTimes();
+                                            }
+                                        }
+                                        cursorShape: entireDay ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // End time
+                Item {
+                    id: endTimeContainer
+                    anchors {
+                        top: parent.top
+                        right: parent.right
+                        bottom: parent.bottom
+                    }
+                    width: (parent.width - 10) / 2
+
+                    Label {
+                        id: endTimeLabel
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                        }
+                        height: 18
+                        text: "End Time"
+                        font.pixelSize: 12
+                        color: "#6b7280"
+                    }
+
+                    Rectangle {
+                        id: endTimeRect
+                        anchors {
+                            top: endTimeLabel.bottom
+                            topMargin: 4
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
+                        color: entireDay ? "#f3f4f6" : "#f9fafb"
+                        radius: 6
+                        border.width: 1
+                        border.color: "#d1d5db"
+                        opacity: entireDay ? 0.6 : 1.0
+
+                        Item {
+                            id: endTimeContent
+                            anchors.centerIn: parent
+                            width: 80
+                            height: parent.height
+
+                            // Hour display
+                            Text {
+                                id: endHourDisplay
+                                anchors {
+                                    left: parent.left
+                                    verticalCenter: parent.verticalCenter
+                                }
+                                width: 50
+                                text: String(endHour).padStart(2, '0') + ":00"
+                                font.pixelSize: 16
+                                color: entireDay ? "#9ca3af" : "#1f2937"
+                                horizontalAlignment: Text.AlignHCenter
+                            }
+
+                            // Hour controls
+                            Item {
+                                id: endHourControls
+                                anchors {
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                }
+                                width: 25
+                                height: 38
+
+                                Rectangle {
+                                    id: endUpButton
+                                    anchors {
+                                        top: parent.top
+                                        left: parent.left
+                                        right: parent.right
+                                    }
+                                    height: 18
+                                    color: (!entireDay && upEndHourMouseArea.containsMouse) ? "#e5e7eb" : "#f3f4f6"
+                                    radius: 3
+                                    border.width: 1
+                                    border.color: "#d1d5db"
+                                    opacity: entireDay ? 0.5 : 1.0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "▲"
+                                        font.pixelSize: 10
+                                        color: entireDay ? "#9ca3af" : "#374151"
+                                    }
+
+                                    MouseArea {
+                                        id: upEndHourMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: !entireDay
+                                        enabled: !entireDay
+                                        onClicked: {
+                                            if (endHour < 23) {
+                                                endHour = endHour + 1;
+                                            }
+                                        }
+                                        cursorShape: entireDay ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                    }
+                                }
+
+                                Rectangle {
+                                    id: endDownButton
+                                    anchors {
+                                        bottom: parent.bottom
+                                        left: parent.left
+                                        right: parent.right
+                                    }
+                                    height: 18
+                                    color: (!entireDay && downEndHourMouseArea.containsMouse) ? "#e5e7eb" : "#f3f4f6"
+                                    radius: 3
+                                    border.width: 1
+                                    border.color: "#d1d5db"
+                                    opacity: entireDay ? 0.5 : 1.0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "▼"
+                                        font.pixelSize: 10
+                                        color: entireDay ? "#9ca3af" : "#374151"
+                                    }
+
+                                    MouseArea {
+                                        id: downEndHourMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: !entireDay
+                                        enabled: !entireDay
+                                        onClicked: {
+                                            if (endHour > 1) {
+                                                endHour = endHour - 1;
+                                                validateTimes();
+                                            }
+                                        }
+                                        cursorShape: entireDay ? Qt.ArrowCursor : Qt.PointingHandCursor
+                                    }
                                 }
                             }
                         }
@@ -357,116 +637,113 @@ Popup {
                 }
             }
 
-            // End time
-            Column {
-                width: (parent.width - 20) / 2
-                spacing: 8
+            Item {
+                id: entireDayToggleContainer
+                anchors {
+                    top: timeLabel.bottom
+                    topMargin: 8
+                    right: parent.right
+                    bottom: parent.bottom
+                }
+                width: 120
 
                 Label {
-                    text: "End Time"
-                    font.pixelSize: 14
-                    font.bold: true
-                    color: "#374151"
+                    id: toggleSectionLabel
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                    }
+                    height: 18
+                    text: "Entire day"
+                    font.pixelSize: 12
+                    color: "#6b7280"
                 }
 
                 Rectangle {
-                    width: parent.width
-                    height: 45
+                    id: toggleBackground
+                    anchors {
+                        top: toggleSectionLabel.bottom
+                        topMargin: 4
+                        left: parent.left
+                        right: parent.right
+                        bottom: parent.bottom
+                    }
                     color: "#f9fafb"
                     radius: 6
                     border.width: 1
                     border.color: "#d1d5db"
 
-                    Row {
-                        anchors.centerIn: parent
-                        spacing: 5
+                    Item {
+                        id: toggleContent
+                        anchors {
+                            fill: parent
+                            margins: 12
+                        }
 
-                        // Hour display
-                        Text {
-                            text: String(endHour).padStart(2, '0') + ":00"
-                            font.pixelSize: 16
-                            color: "#1f2937"
+                        Rectangle {
+                            id: toggleSwitch
+                            anchors {
+                                top: parent.top
+                                horizontalCenter: parent.horizontalCenter
+                            }
                             width: 50
-                            horizontalAlignment: Text.AlignHCenter
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        // Hour controls
-                        Column {
-                            spacing: 2
+                            height: 26
+                            radius: 13
+                            color: entireDay ? "#2563eb" : "#d1d5db"
+                            border.width: 1
+                            border.color: entireDay ? "#1d4ed8" : "#9ca3af"
 
                             Rectangle {
-                                width: 25
-                                height: 18
-                                color: upEndHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                radius: 3
-                                border.width: 1
-                                border.color: "#d1d5db"
+                                id: toggleCircle
+                                width: 22
+                                height: 22
+                                radius: 11
+                                color: "#ffffff"
+                                anchors.verticalCenter: parent.verticalCenter
+                                x: entireDay ? parent.width - width - 2 : 2
 
-                                Text {
-                                    text: "▲"
-                                    font.pixelSize: 10
-                                    color: "#374151"
-                                    anchors.centerIn: parent
-                                }
-
-                                MouseArea {
-                                    id: upEndHourMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        if (endHour < 23) {
-                                            endHour = endHour + 1;
-                                        }
+                                Behavior on x {
+                                    NumberAnimation {
+                                        duration: 200
+                                        easing.type: Easing.OutCubic
                                     }
-                                    cursorShape: Qt.PointingHandCursor
                                 }
                             }
 
-                            Rectangle {
-                                width: 25
-                                height: 18
-                                color: downEndHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                radius: 3
-                                border.width: 1
-                                border.color: "#d1d5db"
-
-                                Text {
-                                    text: "▼"
-                                    font.pixelSize: 10
-                                    color: "#374151"
-                                    anchors.centerIn: parent
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    entireDay = !entireDay;
+                                    validateTimes();
                                 }
-
-                                MouseArea {
-                                    id: downEndHourMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        if (endHour > 1) {
-                                            endHour = endHour - 1;
-                                            validateTimes();
-                                        }
-                                    }
-                                    cursorShape: Qt.PointingHandCursor
-                                }
+                                cursorShape: Qt.PointingHandCursor
                             }
                         }
+
                     }
                 }
             }
         }
 
         // Action buttons
-        Row {
-            width: parent.width
-            spacing: 12
-            anchors.horizontalCenter: parent.horizontalCenter
+        Item {
+            id: actionButtonsSection
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+                right: parent.right
+            }
+            height: 45
 
             Button {
                 id: cancelButton
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    bottom: parent.bottom
+                }
                 width: (parent.width - 12) / 2
-                height: 45
 
                 background: Rectangle {
                     color: cancelMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
@@ -494,8 +771,12 @@ Popup {
 
             Button {
                 id: addButton
+                anchors {
+                    right: parent.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
                 width: (parent.width - 12) / 2
-                height: 45
 
                 background: Rectangle {
                     color: addMouseArea.containsMouse ? "#1d4ed8" : "#2563eb"
