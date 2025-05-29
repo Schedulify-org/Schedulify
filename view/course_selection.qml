@@ -21,12 +21,9 @@ Page {
         errorDialog.open();
     }
 
-    // Property to store error message
     property string errorMessage: ""
-    // Property to store search text
     property string searchText: ""
 
-    // Timer to clear error message
     Timer {
         id: errorMessageTimer
         interval: 3000 // 3 seconds
@@ -35,7 +32,6 @@ Page {
         }
     }
 
-    // Add Block Time Popup
     SlotBlockMenu {
         id: timeBlockPopup
         parent: Overlay.overlay
@@ -53,12 +49,17 @@ Page {
         // Header
         Rectangle {
             id: header
-            width: parent.width
+            anchors {
+                top: parent.top
+                left: parent.left
+                right: parent.right
+            }
             height: 80
             color: "#ffffff"
             border.color: "#e5e7eb"
 
             Item {
+                id: headerContent
                 anchors {
                     left: parent.left
                     right: parent.right
@@ -220,8 +221,8 @@ Page {
             }
         }
 
-        // Main content area with horizontal split
-        Row {
+        // Main content
+        Item {
             id: mainContent
             anchors {
                 top: header.bottom
@@ -230,26 +231,35 @@ Page {
                 bottom: footer.top
                 margins: 16
             }
-            spacing: 16
 
-            // Left side - Course List (2/3 of width)
+            // Left side
             Rectangle {
                 id: courseListArea
+                anchors {
+                    top: parent.top
+                    left: parent.left
+                    bottom: parent.bottom
+                }
                 width: (parent.width * 2 / 3) - 8
-                height: parent.height
                 color: "#ffffff"
                 radius: 8
                 border.color: "#e5e7eb"
 
-                Column {
-                    anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 16
+                Item {
+                    id: courseListContent
+                    anchors {
+                        fill: parent
+                        margins: 16
+                    }
 
                     // Error message
                     Rectangle {
                         id: errorMessageContainer
-                        width: parent.width
+                        anchors {
+                            top: parent.top
+                            left: parent.left
+                            right: parent.right
+                        }
                         height: errorMessage === "" ? 0 : 40
                         visible: errorMessage !== ""
                         color: "#fef2f2"
@@ -266,6 +276,13 @@ Page {
 
                     Label {
                         id: courseListTitle
+                        anchors {
+                            top: errorMessageContainer.bottom
+                            topMargin: errorMessage === "" ? 0 : 16
+                            left: parent.left
+                            right: parent.right
+                        }
+                        height: 30
                         text: "Available Courses"
                         font.pixelSize: 24
                         color: "#1f2937"
@@ -274,13 +291,19 @@ Page {
                     // Search bar
                     Rectangle {
                         id: searchBar
-                        width: parent.width
+                        anchors {
+                            top: courseListTitle.bottom
+                            topMargin: 16
+                            left: parent.left
+                            right: parent.right
+                        }
                         height: 50
                         radius: 8
                         color: "#f9fafb"
                         border.color: "#e5e7eb"
 
-                        Row {
+                        Item {
+                            id: searchContent
                             anchors {
                                 left: parent.left
                                 right: parent.right
@@ -288,11 +311,17 @@ Page {
                                 leftMargin: 16
                                 rightMargin: 16
                             }
-                            spacing: 8
+                            height: parent.height
 
                             TextField {
                                 id: searchField
-                                width: parent.width - clearSearch.width - 8
+                                anchors {
+                                    left: parent.left
+                                    right: clearSearch.left
+                                    rightMargin: 8
+                                    verticalCenter: parent.verticalCenter
+                                }
+                                height: 30
                                 placeholderText: "Search by course ID, name, or instructor..."
                                 placeholderTextColor: "#9CA3AF"
                                 font.pixelSize: 14
@@ -316,7 +345,10 @@ Page {
                                 visible: searchField.text !== ""
                                 width: 30
                                 height: 24
-                                anchors.verticalCenter: parent.verticalCenter
+                                anchors {
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                }
 
                                 background: Rectangle {
                                     color: "transparent"
@@ -347,15 +379,28 @@ Page {
                     }
 
                     Label {
+                        id: searchHelpText
+                        anchors {
+                            top: searchBar.bottom
+                            topMargin: 16
+                            left: parent.left
+                            right: parent.right
+                        }
+                        height: 20
                         text: "Click on a course to select it for your schedule"
                         color: "#6b7280"
                     }
 
-                    // ListView for courses
+                    // courses
                     ListView {
                         id: courseListView
-                        width: parent.width
-                        height: parent.height - courseListTitle.height - searchBar.height - 100
+                        anchors {
+                            top: searchHelpText.bottom
+                            topMargin: 16
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                        }
                         clip: true
                         model: courseSelectionController ? courseSelectionController.filteredCourseModel : null
                         spacing: 8
@@ -410,17 +455,21 @@ Page {
                                 }
                             }
 
-                            RowLayout {
+                            Item {
+                                id: delegateContent
                                 anchors {
                                     fill: parent
                                     margins: 12
                                 }
-                                spacing: 16
 
                                 Rectangle {
                                     id: courseIdBox
-                                    Layout.preferredWidth: 80
-                                    Layout.preferredHeight: 56
+                                    anchors {
+                                        left: parent.left
+                                        verticalCenter: parent.verticalCenter
+                                    }
+                                    width: 80
+                                    height: 56
                                     color: {
                                         if (courseSelectionController.isCourseSelected(originalIndex)) {
                                             return "#dbeafe"
@@ -449,11 +498,25 @@ Page {
                                     }
                                 }
 
-                                Column {
-                                    Layout.fillWidth: true
-                                    spacing: 4
+                                Item {
+                                    id: courseInfoColumn
+                                    anchors {
+                                        left: courseIdBox.right
+                                        leftMargin: 16
+                                        right: parent.right
+                                        verticalCenter: parent.verticalCenter
+                                    }
+                                    height: parent.height
 
                                     Label {
+                                        id: courseTitleLabel
+                                        anchors {
+                                            top: parent.top
+                                            topMargin: 8
+                                            left: parent.left
+                                            right: parent.right
+                                        }
+                                        height: 20
                                         text: courseName
                                         font.pixelSize: 16
                                         font.bold: true
@@ -464,9 +527,18 @@ Page {
                                                 return "#1f2937"
                                             }
                                         }
+                                        elide: Text.ElideRight
                                     }
 
                                     Label {
+                                        id: teacherLabel
+                                        anchors {
+                                            top: courseTitleLabel.bottom
+                                            topMargin: 4
+                                            left: parent.left
+                                            right: parent.right
+                                        }
+                                        height: 18
                                         text: "Instructor: " + teacherName
                                         font.pixelSize: 14
                                         color: {
@@ -476,6 +548,7 @@ Page {
                                                 return "#6b7280"
                                             }
                                         }
+                                        elide: Text.ElideRight
                                     }
                                 }
                             }
@@ -493,25 +566,37 @@ Page {
                             }
                         }
 
-                        // Empty state message
                         Item {
                             anchors.centerIn: parent
                             width: parent.width * 0.8
                             height: 100
                             visible: courseListView.count === 0
 
-                            Column {
+                            Item {
+                                id: emptyStateContent
                                 anchors.centerIn: parent
-                                spacing: 8
+                                width: 200
+                                height: 100
 
                                 Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    id: emptyIcon
+                                    anchors {
+                                        top: parent.top
+                                        horizontalCenter: parent.horizontalCenter
+                                    }
+                                    height: 30
                                     text: "🔍"
                                     font.pixelSize: 24
                                 }
 
                                 Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    id: emptyTitle
+                                    anchors {
+                                        top: emptyIcon.bottom
+                                        topMargin: 8
+                                        horizontalCenter: parent.horizontalCenter
+                                    }
+                                    height: 25
                                     text: "No courses found"
                                     font.pixelSize: 18
                                     font.bold: true
@@ -519,7 +604,13 @@ Page {
                                 }
 
                                 Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    id: emptySubtitle
+                                    anchors {
+                                        top: emptyTitle.bottom
+                                        topMargin: 8
+                                        horizontalCenter: parent.horizontalCenter
+                                    }
+                                    height: 20
                                     text: "Try a different search term"
                                     font.pixelSize: 14
                                     color: "#6b7280"
@@ -535,47 +626,69 @@ Page {
                 }
             }
 
-            // Right side - Selected Courses and Block Times (1/3 of width)
-            Column {
+            // Right side
+            Item {
                 id: rightPanel
-                width: (parent.width * 1 / 3) - 8
-                height: parent.height
-                spacing: 16
+                anchors {
+                    top: parent.top
+                    right: parent.right
+                    bottom: parent.bottom
+                    left: courseListArea.right
+                    leftMargin: 16
+                }
 
                 // Selected Courses Section
                 Rectangle {
                     id: selectedCoursesSection
-                    width: parent.width
+                    anchors {
+                        top: parent.top
+                        left: parent.left
+                        right: parent.right
+                    }
                     height: (parent.height - 16) / 2
                     color: "#ffffff"
                     radius: 8
                     border.color: "#e5e7eb"
 
-                    Column {
-                        anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 12
+                    Item {
+                        id: selectedCoursesContent
+                        anchors {
+                            fill: parent
+                            margins: 16
+                        }
 
-                        Row {
-                            width: parent.width
-                            spacing: 8
+                        Item {
+                            id: selectedCoursesHeader
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                right: parent.right
+                            }
+                            height: 30
 
                             Label {
+                                id: selectedCoursesTitle
+                                anchors {
+                                    left: parent.left
+                                    verticalCenter: parent.verticalCenter
+                                }
                                 text: "Selected Courses"
                                 font.pixelSize: 18
                                 font.bold: true
                                 color: "#1f2937"
-                                anchors.verticalCenter: parent.verticalCenter
                             }
 
                             Rectangle {
                                 id: courseCounter
+                                anchors {
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                }
                                 width: 60
                                 height: 30
                                 radius: 4
                                 color: "#f3f4f6"
                                 border.color: "#d1d5db"
-                                anchors.verticalCenter: parent.verticalCenter
 
                                 Label {
                                     anchors.centerIn: parent
@@ -588,37 +701,49 @@ Page {
                         }
 
                         ScrollView {
-                            width: parent.width
-                            height: parent.height - 50
+                            id: selectedCoursesScrollView
+                            anchors {
+                                top: selectedCoursesHeader.bottom
+                                topMargin: 12
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                            }
                             clip: true
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                            contentWidth: width
+                            contentHeight: selectedCoursesColumn.height
 
-                            Column {
+                            Item {
                                 id: selectedCoursesColumn
-                                width: parent.width
-                                spacing: 8
+                                width: selectedCoursesScrollView.width
+                                height: selectedCoursesRepeater.count * 58
 
                                 Repeater {
                                     id: selectedCoursesRepeater
                                     model: courseSelectionController ? courseSelectionController.selectedCoursesModel : null
 
                                     Rectangle {
-                                        width: selectedCoursesColumn.width  // Reference parent column width
+                                        width: selectedCoursesColumn.width
                                         height: 50
+                                        y: index * 58
                                         radius: 6
                                         color: "#f0f9ff"
                                         border.color: "#3b82f6"
 
-                                        Row {
+                                        Item {
+                                            id: selectedCourseContent
                                             anchors {
-                                                left: parent.left
-                                                right: parent.right
-                                                verticalCenter: parent.verticalCenter
+                                                fill: parent
                                                 margins: 12
                                             }
-                                            spacing: 8
 
                                             Rectangle {
+                                                id: selectedCourseIdBox
+                                                anchors {
+                                                    left: parent.left
+                                                    verticalCenter: parent.verticalCenter
+                                                }
                                                 width: 40
                                                 height: 26
                                                 radius: 4
@@ -633,37 +758,42 @@ Page {
                                                 }
                                             }
 
-                                            Column {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                spacing: 2
-                                                width: Math.max(100, parent.parent.width - 80)  // Explicit width calculation
+                                            Item {
+                                                id: selectedCourseInfo
+                                                anchors {
+                                                    left: selectedCourseIdBox.right
+                                                    leftMargin: 8
+                                                    right: removeButton.left
+                                                    rightMargin: 8
+                                                    verticalCenter: parent.verticalCenter
+                                                }
+                                                height: parent.height
 
                                                 Label {
+                                                    id: selectedCourseName
+                                                    anchors {
+                                                        top: parent.top
+                                                        topMargin: 4
+                                                        left: parent.left
+                                                        right: parent.right
+                                                    }
+                                                    height: 16
                                                     text: courseName
                                                     font.pixelSize: 14
                                                     font.bold: true
                                                     color: "#1f2937"
-                                                    width: parent.width
                                                     elide: Text.ElideRight
                                                 }
-
-                                                Label {
-                                                    text: teacherName
-                                                    font.pixelSize: 12
-                                                    color: "#6b7280"
-                                                    width: parent.width
-                                                    elide: Text.ElideRight
-                                                }
-                                            }
-
-                                            Item {
-                                                width: 8  // Spacer
                                             }
 
                                             Button {
+                                                id: removeButton
+                                                anchors {
+                                                    right: parent.right
+                                                    verticalCenter: parent.verticalCenter
+                                                }
                                                 width: 24
                                                 height: 24
-                                                anchors.verticalCenter: parent.verticalCenter
 
                                                 background: Rectangle {
                                                     color: removeMouseArea.containsMouse ? "#ef4444" : "#f87171"
@@ -698,39 +828,53 @@ Page {
                 // Block Times Section
                 Rectangle {
                     id: blockTimesSection
-                    width: parent.width
-                    height: (parent.height - 16) / 2
+                    anchors {
+                        top: selectedCoursesSection.bottom
+                        topMargin: 16
+                        left: parent.left
+                        right: parent.right
+                        bottom: parent.bottom
+                    }
                     color: "#ffffff"
                     radius: 8
                     border.color: "#e5e7eb"
 
-                    Column {
-                        anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 12
+                    Item {
+                        id: blockTimesContent
+                        anchors {
+                            fill: parent
+                            margins: 16
+                        }
 
-                        Row {
-                            width: parent.width
-                            spacing: 8
+                        Item {
+                            id: blockTimesHeader
+                            anchors {
+                                top: parent.top
+                                left: parent.left
+                                right: parent.right
+                            }
+                            height: 32
 
                             Label {
+                                id: blockTimesTitle
+                                anchors {
+                                    left: parent.left
+                                    verticalCenter: parent.verticalCenter
+                                }
                                 text: "Block Times"
                                 font.pixelSize: 18
                                 font.bold: true
                                 color: "#1f2937"
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                width: parent.parent.width - addBlockButton.width - 150
                             }
 
                             Button {
                                 id: addBlockButton
+                                anchors {
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                }
                                 width: 120
                                 height: 32
-                                anchors.verticalCenter: parent.verticalCenter
 
                                 background: Rectangle {
                                     color: addBlockMouseArea.containsMouse ? "#35455c" : "#1f2937"
@@ -757,66 +901,91 @@ Page {
                         }
 
                         ScrollView {
-                            width: parent.width
-                            height: parent.height - 50
+                            id: blockScroll
+                            anchors {
+                                top: blockTimesHeader.bottom
+                                topMargin: 12
+                                left: parent.left
+                                right: parent.right
+                                bottom: parent.bottom
+                            }
                             clip: true
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                            Column {
-                                width: parent.width
-                                spacing: 8
+                            Item {
+                                id: blockTimesColumn
+                                width: blockScroll.width
+                                height: Math.max(blockScroll.height, Math.max(blockTimesRepeater.count * 68, emptyBlockState.height))
 
                                 Repeater {
                                     id: blockTimesRepeater
                                     model: courseSelectionController ? courseSelectionController.blocksModel : null
 
                                     Rectangle {
-                                        width: parent ? parent.width : 200  // Ensure explicit width
+                                        width: blockTimesColumn.width
                                         height: 60
+                                        y: index * 68
                                         radius: 6
                                         color: "#fef3c7"
                                         border.color: "#f59e0b"
 
-                                        Row {
+                                        Item {
+                                            id: blockTimeContent
                                             anchors {
-                                                left: parent.left
-                                                right: parent.right
-                                                verticalCenter: parent.verticalCenter
+                                                fill: parent
                                                 margins: 12
-                                            }
-                                            spacing: 8
-
-                                            Column {
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                spacing: 4
-                                                width: Math.max(100, parent.parent.width - 40)  // Explicit width calculation
-
-                                                Label {
-                                                    text: teacherName // Day (moved from courseName to teacherName)
-                                                    font.pixelSize: 14
-                                                    font.bold: true
-                                                    color: "#92400e"
-                                                    width: parent.width
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                Label {
-                                                    text: courseId // Time range
-                                                    font.pixelSize: 12
-                                                    color: "#a16207"
-                                                    width: parent.width
-                                                    elide: Text.ElideRight
-                                                }
                                             }
 
                                             Item {
-                                                width: 8  // Spacer
+                                                id: blockTimeInfo
+                                                anchors {
+                                                    left: parent.left
+                                                    right: removeBlockButton.left
+                                                    rightMargin: 8
+                                                    verticalCenter: parent.verticalCenter
+                                                }
+                                                height: parent.height
+
+                                                Label {
+                                                    id: blockDayLabel
+                                                    anchors {
+                                                        top: parent.top
+                                                        topMargin: 4
+                                                        left: parent.left
+                                                        right: parent.right
+                                                    }
+                                                    height: 16
+                                                    text: teacherName
+                                                    font.pixelSize: 14
+                                                    font.bold: true
+                                                    color: "#92400e"
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Label {
+                                                    id: blockTimeLabel
+                                                    anchors {
+                                                        top: blockDayLabel.bottom
+                                                        topMargin: 4
+                                                        left: parent.left
+                                                        right: parent.right
+                                                    }
+                                                    height: 14
+                                                    text: courseId
+                                                    font.pixelSize: 12
+                                                    color: "#a16207"
+                                                    elide: Text.ElideRight
+                                                }
                                             }
 
                                             Button {
+                                                id: removeBlockButton
+                                                anchors {
+                                                    right: parent.right
+                                                    verticalCenter: parent.verticalCenter
+                                                }
                                                 width: 24
                                                 height: 24
-                                                anchors.verticalCenter: parent.verticalCenter
 
                                                 background: Rectangle {
                                                     color: removeBlockMouseArea.containsMouse ? "#dc2626" : "#ef4444"
@@ -846,22 +1015,37 @@ Page {
 
                                 // Empty state for block times
                                 Item {
+                                    id: emptyBlockState
+                                    anchors.centerIn: parent
                                     width: parent.width
                                     height: 80
                                     visible: blockTimesRepeater.count === 0
 
-                                    Column {
+                                    Item {
+                                        id: emptyBlockContent
                                         anchors.centerIn: parent
-                                        spacing: 8
+                                        width: 200
+                                        height: 80
 
                                         Text {
-                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            id: emptyBlockIcon
+                                            anchors {
+                                                top: parent.top
+                                                horizontalCenter: parent.horizontalCenter
+                                            }
+                                            height: 25
                                             text: "🚫"
                                             font.pixelSize: 20
                                         }
 
                                         Text {
-                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            id: emptyBlockTitle
+                                            anchors {
+                                                top: emptyBlockIcon.bottom
+                                                topMargin: 8
+                                                horizontalCenter: parent.horizontalCenter
+                                            }
+                                            height: 18
                                             text: "No blocked times"
                                             font.pixelSize: 14
                                             color: "#6b7280"
@@ -869,7 +1053,13 @@ Page {
                                         }
 
                                         Text {
-                                            anchors.horizontalCenter: parent.horizontalCenter
+                                            id: emptyBlockSubtitle
+                                            anchors {
+                                                top: emptyBlockTitle.bottom
+                                                topMargin: 8
+                                                horizontalCenter: parent.horizontalCenter
+                                            }
+                                            height: 15
                                             text: "Add time slots you want to avoid"
                                             font.pixelSize: 12
                                             color: "#9ca3af"
@@ -887,9 +1077,12 @@ Page {
         // Footer
         Rectangle {
             id: footer
-            width: parent.width
+            anchors {
+                bottom: parent.bottom
+                left: parent.left
+                right: parent.right
+            }
             height: 30
-            anchors.bottom: parent.bottom
             color: "#ffffff"
             border.color: "#e5e7eb"
 

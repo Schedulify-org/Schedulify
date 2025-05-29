@@ -88,8 +88,8 @@ private:
     // Helper methods
     void updateBlockTimesModel();
     Course createBlockTimeCourse(const BlockTime& blockTime, int id);
-    int getDayNumber(const QString& dayName);
-    Group createBlockGroup(const BlockTime& blockTime);
+    static int getDayNumber(const QString& dayName);
+    static Group createBlockGroup(const BlockTime& blockTime);
 };
 
 #endif //COURSE_SELECTION_H

@@ -97,25 +97,17 @@ void CourseSelectionController::updateBlockTimesModel() {
 }
 
 Course CourseSelectionController::createBlockTimeCourse(const BlockTime& blockTime, int id) {
-    // Create a Course object to represent the block time for display purposes
-    // We'll use the course fields for display:
-    // - raw_id will show the time range
-    // - name will show "Blocked Time"
-    // - teacher can show the day for additional info
-
     Course blockCourse;
     blockCourse.id = id;
     blockCourse.raw_id = (blockTime.startTime + " - " + blockTime.endTime).toStdString();
-    blockCourse.name = "Blocked Time"; // Fixed: should always be "Blocked Time"
-    blockCourse.teacher = blockTime.day.toStdString(); // Day info moved to teacher field
+    blockCourse.name = "Blocked Time";
+    blockCourse.teacher = blockTime.day.toStdString();
 
-    // Clear all group vectors
     blockCourse.Lectures.clear();
     blockCourse.Tirgulim.clear();
     blockCourse.labs.clear();
     blockCourse.blocks.clear();
 
-    // Create a block group with the blocked time session
     Group blockGroup = createBlockGroup(blockTime);
     blockCourse.blocks.push_back(blockGroup);
 
@@ -126,7 +118,6 @@ Group CourseSelectionController::createBlockGroup(const BlockTime& blockTime) {
     Group blockGroup;
     blockGroup.type = SessionType::BLOCK;
 
-    // Create a session that represents the blocked time
     Session blockSession;
     blockSession.day_of_week = getDayNumber(blockTime.day);
     blockSession.start_time = blockTime.startTime.toStdString();
@@ -162,7 +153,7 @@ void CourseSelectionController::generateSchedules() {
     // Combine selected courses with block times
     vector<Course> coursesToProcess = selectedCourses;
 
-    // Add user-defined block times as courses
+    // Add block times as courses
     for (size_t i = 0; i < userBlockTimes.size(); ++i) {
         const auto& blockTime = userBlockTimes[i];
         Course blockCourse = createBlockTimeCourse(blockTime, 99000 + static_cast<int>(i));
@@ -241,12 +232,10 @@ void CourseSelectionController::toggleCourseSelection(int index) {
     auto it = find(selectedIndices.begin(), selectedIndices.end(), index);
 
     if (it != selectedIndices.end()) {
-        // Course is already selected, remove it
         int selectedIndex = std::distance(selectedIndices.begin(), it);
         selectedIndices.erase(it);
         selectedCourses.erase(selectedCourses.begin() + selectedIndex);
     } else {
-        // Course is not selected, add it
         selectedIndices.push_back(index);
         selectedCourses.push_back(allCourses[index]);
     }
@@ -254,7 +243,6 @@ void CourseSelectionController::toggleCourseSelection(int index) {
     // Update the selected courses model
     m_selectedCoursesModel->populateCoursesData(selectedCourses);
 
-    // Emit our custom signal to notify QML of selection change
     emit selectionChanged();
 }
 
@@ -264,14 +252,11 @@ void CourseSelectionController::deselectCourse(int index) {
         return;
     }
 
-    // Remove from selected courses
     selectedCourses.erase(selectedCourses.begin() + index);
     selectedIndices.erase(selectedIndices.begin() + index);
 
-    // Update the selected courses model
     m_selectedCoursesModel->populateCoursesData(selectedCourses);
 
-    // Emit our custom signal to notify QML of selection change
     emit selectionChanged();
 }
 
@@ -285,44 +270,36 @@ void CourseSelectionController::filterCourses(const QString& searchText) {
         return;
     }
 
-    // Convert searchText to lowercase for case-insensitive search
     QString searchLower = searchText.toLower();
 
-    // Clear previous filtered results
     filteredCourses.clear();
     filteredIndicesMap.clear();
 
-    // Filter courses based on search text
     for (size_t i = 0; i < allCourses.size(); ++i) {
         const Course& course = allCourses[i];
         QString courseId = QString::fromStdString(course.raw_id).toLower();
         QString courseName = QString::fromStdString(course.name).toLower();
         QString teacherName = QString::fromStdString(course.teacher).toLower();
 
-        // Check if search text is contained in any of the fields
         if (courseId.contains(searchLower) ||
             courseName.contains(searchLower) ||
             teacherName.contains(searchLower))
         {
             filteredCourses.push_back(course);
-            filteredIndicesMap.push_back(static_cast<int>(i)); // Store the original index
+            filteredIndicesMap.push_back(static_cast<int>(i));
         }
     }
 
-    // Update the filtered model
     m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
 }
 
 void CourseSelectionController::resetFilter() {
-    // Reset filtered courses to show all
     filteredCourses = allCourses;
     filteredIndicesMap.clear();
 
-    // Rebuild the index map
     for (size_t i = 0; i < allCourses.size(); ++i) {
         filteredIndicesMap.push_back(static_cast<int>(i));
     }
 
-    // Update the filtered model
     m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
 }
