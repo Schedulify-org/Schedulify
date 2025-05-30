@@ -44,22 +44,52 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
     }
 }
 
-void CourseSelectionController::addBlockTime(const QString& day, const QString& startTime, const QString& endTime) {
-    // Check if this block time already exists
-    for (const auto& blockTime : userBlockTimes) {
-        if (blockTime.day == day && blockTime.startTime == startTime && blockTime.endTime == endTime) {
-            emit errorMessage("This block time already exists");
-            return;
-        }
-    }
 
-    // Validate time format and logic
+void CourseSelectionController::addBlockTime(const QString& day, const QString& startTime, const QString& endTime) {
+    // Validate time format and logic first
     if (startTime >= endTime) {
         emit errorMessage("Start time must be before end time");
         return;
     }
 
-    // Add the new block time
+    // Helper function to convert time string to minutes for easier comparison
+    auto timeToMinutes = [](const QString& time) -> int {
+        QStringList parts = time.split(":");
+        if (parts.size() != 2) return -1;
+        int hours = parts[0].toInt();
+        int minutes = parts[1].toInt();
+        return hours * 60 + minutes;
+    };
+
+    int newStartMinutes = timeToMinutes(startTime);
+    int newEndMinutes = timeToMinutes(endTime);
+
+    if (newStartMinutes == -1 || newEndMinutes == -1) {
+        emit errorMessage("Invalid time format");
+        return;
+    }
+
+    // Check for overlaps with existing block times on the same day
+    for (const auto& blockTime : userBlockTimes) {
+        if (blockTime.day == day) {
+            int existingStartMinutes = timeToMinutes(blockTime.startTime);
+            int existingEndMinutes = timeToMinutes(blockTime.endTime);
+
+            // Check if the new time block overlaps with the existing one
+            // Two time blocks overlap if:
+            // 1. New start time is before existing end time AND
+            // 2. New end time is after existing start time
+            if (newStartMinutes < existingEndMinutes && newEndMinutes > existingStartMinutes) {
+                emit errorMessage(QString("Time block overlaps with existing block on %1 (%2 - %3)")
+                                          .arg(day)
+                                          .arg(blockTime.startTime)
+                                          .arg(blockTime.endTime));
+                return;
+            }
+        }
+    }
+
+    // If we get here, there's no overlap, so add the new block time
     userBlockTimes.emplace_back(day, startTime, endTime);
     updateBlockTimesModel();
 
