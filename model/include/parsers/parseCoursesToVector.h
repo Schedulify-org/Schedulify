@@ -2,6 +2,7 @@
 #define PRE_PARSER_H
 
 #include "model_interfaces.h"
+#include "logger.h"
 
 #include <string>
 #include <vector>

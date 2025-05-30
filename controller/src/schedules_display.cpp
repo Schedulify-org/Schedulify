@@ -1,85 +1,120 @@
-
 #include "schedules_display.h"
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
-    : ControllerManager(parent), m_currentScheduleIndex(0) {
+        : ControllerManager(parent),
+          m_scheduleModel(new ScheduleModel(this)),
+          m_scheduleFilter(new ScheduleFilter(this)) {
     modelConnection = ModelAccess::getModel();
+    connect(this, &SchedulesDisplayController::filtersApplied,this, [this]() {
+                emit m_scheduleModel->scheduleDataChanged();
+    });
 }
 
 SchedulesDisplayController::~SchedulesDisplayController() {
     delete modelConnection;
-};
-
-void SchedulesDisplayController::loadScheduleData(const vector<InformativeSchedule> &schedules) {
-    m_schedules = schedules;
-    setCurrentScheduleIndex(0);
+    delete m_scheduleFilter;
 }
 
-int SchedulesDisplayController::currentScheduleIndex() const {
-    return m_currentScheduleIndex;
+void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
+    m_originalSchedules = schedules;
+    m_filteredSchedules = schedules;
+    m_scheduleModel->loadSchedules(m_filteredSchedules);
 }
 
-void SchedulesDisplayController::setCurrentScheduleIndex(int index) {
-    if (index >= 0 && index < static_cast<int>(m_schedules.size()) && m_currentScheduleIndex != index) {
-        m_currentScheduleIndex = index;
-        emit currentScheduleIndexChanged();
-        emit scheduleChanged();
+void SchedulesDisplayController::applyFilters(const QVariantMap& filterData) {
+    ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
+
+    applyFiltersToSchedules(criteria);
+
+    m_scheduleModel->loadSchedules(m_filteredSchedules);
+
+    emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
+                        static_cast<int>(m_originalSchedules.size()));
+}
+
+void SchedulesDisplayController::clearFilters() {
+    m_filteredSchedules = m_originalSchedules;
+    m_scheduleModel->loadSchedules(m_filteredSchedules);
+    emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
+                        static_cast<int>(m_originalSchedules.size()));
+}
+
+void SchedulesDisplayController::applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria) {
+    m_filteredSchedules = m_scheduleFilter->filterSchedules(m_originalSchedules, criteria);
+}
+
+ScheduleFilter::FilterCriteria SchedulesDisplayController::convertQVariantToFilterCriteria(const QVariantMap& filterData) {
+    ScheduleFilter::FilterCriteria criteria;
+
+    // Days to Study Filter (serves as Active Days filter)
+    if (filterData.contains("daysToStudy")) {
+        QVariantMap daysToStudyData = filterData["daysToStudy"].toMap();
+        criteria.daysToStudyEnabled = daysToStudyData["enabled"].toBool();
+        if (criteria.daysToStudyEnabled) {
+            criteria.daysToStudyValue = daysToStudyData["value"].toInt();
+        }
     }
-}
 
-QVariantList SchedulesDisplayController::getDayItems(int scheduleIndex, int dayIndex) const {
-    if (scheduleIndex < 0 || scheduleIndex >= static_cast<int>(m_schedules.size()))
-        return {};
-
-    if (dayIndex < 0 || dayIndex >= static_cast<int>(m_schedules[scheduleIndex].week.size()))
-        return {};
-
-    QVariantList items;
-    for (const auto &item : m_schedules[scheduleIndex].week[dayIndex].day_items) {
-        QVariantMap itemMap;
-        itemMap["courseName"] = QString::fromStdString(item.courseName);
-        itemMap["raw_id"] = QString::fromStdString(item.raw_id);
-        itemMap["type"] = QString::fromStdString(item.type);
-        itemMap["start"] = QString::fromStdString(item.start);
-        itemMap["end"] = QString::fromStdString(item.end);
-        itemMap["building"] = QString::fromStdString(item.building);
-        itemMap["room"] = QString::fromStdString(item.room);
-        items.append(itemMap);
+    // Total Gaps Filter
+    if (filterData.contains("totalGaps")) {
+        QVariantMap totalGapsData = filterData["totalGaps"].toMap();
+        criteria.totalGapsEnabled = totalGapsData["enabled"].toBool();
+        if (criteria.totalGapsEnabled) {
+            criteria.totalGapsValue = totalGapsData["value"].toInt();
+        }
     }
-    return items;
-}
 
-QString SchedulesDisplayController::getDayName(int dayIndex) {
-    const QString dayNames[] = {
-        "ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"
-    };
+    // Max Gaps Time Filter
+    if (filterData.contains("maxGapsTime")) {
+        QVariantMap maxGapsTimeData = filterData["maxGapsTime"].toMap();
+        criteria.maxGapsTimeEnabled = maxGapsTimeData["enabled"].toBool();
+        if (criteria.maxGapsTimeEnabled) {
+            criteria.maxGapsTimeValue = maxGapsTimeData["value"].toInt();
+        }
+    }
 
-    if (dayIndex >= 0 && dayIndex < 7)
-        return dayNames[dayIndex];
-    return "";
-}
+    // Average Day Start Filter
+    if (filterData.contains("avgDayStart")) {
+        QVariantMap avgDayStartData = filterData["avgDayStart"].toMap();
+        criteria.avgDayStartEnabled = avgDayStartData["enabled"].toBool();
+        if (criteria.avgDayStartEnabled) {
+            criteria.avgDayStartHour = avgDayStartData["hour"].toInt();
+            criteria.avgDayStartMinute = avgDayStartData["minute"].toInt();
+        }
+    }
 
-int SchedulesDisplayController::getScheduleCount() const {
-    return static_cast<int>(m_schedules.size());
+    // Average Day End Filter
+    if (filterData.contains("avgDayEnd")) {
+        QVariantMap avgDayEndData = filterData["avgDayEnd"].toMap();
+        criteria.avgDayEndEnabled = avgDayEndData["enabled"].toBool();
+        if (criteria.avgDayEndEnabled) {
+            criteria.avgDayEndHour = avgDayEndData["hour"].toInt();
+            criteria.avgDayEndMinute = avgDayEndData["minute"].toInt();
+        }
+    }
+
+    return criteria;
 }
 
 void SchedulesDisplayController::saveScheduleAsCSV() {
-    if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
+    int currentIndex = m_scheduleModel->currentScheduleIndex();
+    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {
         QString fileName = QFileDialog::getSaveFileName(nullptr,
-                                                        "Save Schedule as PDF",
+                                                        "Save Schedule as CSV",
                                                         QDir::homePath() + "/" + generateFilename("",
-                                                              m_currentScheduleIndex+1, fileType::CSV),
+                                                                                                  currentIndex + 1, fileType::CSV),
                                                         "CSV Files (*.csv)");
         if (!fileName.isEmpty()) {
             modelConnection->executeOperation(ModelOperation::SAVE_SCHEDULE,
-                                  &m_schedules[m_currentScheduleIndex], fileName.toLocal8Bit().constData());
+                                              &m_filteredSchedules[currentIndex], fileName.toLocal8Bit().constData());
         }
     }
 }
 
 void SchedulesDisplayController::printScheduleDirectly() {
-    if (m_currentScheduleIndex >= 0 && m_currentScheduleIndex < static_cast<int>(m_schedules.size())) {
-        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[m_currentScheduleIndex], "");
+    int currentIndex = m_scheduleModel->currentScheduleIndex();
+    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {
+        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_filteredSchedules[currentIndex], "");
     }
 }
 
@@ -95,23 +130,23 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
 
     QString path = savePath;
     if (path.isEmpty()) {
+        int currentIndex = m_scheduleModel->currentScheduleIndex();
         path = QFileDialog::getSaveFileName(
                 nullptr,
                 tr("Save Screenshot"),
                 generateFilename(QStandardPaths::writableLocation(QStandardPaths::PicturesLocation),
-                                 m_currentScheduleIndex+1, fileType::PNG),
+                                 currentIndex + 1, fileType::PNG),
                 tr("Images (*.png)")
         );
 
         if (path.isEmpty()) {
-            // User canceled the dialog
             return;
         }
     } else {
         QFileInfo fileInfo(path);
         if (fileInfo.isDir()) {
-            path = QDir(path).filePath(generateFilename("", m_currentScheduleIndex+1
-                                                        , fileType::PNG));
+            int currentIndex = m_scheduleModel->currentScheduleIndex();
+            path = QDir(path).filePath(generateFilename("", currentIndex + 1, fileType::PNG));
         }
     }
 
@@ -131,7 +166,6 @@ QString SchedulesDisplayController::generateFilename(const QString& basePath, in
         case fileType::PNG:
             filename = QString("Schedule-%1.png").arg(index);
             break;
-
         case fileType::CSV:
             filename = QString("Schedule-%1.csv").arg(index);
             break;

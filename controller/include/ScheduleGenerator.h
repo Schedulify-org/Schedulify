@@ -1,7 +1,7 @@
 #pragma once
 #include <QObject>
 #include <vector>
-#include "main/model_access.h"
+#include "model_access.h"
 #include "model_interfaces.h"
 
 class ScheduleGenerator : public QObject {

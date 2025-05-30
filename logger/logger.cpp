@@ -30,7 +30,7 @@ void Logger::logInfo(const string& message) {
 }
 
 void Logger::logError(const string& message) {
-    log(LogLevel::ERROR, message);
+    log(LogLevel::ERR, message);
 }
 
 void Logger::logWarning(const string &message) {

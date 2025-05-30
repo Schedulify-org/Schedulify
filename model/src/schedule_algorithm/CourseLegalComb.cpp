@@ -1,65 +1,58 @@
-#include "schedule_algorithm/CourseLegalComb.h"
-#include "schedule_algorithm/TimeUtils.h"
-#include "parsers/parseCoursesToVector.h"
-#include "logger/logger.h"
+#include "CourseLegalComb.h"
 
 // Generates all valid combinations of groups (lecture, tutorial, lab) for a given course
 vector<CourseSelection> CourseLegalComb::generate(const Course& course) {
     vector<CourseSelection> combinations;
 
     try {
-        for (const auto& lectureGroup : course.Lectures) {
-            const Group* lecGroupPtr = &lectureGroup; // Pointer to the current lecture group
+        if (!course.blocks.empty()){
+            const Group* blockGroupPtr = &course.blocks[0];
+            combinations.push_back({course.id, nullptr, nullptr, nullptr, blockGroupPtr});
+        } else {
+            for (const auto& lectureGroup : course.Lectures) {
+                const Group* lecGroupPtr = &lectureGroup;
 
-            if (!lecGroupPtr) {
-                Logger::get().logWarning("Null lecture group pointer encountered. Skipping.");
-                continue;
-            }
-
-            vector<const Group*> tutorials;
-            if (course.Tirgulim.empty()) {
-                // If no tutorials exist, allow null (optional) tutorial
-                tutorials.push_back(nullptr);
-            } else {
-                // Add all tutorial group pointers
-                for (const auto& t : course.Tirgulim) {
-                    tutorials.push_back(&t);
-                }
-            }
-
-            vector<const Group*> labs;
-            if (course.labs.empty()) {
-                // If no labs exist, allow null (optional) lab
-                labs.push_back(nullptr);
-            } else {
-                // Add all lab group pointers
-                for (const auto& l : course.labs) {
-                    labs.push_back(&l);
-                }
-            }
-
-            for (const auto* tutorialGroup : tutorials) {
-                // Check if any session in the tutorial group conflicts with any session in the lecture group
-                if (tutorialGroup && hasGroupConflict(lecGroupPtr, tutorialGroup)) {
-                    Logger::get().logInfo("Skipped due to lecture-tutorial group conflict for course ID " + to_string(course.id));
+                if (!lecGroupPtr) {
+                    Logger::get().logWarning("Null lecture group pointer encountered. Skipping.");
                     continue;
                 }
 
-                // Iterate over all lab options for the current lecture-tutorial combination
-                for (const auto* labGroup : labs) {
-                    // Check if there's a conflict between lecture-lab groups or tutorial-lab groups
-                    if ((labGroup && hasGroupConflict(lecGroupPtr, labGroup)) ||
-                        (tutorialGroup && labGroup && hasGroupConflict(tutorialGroup, labGroup))) {
-                        Logger::get().logInfo("Skipped due to time conflict in groups for course ID " + to_string(course.id));
+                vector<const Group*> tutorials;
+                if (course.Tirgulim.empty()) {
+                    tutorials.push_back(nullptr);
+                } else {
+                    for (const auto& t : course.Tirgulim) {
+                        tutorials.push_back(&t);
+                    }
+                }
+
+                vector<const Group*> labs;
+                if (course.labs.empty()) {
+                    labs.push_back(nullptr);
+                } else {
+                    for (const auto& l : course.labs) {
+                        labs.push_back(&l);
+                    }
+                }
+
+                for (const auto* tutorialGroup : tutorials) {
+                    if (tutorialGroup && hasGroupConflict(lecGroupPtr, tutorialGroup)) {
+                        Logger::get().logInfo("Skipped due to lecture-tutorial group conflict for course ID " + to_string(course.id));
                         continue;
                     }
 
-                    // If no conflicts, add this combination as valid
-                    combinations.push_back({course.id, lecGroupPtr, tutorialGroup, labGroup});
+                    for (const auto* labGroup : labs) {
+                        if ((labGroup && hasGroupConflict(lecGroupPtr, labGroup)) ||
+                            (tutorialGroup && labGroup && hasGroupConflict(tutorialGroup, labGroup))) {
+                            Logger::get().logInfo("Skipped due to time conflict in groups for course ID " + to_string(course.id));
+                            continue;
+                        }
+
+                        combinations.push_back({course.id, lecGroupPtr, tutorialGroup, labGroup, nullptr});
+                    }
                 }
             }
         }
-
         if (combinations.empty()) {
             Logger::get().logWarning("No valid combinations generated for course ID " + to_string(course.id));
         } else {

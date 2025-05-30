@@ -41,7 +41,7 @@ using namespace OpenXLSX;
 class ExcelCourseParser {
 private:
     unordered_map<string, int> dayMap;
-    unordered_map<string, string> sessionTypeMap;
+    unordered_map<string, SessionType> sessionTypeMap;
 
 public:
     ExcelCourseParser();
@@ -56,7 +56,7 @@ public:
     Session parseSingleSession(const string& timeSlotStr, const string& roomStr, const string& teacher);
 
     // Get session type mapping
-    string getSessionType(const string& hebrewType);
+    SessionType getSessionType(const string& hebrewType);
 
     // Parse course code from full code
     pair<string, string> parseCourseCode(const string& fullCode);

@@ -2,11 +2,10 @@
 #define PRINT_SCHEDULE_H
 
 #include "model_interfaces.h"
+#include "logger.h"
 
 #include <QString>
 #include <QFileDialog>
-#include <QPrintDialog>
-#include "logger/logger.h"
 #include <QPrinter>
 #include <QPainter>
 #include <QTextDocument>
