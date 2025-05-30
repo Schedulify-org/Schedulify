@@ -483,7 +483,6 @@ Page {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                // Show this when there are no schedules
                 Rectangle {
                     id: noSchedulesMessage
                     anchors.fill: parent
@@ -504,7 +503,6 @@ Page {
                     }
                 }
 
-                // Show this when there are schedules (original table content)
                 Flickable {
                     id: scrollArea
                     anchors.fill: parent
@@ -702,7 +700,7 @@ Page {
                                         case "Lecture": return "#b0e8ff";
                                         case "Lab": return "#abffc6";
                                         case "Tutorial": return "#edc8ff";
-                                        case "Block": return "#414142";
+                                        case "Block": return "#7a7a7a";
                                         default: return "#64748BFF";
                                     }
                                 }
