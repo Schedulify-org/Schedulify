@@ -133,6 +133,8 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
             schedule.week.push_back(scheduleDay);
         }
 
+        calculateScheduleMetrics(schedule);
+
     } catch (const exception& e) {
         Logger::get().logError("Exception in convertToInformativeSchedule: " + string(e.what()));
         schedule.week.clear();
@@ -193,4 +195,63 @@ string ScheduleBuilder::getCourseRawIdById(int courseId) {
     }
     Logger::get().logWarning("Course ID " + to_string(courseId) + " not found in course info map");
     return "UNKNOWN";
+}
+
+void ScheduleBuilder::calculateScheduleMetrics(InformativeSchedule& schedule) {
+    int totalDaysWithItems = 0;
+    int totalGaps = 0;
+    int totalGapTime = 0;
+    int totalStartTime = 0;
+    int totalEndTime = 0;
+
+    try {
+        for (const auto& scheduleDay : schedule.week) {
+            if (scheduleDay.day_items.empty()) {
+                continue;
+            }
+
+            totalDaysWithItems++;
+
+            // start and end times for day
+            int dayStartMinutes = TimeUtils::toMinutes(scheduleDay.day_items.front().start);
+            int dayEndMinutes = TimeUtils::toMinutes(scheduleDay.day_items.back().end);
+
+            totalStartTime += dayStartMinutes;
+            totalEndTime += dayEndMinutes;
+
+            // Calculate gaps for day
+            for (size_t i = 0; i < scheduleDay.day_items.size() - 1; i++) {
+                int currentEndMinutes = TimeUtils::toMinutes(scheduleDay.day_items[i].end);
+                int nextStartMinutes = TimeUtils::toMinutes(scheduleDay.day_items[i + 1].start);
+
+                int gapDuration = nextStartMinutes - currentEndMinutes;
+
+                if (gapDuration >= 90) {
+                    totalGaps++;
+                    totalGapTime += gapDuration;
+                }
+            }
+        }
+
+        schedule.amount_days = totalDaysWithItems;
+        schedule.amount_gaps = totalGaps;
+        schedule.gaps_time = totalGapTime;
+
+        // Calculate averages
+        if (totalDaysWithItems > 0) {
+            schedule.avg_start = totalStartTime / totalDaysWithItems;
+            schedule.avg_end = totalEndTime / totalDaysWithItems;
+        } else {
+            schedule.avg_start = 0;
+            schedule.avg_end = 0;
+        }
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception in calculateScheduleMetrics: " + string(e.what()));
+        schedule.amount_days = 0;
+        schedule.amount_gaps = 0;
+        schedule.gaps_time = 0;
+        schedule.avg_start = 0;
+        schedule.avg_end = 0;
+    }
 }

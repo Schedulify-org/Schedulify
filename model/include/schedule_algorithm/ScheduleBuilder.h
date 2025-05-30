@@ -40,6 +40,8 @@ private:
     static string getCourseRawIdById(int courseId) ;
 
     static void buildCourseInfoMap(const vector<Course>& courses);
+
+    static void calculateScheduleMetrics(InformativeSchedule& schedule) ;
 };
 
 #endif // SCHEDULE_BUILDER_H
