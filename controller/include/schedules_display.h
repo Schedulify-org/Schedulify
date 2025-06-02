@@ -5,7 +5,6 @@
 #include "model_access.h"
 #include "model_interfaces.h"
 #include "schedule_model.h"
-#include "schedule_filter.h"
 
 #include <QObject>
 #include <QVariant>
@@ -18,19 +17,16 @@
 #include <QQuickItemGrabResult>
 #include <QtQuick/QQuickItem>
 
-// Forward declaration
-class ScheduleFilter;
-
 enum class fileType {
     PNG,
     CSV
 };
 
 class SchedulesDisplayController : public ControllerManager {
-Q_OBJECT
-    Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
+    Q_OBJECT
+        Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
 
-public:
+    public:
     explicit SchedulesDisplayController(QObject *parent = nullptr);
     ~SchedulesDisplayController() override;
 
@@ -39,31 +35,33 @@ public:
     // Properties
     ScheduleModel* scheduleModel() const { return m_scheduleModel; }
 
-    // Existing QML accessible methods
+    // QML accessible methods
     Q_INVOKABLE void goBack() override;
     Q_INVOKABLE void saveScheduleAsCSV();
     Q_INVOKABLE void printScheduleDirectly();
     Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
-    Q_INVOKABLE void applyFilters(const QVariantMap& filterData);
-    Q_INVOKABLE void clearFilters();
+    // Sorting methods
+    Q_INVOKABLE void applySorting(const QVariantMap& sortData);
+    Q_INVOKABLE void clearSorting();
 
     static QString generateFilename(const QString& basePath, int index, fileType type);
 
-signals:
-    void filtersApplied(int filteredCount, int totalCount);
-    void screenshotSaved(const QString& path);
-    void screenshotFailed();
+    signals:
+        void schedulesSorted(int totalCount);
+        void screenshotSaved(const QString& path);
+        void screenshotFailed();
 
 private:
-    std::vector<InformativeSchedule> m_filteredSchedules;
-    std::vector<InformativeSchedule> m_originalSchedules;
-    ScheduleFilter* m_scheduleFilter;
+    std::vector<InformativeSchedule> m_schedules;
     ScheduleModel* m_scheduleModel;
     IModel* modelConnection;
+    QMap<QString, QString> m_sortKeyMap;
 
-    ScheduleFilter::FilterCriteria convertQVariantToFilterCriteria(const QVariantMap& filterData);
-    void applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria);
+
+    // Track current sort state for optimization
+    QString m_currentSortField;
+    bool m_currentSortAscending = true;
 };
 
 #endif // SCHEDULES_DISPLAY_H

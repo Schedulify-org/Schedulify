@@ -6,21 +6,19 @@ import QtQuick.Controls.Basic
 Popup {
     id: root
 
-    signal filtersApplied(var filterData)
+    signal sortingApplied(var sortData)
 
-    // Filter properties
+    // Sort properties
     property bool daysToStudyEnabled: false
-    property int daysToStudyValue: 7
+    property bool daysToStudyAscending: true
     property bool totalGapsEnabled: false
-    property int totalGapsValue: 0
+    property bool totalGapsAscending: true
     property bool maxGapsTimeEnabled: false
-    property int maxGapsTimeValue: 90
+    property bool maxGapsTimeAscending: true
     property bool avgDayStartEnabled: false
-    property int avgDayStartHour: 8
-    property int avgDayStartMinute: 0
+    property bool avgDayStartAscending: true
     property bool avgDayEndEnabled: false
-    property int avgDayEndHour: 17
-    property int avgDayEndMinute: 0
+    property bool avgDayEndAscending: true
 
     width: 400
     height: 600
@@ -39,32 +37,40 @@ Popup {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
-    function getCurrentFilterData() {
+    // make the selection unique
+    function disableAllSortsExcept(keepEnabled) {
+        if (keepEnabled !== "daysToStudy") daysToStudyEnabled = false
+        if (keepEnabled !== "totalGaps") totalGapsEnabled = false
+        if (keepEnabled !== "maxGapsTime") maxGapsTimeEnabled = false
+        if (keepEnabled !== "avgDayStart") avgDayStartEnabled = false
+        if (keepEnabled !== "avgDayEnd") avgDayEndEnabled = false
+    }
+
+    function getCurrentSortData() {
         return {
-            daysToStudy: {
+            amount_days: {
                 enabled: root.daysToStudyEnabled,
-                value: root.daysToStudyValue
+                ascending: root.daysToStudyAscending
             },
-            totalGaps: {
+            amount_gaps: {
                 enabled: root.totalGapsEnabled,
-                value: root.totalGapsValue
+                ascending: root.totalGapsAscending
             },
-            maxGapsTime: {
+            gaps_time: {
                 enabled: root.maxGapsTimeEnabled,
-                value: root.maxGapsTimeValue
+                ascending: root.maxGapsTimeAscending
             },
-            avgDayStart: {
+            avg_start: {
                 enabled: root.avgDayStartEnabled,
-                hour: root.avgDayStartHour,
-                minute: root.avgDayStartMinute
+                ascending: root.avgDayStartAscending
             },
-            avgDayEnd: {
+            avg_end: {
                 enabled: root.avgDayEndEnabled,
-                hour: root.avgDayEndHour,
-                minute: root.avgDayEndMinute
+                ascending: root.avgDayEndAscending
             }
         }
     }
+
 
     Column {
         width: parent.width
@@ -82,7 +88,7 @@ Popup {
                 anchors.margins: 10
 
                 Text {
-                    text: "Filter Schedules"
+                    text: "Sort Schedules"
                     font.pixelSize: 20
                     font.bold: true
                     color: "#ffffff"
@@ -92,7 +98,7 @@ Popup {
             }
         }
 
-        // Days to Study filter
+        // Days to Study sort
         Item {
             width: parent.width
             height: 50
@@ -128,10 +134,13 @@ Popup {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        daysToStudyEnabled = !daysToStudyEnabled
+                        if (!daysToStudyEnabled) {
+                            disableAllSortsExcept("daysToStudy")
+                            daysToStudyEnabled = true
+                        } else {
+                            daysToStudyEnabled = false
+                        }
                     }
-
-
                 }
             }
 
@@ -144,7 +153,7 @@ Popup {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Counter
+            // Ascending/Descending Toggle
             Rectangle {
                 width: 120
                 height: 40
@@ -157,18 +166,20 @@ Popup {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 0
 
                     Rectangle {
-                        width: 30
-                        height: 30
-                        color: "#4b5563"
+                        width: 60
+                        height: 38
+                        color: daysToStudyEnabled && daysToStudyAscending ? "#10b981" : "#4b5563"
                         radius: 4
-                        opacity: daysToStudyEnabled && daysToStudyValue > 1 ? 1 : 0.5
+                        border.width: 1
+                        border.color: "#374151"
 
                         Text {
-                            text: "-"
-                            font.pixelSize: 16
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
                             anchors.centerIn: parent
                         }
@@ -176,34 +187,25 @@ Popup {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            enabled: daysToStudyEnabled && daysToStudyValue > 1
+                            enabled: daysToStudyEnabled
                             onClicked: {
-                                if (daysToStudyValue > 1) {
-                                    daysToStudyValue--
-                                }
+                                daysToStudyAscending = true
                             }
                         }
                     }
 
-                    Text {
-                        text: daysToStudyEnabled ? daysToStudyValue : "7"
-                        font.pixelSize: 14
-                        color: daysToStudyEnabled ? "#ffffff" : "#9ca3af"
-                        width: 30
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
                     Rectangle {
-                        width: 30
-                        height: 30
-                        color: "#4b5563"
+                        width: 60
+                        height: 38
+                        color: daysToStudyEnabled && !daysToStudyAscending ? "#10b981" : "#4b5563"
                         radius: 4
-                        opacity: daysToStudyEnabled && daysToStudyValue < 7 ? 1 : 0.5
+                        border.width: 1
+                        border.color: "#374151"
 
                         Text {
-                            text: "+"
-                            font.pixelSize: 16
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
                             anchors.centerIn: parent
                         }
@@ -211,11 +213,9 @@ Popup {
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            enabled: daysToStudyEnabled && daysToStudyValue < 7
+                            enabled: daysToStudyEnabled
                             onClicked: {
-                                if (daysToStudyValue < 7) {
-                                    daysToStudyValue++
-                                }
+                                daysToStudyAscending = false
                             }
                         }
                     }
@@ -223,7 +223,7 @@ Popup {
             }
         }
 
-        // Total Gaps filter
+        // Total Gaps sort
         Item {
             width: parent.width
             height: 50
@@ -259,7 +259,12 @@ Popup {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        totalGapsEnabled = !totalGapsEnabled
+                        if (!totalGapsEnabled) {
+                            disableAllSortsExcept("totalGaps")
+                            totalGapsEnabled = true
+                        } else {
+                            totalGapsEnabled = false
+                        }
                     }
                 }
             }
@@ -273,7 +278,7 @@ Popup {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Counter
+            // Ascending/Descending Toggle
             Rectangle {
                 width: 120
                 height: 40
@@ -286,53 +291,20 @@ Popup {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 0
 
                     Rectangle {
-                        width: 30
-                        height: 30
-                        color: "#4b5563"
+                        width: 60
+                        height: 38
+                        color: totalGapsEnabled && totalGapsAscending ? "#10b981" : "#4b5563"
                         radius: 4
-                        opacity: totalGapsEnabled && totalGapsValue > 0 ? 1 : 0.5
+                        border.width: 1
+                        border.color: "#374151"
 
                         Text {
-                            text: "-"
-                            font.pixelSize: 16
-                            color: "#ffffff"
-                            anchors.centerIn: parent
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            enabled: totalGapsEnabled && totalGapsValue > 0
-                            onClicked: {
-                                if (totalGapsValue > 0) {
-                                    totalGapsValue--
-                                }
-                            }
-                        }
-                    }
-
-                    Text {
-                        text: totalGapsEnabled ? totalGapsValue : "--"
-                        font.pixelSize: 14
-                        color: totalGapsEnabled ? "#ffffff" : "#9ca3af"
-                        width: 30
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Rectangle {
-                        width: 30
-                        height: 30
-                        color: "#4b5563"
-                        radius: 4
-                        opacity: totalGapsEnabled ? 1 : 0.5
-
-                        Text {
-                            text: "+"
-                            font.pixelSize: 16
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
                             anchors.centerIn: parent
                         }
@@ -342,7 +314,33 @@ Popup {
                             cursorShape: Qt.PointingHandCursor
                             enabled: totalGapsEnabled
                             onClicked: {
-                                totalGapsValue++
+                                totalGapsAscending = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: totalGapsEnabled && !totalGapsAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: totalGapsEnabled
+                            onClicked: {
+                                totalGapsAscending = false
                             }
                         }
                     }
@@ -350,7 +348,7 @@ Popup {
             }
         }
 
-        // Max Gaps Time filter
+        // Max Gaps Time sort
         Item {
             width: parent.width
             height: 50
@@ -386,7 +384,12 @@ Popup {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.maxGapsTimeEnabled = !root.maxGapsTimeEnabled
+                        if (!root.maxGapsTimeEnabled) {
+                            disableAllSortsExcept("maxGapsTime")
+                            root.maxGapsTimeEnabled = true
+                        } else {
+                            root.maxGapsTimeEnabled = false
+                        }
                     }
                 }
             }
@@ -410,7 +413,7 @@ Popup {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Counter
+            // Ascending/Descending Toggle
             Rectangle {
                 width: 120
                 height: 40
@@ -423,53 +426,47 @@ Popup {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 10
+                    spacing: 0
 
                     Rectangle {
-                        width: 30
-                        height: 30
-                        color: "#4b5563"
+                        width: 60
+                        height: 38
+                        color: root.maxGapsTimeEnabled && root.maxGapsTimeAscending ? "#10b981" : "#4b5563"
                         radius: 4
-                        opacity: root.maxGapsTimeEnabled && root.maxGapsTimeValue > 90 ? 1 : 0.5
+                        border.width: 1
+                        border.color: "#374151"
 
                         Text {
-                            text: "-"
-                            font.pixelSize: 16
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
                             anchors.centerIn: parent
                         }
 
+
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            enabled: root.maxGapsTimeEnabled && root.maxGapsTimeValue > 90
+                            enabled: root.maxGapsTimeEnabled
                             onClicked: {
-                                if (root.maxGapsTimeValue > 90) {
-                                    root.maxGapsTimeValue -= 5
-                                }
+                                root.maxGapsTimeAscending = true
                             }
                         }
                     }
 
-                    Text {
-                        text: root.maxGapsTimeEnabled ? root.maxGapsTimeValue : "--"
-                        font.pixelSize: 14
-                        color: root.maxGapsTimeEnabled ? "#ffffff" : "#9ca3af"
-                        width: 30
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
                     Rectangle {
-                        width: 30
-                        height: 30
-                        color: "#4b5563"
+                        width: 60
+                        height: 38
+                        color: root.maxGapsTimeEnabled && !root.maxGapsTimeAscending ? "#10b981" : "#4b5563"
                         radius: 4
-                        opacity: root.maxGapsTimeEnabled ? 1 : 0.5
+                        border.width: 1
+                        border.color: "#374151"
 
                         Text {
-                            text: "+"
-                            font.pixelSize: 16
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
                             anchors.centerIn: parent
                         }
@@ -479,7 +476,7 @@ Popup {
                             cursorShape: Qt.PointingHandCursor
                             enabled: root.maxGapsTimeEnabled
                             onClicked: {
-                                root.maxGapsTimeValue += 5
+                                root.maxGapsTimeAscending = false
                             }
                         }
                     }
@@ -487,7 +484,7 @@ Popup {
             }
         }
 
-        // Avg Day Start filter
+        // Avg Day Start sort
         Item {
             width: parent.width
             height: 50
@@ -523,7 +520,12 @@ Popup {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.avgDayStartEnabled = !root.avgDayStartEnabled
+                        if (!root.avgDayStartEnabled) {
+                            disableAllSortsExcept("avgDayStart")
+                            root.avgDayStartEnabled = true
+                        } else {
+                            root.avgDayStartEnabled = false
+                        }
                     }
                 }
             }
@@ -537,7 +539,7 @@ Popup {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Time Picker
+            // Ascending/Descending Toggle
             Rectangle {
                 width: 120
                 height: 40
@@ -550,133 +552,56 @@ Popup {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 5
+                    spacing: 0
 
-                    // Hour
-                    Column {
-                        spacing: 2
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayStartEnabled && root.avgDayStartAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayStartEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayStartEnabled
-                                onClicked: {
-                                    root.avgDayStartHour = (root.avgDayStartHour + 1) % 24
-                                }
-                            }
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
                         }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayStartEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayStartEnabled
-                                onClicked: {
-                                    root.avgDayStartHour = root.avgDayStartHour > 0 ? root.avgDayStartHour - 1 : 23
-                                }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayStartEnabled
+                            onClicked: {
+                                root.avgDayStartAscending = true
                             }
                         }
                     }
 
-                    Text {
-                        text: root.avgDayStartEnabled ? String(root.avgDayStartHour).padStart(2, '0') : "--"
-                        font.pixelSize: 12
-                        color: root.avgDayStartEnabled ? "#ffffff" : "#9ca3af"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayStartEnabled && !root.avgDayStartAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
 
-                    Text {
-                        text: ":"
-                        font.pixelSize: 14
-                        color: root.avgDayStartEnabled ? "#ffffff" : "#9ca3af"
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: root.avgDayStartEnabled ? String(root.avgDayStartMinute).padStart(2, '0') : "--"
-                        font.pixelSize: 12
-                        color: root.avgDayStartEnabled ? "#ffffff" : "#9ca3af"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    // Minute
-                    Column {
-                        spacing: 2
-
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayStartEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayStartEnabled
-                                onClicked: {
-                                    root.avgDayStartMinute = (root.avgDayStartMinute + 15) % 60
-                                }
-                            }
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
                         }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayStartEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayStartEnabled
-                                onClicked: {
-                                    root.avgDayStartMinute = root.avgDayStartMinute >= 15 ? root.avgDayStartMinute - 15 : 45
-                                }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayStartEnabled
+                            onClicked: {
+                                root.avgDayStartAscending = false
                             }
                         }
                     }
@@ -684,7 +609,7 @@ Popup {
             }
         }
 
-        // Avg Day End filter
+        // Avg Day End sort
         Item {
             width: parent.width
             height: 50
@@ -720,7 +645,12 @@ Popup {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        root.avgDayEndEnabled = !root.avgDayEndEnabled
+                        if (!root.avgDayEndEnabled) {
+                            disableAllSortsExcept("avgDayEnd")
+                            root.avgDayEndEnabled = true
+                        } else {
+                            root.avgDayEndEnabled = false
+                        }
                     }
                 }
             }
@@ -734,7 +664,7 @@ Popup {
                 anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Time Picker
+            // Ascending/Descending Toggle
             Rectangle {
                 width: 120
                 height: 40
@@ -747,133 +677,56 @@ Popup {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 5
+                    spacing: 0
 
-                    // Hour
-                    Column {
-                        spacing: 2
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayEndEnabled && root.avgDayEndAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayEndEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayEndEnabled
-                                onClicked: {
-                                    root.avgDayEndHour = (root.avgDayEndHour + 1) % 24
-                                }
-                            }
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
                         }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayEndEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayEndEnabled
-                                onClicked: {
-                                    root.avgDayEndHour = root.avgDayEndHour > 0 ? root.avgDayEndHour - 1 : 23
-                                }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayEndEnabled
+                            onClicked: {
+                                root.avgDayEndAscending = true
                             }
                         }
                     }
 
-                    Text {
-                        text: root.avgDayEndEnabled ? String(root.avgDayEndHour).padStart(2, '0') : "--"
-                        font.pixelSize: 12
-                        color: root.avgDayEndEnabled ? "#ffffff" : "#9ca3af"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayEndEnabled && !root.avgDayEndAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
 
-                    Text {
-                        text: ":"
-                        font.pixelSize: 14
-                        color: root.avgDayEndEnabled ? "#ffffff" : "#9ca3af"
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: root.avgDayEndEnabled ? String(root.avgDayEndMinute).padStart(2, '0') : "--"
-                        font.pixelSize: 12
-                        color: root.avgDayEndEnabled ? "#ffffff" : "#9ca3af"
-                        width: 20
-                        height: parent.height
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    // Minute
-                    Column {
-                        spacing: 2
-
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayEndEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▲"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayEndEnabled
-                                onClicked: {
-                                    root.avgDayEndMinute = (root.avgDayEndMinute + 15) % 60
-                                }
-                            }
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
                         }
 
-                        Rectangle {
-                            width: 20
-                            height: 15
-                            color: "#4b5563"
-                            radius: 2
-                            opacity: root.avgDayEndEnabled ? 1 : 0.5
-
-                            Text {
-                                text: "▼"
-                                font.pixelSize: 8
-                                color: "#ffffff"
-                                anchors.centerIn: parent
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.avgDayEndEnabled
-                                onClicked: {
-                                    root.avgDayEndMinute = root.avgDayEndMinute >= 15 ? root.avgDayEndMinute - 15 : 45
-                                }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayEndEnabled
+                            onClicked: {
+                                root.avgDayEndAscending = false
                             }
                         }
                     }
@@ -911,9 +764,9 @@ Popup {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        var filterData = getCurrentFilterData()
+                        var sortData = getCurrentSortData()
 
-                        root.filtersApplied(filterData)
+                        root.sortingApplied(sortData)
                         root.close()
                     }
                 }

@@ -184,7 +184,6 @@ void CourseSelectionController::updateBlockTimesModel() {
 
         blockTimes.push_back(blockCourse);
     }
-
     m_blocksModel->populateCoursesData(blockTimes);
 }
 
