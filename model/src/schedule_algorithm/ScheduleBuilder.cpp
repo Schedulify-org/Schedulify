@@ -226,7 +226,7 @@ void ScheduleBuilder::calculateScheduleMetrics(InformativeSchedule& schedule) {
 
                 int gapDuration = nextStartMinutes - currentEndMinutes;
 
-                if (gapDuration >= 90) {
+                if (gapDuration >= 30) {
                     totalGaps++;
                     totalGapTime += gapDuration;
                 }
