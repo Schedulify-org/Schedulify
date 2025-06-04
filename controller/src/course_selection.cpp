@@ -44,7 +44,6 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
     }
 }
 
-
 void CourseSelectionController::addBlockTime(const QString& day, const QString& startTime, const QString& endTime) {
     // Validate time format and logic first
     if (startTime >= endTime) {
@@ -152,9 +151,6 @@ Course CourseSelectionController::createSingleBlockTimeCourse() {
 void CourseSelectionController::updateBlockTimesModel() {
     blockTimes.clear();
 
-    // Create individual block course items for display purposes
-    // Even though we generate a single course for schedule generation,
-    // we still create individual display items for the UI
     for (size_t i = 0; i < userBlockTimes.size(); ++i) {
         const BlockTime& blockTime = userBlockTimes[i];
         Course blockCourse;
@@ -321,6 +317,8 @@ bool CourseSelectionController::isCourseSelected(int index) {
 }
 
 void CourseSelectionController::filterCourses(const QString& searchText) {
+    currentSearchText = searchText; // Store the current search text
+
     if (searchText.isEmpty()) {
         resetFilter();
         return;
@@ -350,6 +348,8 @@ void CourseSelectionController::filterCourses(const QString& searchText) {
 }
 
 void CourseSelectionController::resetFilter() {
+    currentSearchText.clear(); // Clear the search text
+
     filteredCourses = allCourses;
     filteredIndicesMap.clear();
 
@@ -358,4 +358,138 @@ void CourseSelectionController::resetFilter() {
     }
 
     m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
+}
+
+void CourseSelectionController::createNewCourse(const QString& courseName, const QString& courseId,
+                                                const QString& teacherName, const QVariantList& sessionGroups) {
+
+    for (const auto& course : allCourses) {
+        if (QString::fromStdString(course.raw_id) == courseId) {
+            emit errorMessage("Course ID already exists");
+            return;
+        }
+    }
+
+    Course newCourse = createCourseFromData(courseName, courseId, teacherName, sessionGroups);
+    Logger::get().logInfo("Created new course with ID: " + to_string(newCourse.id) +
+                          ", name: " + newCourse.name + ", raw_id: " + newCourse.raw_id);
+
+    // Add to allCourses
+    allCourses.push_back(newCourse);
+
+    // Update the main course model
+    m_courseModel->populateCoursesData(allCourses);
+
+    // Update filtered courses and indices map
+    QString searchLower = currentSearchText.toLower();
+    QString courseIdLower = courseId.toLower();
+    QString courseNameLower = courseName.toLower();
+    QString teacherNameLower = teacherName.toLower();
+
+    bool shouldIncludeInFilter = searchLower.isEmpty() ||
+                                 courseIdLower.contains(searchLower) ||
+                                 courseNameLower.contains(searchLower) ||
+                                 teacherNameLower.contains(searchLower);
+
+    if (shouldIncludeInFilter) {
+        filteredCourses.push_back(newCourse);
+        filteredIndicesMap.push_back(static_cast<int>(allCourses.size() - 1));
+        m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
+    }
+
+    Logger::get().logInfo("New course created: " + courseName.toStdString() + ", "  + courseId.toStdString());
+}
+
+// Add this function to course_selection.cpp
+Course CourseSelectionController::createCourseFromData(const QString& courseName, const QString& courseId,
+                                                       const QString& teacherName, const QVariantList& sessionGroups) {
+    Course course;
+    course.id = courseId.toInt();
+    course.raw_id = courseId.toStdString();
+    course.name = courseName.toStdString();
+    course.teacher = teacherName.toStdString();
+
+    // Clear all session vectors
+    course.Lectures.clear();
+    course.Tirgulim.clear();
+    course.labs.clear();
+    course.blocks.clear();
+
+    // Process session groups
+    for (const QVariant& groupVar : sessionGroups) {
+        QVariantMap groupMap = groupVar.toMap();
+        string groupType = groupMap["type"].toString().toStdString();
+        QVariantList sessions = groupMap["sessions"].toList();
+
+        Group group;
+
+        // Set group type
+        if (groupType == "Lecture") {
+            group.type = SessionType::LECTURE;
+        } else if (groupType == "Tutorial") {
+            group.type = SessionType::TUTORIAL;
+        } else if (groupType == "Lab") {
+            group.type = SessionType::LAB;
+        } else {
+            group.type = SessionType::LECTURE;
+        }
+
+        Logger::get().logInfo("parsing group from type: " + groupMap["type"].toString().toStdString());
+
+        // Process sessions for this group
+        for (const QVariant& sessionVar : sessions) {
+            Logger::get().logInfo("A");
+            QVariantMap sessionMap = sessionVar.toMap();
+            Logger::get().logInfo("B");
+
+            Session session;
+            Logger::get().logInfo("C");
+
+            session.day_of_week = getDayNumber(sessionMap["day"].toString());
+            Logger::get().logInfo("D");
+
+
+            // Ensure proper time format
+            QString startTime = sessionMap["startTime"].toString();
+            QString endTime = sessionMap["endTime"].toString();
+
+            Logger::get().logInfo("E");
+
+
+            // Add validation and formatting
+            if (!startTime.contains(":")) {
+                startTime = startTime + ":00";
+            }
+            if (!endTime.contains(":")) {
+                endTime = endTime + ":00";
+            }
+
+            Logger::get().logInfo("F");
+
+
+            session.start_time = startTime.toStdString();
+            session.end_time = endTime.toStdString();
+            session.building_number = sessionMap["building"].toString().toStdString();
+            session.room_number = sessionMap["room"].toString().toStdString();
+
+            Logger::get().logInfo("Manual course session created: Day=" + std::to_string(session.day_of_week) +
+                                  ", Start=" + session.start_time +
+                                  ", End=" + session.end_time +
+                                  ", Building=" + session.building_number +
+                                  ", Room=" + session.room_number);
+
+            group.sessions.push_back(session);
+        }
+
+        // Add group to appropriate vector
+        if (group.type == SessionType::LECTURE) {
+            course.Lectures.push_back(group);
+        } else if (group.type == SessionType::TUTORIAL) {
+            course.Tirgulim.push_back(group);
+        } else if (group.type == SessionType::LAB) {
+            course.labs.push_back(group);
+        }
+    }
+
+    return course;
 }

@@ -54,6 +54,8 @@ public:
     Q_INVOKABLE void resetFilter();
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
+    Q_INVOKABLE void createNewCourse(const QString& courseName, const QString& courseId,
+                                                        const QString& teacherName, const QVariantList& sessionGroups);
 
     // Block time management methods
     Q_INVOKABLE void addBlockTime(const QString& day, const QString& startTime, const QString& endTime);
@@ -77,20 +79,21 @@ private:
     vector<Course> allCourses;
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
-    vector<Course> blockTimes; // This will store the single block times course for display
-    vector<BlockTime> userBlockTimes; // This stores the actual block time data
+    vector<Course> blockTimes;
+    vector<BlockTime> userBlockTimes;
 
     vector<int> selectedIndices;
     vector<int> filteredIndicesMap;
+    QString currentSearchText;
     IModel* modelConnection;
     QThread* workerThread = nullptr;
 
     // Helper methods
     void updateBlockTimesModel();
-    Course createSingleBlockTimeCourse(); // NEW: Creates a single course with all block times
+    Course createSingleBlockTimeCourse();
     static int getDayNumber(const QString& dayName);
-
-    // REMOVED: createBlockTimeCourse and createBlockGroup methods are no longer needed
+    Course createCourseFromData(const QString& courseName, const QString& courseId,
+                                                       const QString& teacherName, const QVariantList& sessionGroups);
 };
 
 #endif //COURSE_SELECTION_H

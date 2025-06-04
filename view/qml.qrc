@@ -7,7 +7,7 @@
         <file>log_display.qml</file>
         <file>loading_overlay.qml</file>
         <file>popups/ExportMenu.qml</file>
-        <file>popups/MainPreferencePopup.qml</file>
+        <file>popups/AddCoursePopup.qml</file>
         <file>popups/SortMenu.qml</file>
         <file>popups/SlotBlockMenu.qml</file>
         <file>icons/ic-export.svg</file>

@@ -210,6 +210,7 @@ void ScheduleBuilder::calculateScheduleMetrics(InformativeSchedule& schedule) {
                 continue;
             }
 
+            // calculate amount of none empty days
             totalDaysWithItems++;
 
             // start and end times for day

@@ -41,6 +41,15 @@ Page {
         }
     }
 
+    AddCoursePopup {
+        id: addCoursePopup
+        parent: Overlay.overlay
+
+        onCourseCreated: function(courseName, courseId, teacherName, sessionGroups) {
+            courseSelectionController.createNewCourse(courseName, courseId, teacherName, sessionGroups);
+        }
+    }
+
     Rectangle {
         id: root
         anchors.fill: parent
@@ -100,7 +109,7 @@ Page {
                 // Page Title
                 Label {
                     id: titleLabel
-                    text: "Course Selection & Schedule Preferences"
+                    text: "Course Selection"
                     font.pixelSize: 20
                     color: "#1f2937"
                     anchors {
@@ -274,8 +283,9 @@ Page {
                         }
                     }
 
-                    Label {
-                        id: courseListTitle
+                    // Header
+                    RowLayout {
+                        id: courseListTitleRow
                         anchors {
                             top: errorMessageContainer.bottom
                             topMargin: errorMessage === "" ? 0 : 16
@@ -283,16 +293,49 @@ Page {
                             right: parent.right
                         }
                         height: 30
-                        text: "Available Courses"
-                        font.pixelSize: 24
-                        color: "#1f2937"
+
+                        Label {
+                            text: "Available Courses"
+                            font.pixelSize: 24
+                            color: "#1f2937"
+                            Layout.fillWidth: true
+                        }
+
+                        Button {
+                            id: createCourseButton
+                            Layout.preferredWidth: 140
+                            Layout.preferredHeight: 32
+
+                            background: Rectangle {
+                                color: createCourseMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                                radius: 4
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "+ Create Course"
+                                font.pixelSize: 12
+                                font.bold: true
+                                color: "white"
+                            }
+
+                            MouseArea {
+                                id: createCourseMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    addCoursePopup.open()
+                                }
+                                cursorShape: Qt.PointingHandCursor
+                            }
+                        }
                     }
 
                     // Search bar
                     Rectangle {
                         id: searchBar
                         anchors {
-                            top: courseListTitle.bottom
+                            top: courseListTitleRow.bottom
                             topMargin: 16
                             left: parent.left
                             right: parent.right
