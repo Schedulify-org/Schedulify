@@ -59,6 +59,9 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 
         cleanupValidatorThread();
 
+        // Set validation in progress FIRST, before clearing errors
+        setValidationInProgress(true);
+
         allCourses = courses;
         m_courseModel->populateCoursesData(courses);
 
@@ -76,6 +79,7 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         blockTimes.clear();
         updateBlockTimesModel();
 
+        // Clear validation errors AFTER setting validation in progress
         setValidationErrors(QStringList());
 
         int timeoutMs = std::min(VALIDATION_TIMEOUT_MS,

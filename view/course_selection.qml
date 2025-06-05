@@ -287,7 +287,6 @@ Page {
                 leftMargin: 16
                 rightMargin: 16
             }
-            // Fixed height calculation: collapsed = 60, expanded = status row (44) + spacing (12) + fixed message area (120) + margins (32)
             height: validationExpanded ? 208 : 60
             radius: 8
             color: {
@@ -319,7 +318,6 @@ Page {
                 }
                 spacing: 12
 
-                // Status Row
                 Row {
                     anchors {
                         left: parent.left
@@ -329,17 +327,20 @@ Page {
                     spacing: 12
 
                     // Status Icon
-                    Text {
+                    Image {
+                        id: statusIcon
                         anchors.verticalCenter: parent.verticalCenter
-                        text: {
-                            if (validationInProgress) return "⏳"
-                            if (validationErrors.length === 0) return "✅"
-                            return "⚠️"
+                        width: 30
+                        height: 30
+                        source: {
+                            if (validationInProgress) return "qrc:/icons/ic-loading.svg"
+                            if (validationErrors.length === 0) return "qrc:/icons/ic-valid.svg"
+                            return "qrc:/icons/ic-warning.svg"
                         }
-                        font.pixelSize: 20
+                        sourceSize.width: 30
+                        sourceSize.height: 30
                     }
 
-                    // Status Text
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: {
@@ -370,7 +371,7 @@ Page {
                                 return "Found " + parserWarnings + " warnings in your course file"
                             }
                         }
-                        font.pixelSize: 16
+                        font.pixelSize: 14
                         font.bold: true
                         color: {
                             if (validationInProgress) return "#92400e"
@@ -379,7 +380,6 @@ Page {
                         }
                     }
 
-                    // Expand/Collapse Button (only show when there are errors)
                     Button {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: validationErrors && validationErrors.length > 0
@@ -399,7 +399,6 @@ Page {
                     }
                 }
 
-                // Error Messages (only visible when expanded) - Fixed height with scrolling
                 Rectangle {
                     visible: validationExpanded && validationErrors && validationErrors.length > 0
                     anchors {
