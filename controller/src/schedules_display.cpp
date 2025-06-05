@@ -1,104 +1,115 @@
 #include "schedules_display.h"
+#include <algorithm>
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
         : ControllerManager(parent),
-          m_scheduleModel(new ScheduleModel(this)),
-          m_scheduleFilter(new ScheduleFilter(this)) {
+          m_scheduleModel(new ScheduleModel(this)) {
     modelConnection = ModelAccess::getModel();
-    connect(this, &SchedulesDisplayController::filtersApplied,this, [this]() {
-                emit m_scheduleModel->scheduleDataChanged();
+    connect(this, &SchedulesDisplayController::schedulesSorted, this, [this]() {
+        emit m_scheduleModel->scheduleDataChanged();
     });
 }
 
 SchedulesDisplayController::~SchedulesDisplayController() {
     delete modelConnection;
-    delete m_scheduleFilter;
 }
 
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
-    m_originalSchedules = schedules;
-    m_filteredSchedules = schedules;
-    m_scheduleModel->loadSchedules(m_filteredSchedules);
+    m_schedules = schedules;
+    m_scheduleModel->loadSchedules(m_schedules);
 }
 
-void SchedulesDisplayController::applyFilters(const QVariantMap& filterData) {
-    ScheduleFilter::FilterCriteria criteria = convertQVariantToFilterCriteria(filterData);
+void SchedulesDisplayController::applySorting(const QVariantMap& sortData) {
+    QString sortField;
+    bool isAscending = true;
+    for (auto it = sortData.constBegin(); it != sortData.constEnd(); ++it) {
+        const QVariantMap criterion = it.value().toMap();
+        if (criterion.value("enabled").toBool()) {
+            sortField = it.key();
+            isAscending = criterion["ascending"].toBool();
+            break;
+        }
+    }
 
-    applyFiltersToSchedules(criteria);
+    if (sortField.isEmpty()) {
+        qWarning() << "No sorting field enabled!";
+        clearSorting();
+        return;
+    }
 
-    m_scheduleModel->loadSchedules(m_filteredSchedules);
+    // Check if we can make it in O(n)
+    if (sortField == m_currentSortField && isAscending != m_currentSortAscending) {
+        std::reverse(m_schedules.begin(), m_schedules.end());
+    }
+    else {
+        if (sortField == "amount_days") {
+            std::vector<std::vector<InformativeSchedule>> buckets(8); // Constant days
+            for (const auto& sched : m_schedules) {
+                if (sched.amount_days >= 1 && sched.amount_days <= 7)
+                    buckets[sched.amount_days].push_back(sched);
+                else
+                    qWarning() << "amount_days out of range:" << sched.amount_days;
+            }
+            m_schedules.clear();
+            if (isAscending) {
+                for (int i = 1; i <= 7; ++i)
+                    m_schedules.insert(m_schedules.end(), buckets[i].begin(), buckets[i].end());
+            } else {
+                for (int i = 7; i >= 1; --i)
+                    m_schedules.insert(m_schedules.end(), buckets[i].begin(), buckets[i].end());
+            }
+        }
 
-    emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
-                        static_cast<int>(m_originalSchedules.size()));
+        else if (sortField == "amount_gaps") {
+            std::sort(m_schedules.begin(), m_schedules.end(), [isAscending](const InformativeSchedule& a, const InformativeSchedule& b) {
+                return isAscending ? a.amount_gaps < b.amount_gaps : a.amount_gaps > b.amount_gaps;
+            });
+        }
+        else if (sortField == "gaps_time") {
+            std::sort(m_schedules.begin(), m_schedules.end(), [isAscending](const InformativeSchedule& a, const InformativeSchedule& b) {
+                return isAscending ? a.gaps_time < b.gaps_time : a.gaps_time > b.gaps_time;
+            });
+        }
+        else if (sortField == "avg_start") {
+            std::sort(m_schedules.begin(), m_schedules.end(), [isAscending](const InformativeSchedule& a, const InformativeSchedule& b) {
+                return isAscending ? a.avg_start < b.avg_start : a.avg_start > b.avg_start;
+            });
+        }
+        else if (sortField == "avg_end") {
+            std::sort(m_schedules.begin(), m_schedules.end(), [isAscending](const InformativeSchedule& a, const InformativeSchedule& b) {
+                return isAscending ? a.avg_end < b.avg_end : a.avg_end > b.avg_end;
+            });
+        }
+        else {
+            qWarning() << "Unknown sorting key received:" << sortField;
+            clearSorting();
+            return;
+        }
+    }
+
+    m_currentSortField = sortField;
+    m_currentSortAscending = isAscending;
+    m_scheduleModel->setCurrentScheduleIndex(0);
+    m_scheduleModel->loadSchedules(m_schedules);
+    emit schedulesSorted(static_cast<int>(m_schedules.size()));
 }
 
-void SchedulesDisplayController::clearFilters() {
-    m_filteredSchedules = m_originalSchedules;
-    m_scheduleModel->loadSchedules(m_filteredSchedules);
-    emit filtersApplied(static_cast<int>(m_filteredSchedules.size()),
-                        static_cast<int>(m_originalSchedules.size()));
-}
+void SchedulesDisplayController::clearSorting() {
+    // Reset to original order by index
+    std::sort(m_schedules.begin(), m_schedules.end(), [](const InformativeSchedule& a, const InformativeSchedule& b) {
+        return a.index < b.index;
+    });
 
-void SchedulesDisplayController::applyFiltersToSchedules(const ScheduleFilter::FilterCriteria& criteria) {
-    m_filteredSchedules = m_scheduleFilter->filterSchedules(m_originalSchedules, criteria);
-}
+    m_currentSortField.clear();
+    m_currentSortAscending = true;
 
-ScheduleFilter::FilterCriteria SchedulesDisplayController::convertQVariantToFilterCriteria(const QVariantMap& filterData) {
-    ScheduleFilter::FilterCriteria criteria;
-
-    // Days to Study Filter (serves as Active Days filter)
-    if (filterData.contains("daysToStudy")) {
-        QVariantMap daysToStudyData = filterData["daysToStudy"].toMap();
-        criteria.daysToStudyEnabled = daysToStudyData["enabled"].toBool();
-        if (criteria.daysToStudyEnabled) {
-            criteria.daysToStudyValue = daysToStudyData["value"].toInt();
-        }
-    }
-
-    // Total Gaps Filter
-    if (filterData.contains("totalGaps")) {
-        QVariantMap totalGapsData = filterData["totalGaps"].toMap();
-        criteria.totalGapsEnabled = totalGapsData["enabled"].toBool();
-        if (criteria.totalGapsEnabled) {
-            criteria.totalGapsValue = totalGapsData["value"].toInt();
-        }
-    }
-
-    // Max Gaps Time Filter
-    if (filterData.contains("maxGapsTime")) {
-        QVariantMap maxGapsTimeData = filterData["maxGapsTime"].toMap();
-        criteria.maxGapsTimeEnabled = maxGapsTimeData["enabled"].toBool();
-        if (criteria.maxGapsTimeEnabled) {
-            criteria.maxGapsTimeValue = maxGapsTimeData["value"].toInt();
-        }
-    }
-
-    // Average Day Start Filter
-    if (filterData.contains("avgDayStart")) {
-        QVariantMap avgDayStartData = filterData["avgDayStart"].toMap();
-        criteria.avgDayStartEnabled = avgDayStartData["enabled"].toBool();
-        if (criteria.avgDayStartEnabled) {
-            criteria.avgDayStartHour = avgDayStartData["hour"].toInt();
-            criteria.avgDayStartMinute = avgDayStartData["minute"].toInt();
-        }
-    }
-
-    // Average Day End Filter
-    if (filterData.contains("avgDayEnd")) {
-        QVariantMap avgDayEndData = filterData["avgDayEnd"].toMap();
-        criteria.avgDayEndEnabled = avgDayEndData["enabled"].toBool();
-        if (criteria.avgDayEndEnabled) {
-            criteria.avgDayEndHour = avgDayEndData["hour"].toInt();
-            criteria.avgDayEndMinute = avgDayEndData["minute"].toInt();
-        }
-    }
-
-    return criteria;
+    m_scheduleModel->loadSchedules(m_schedules);
+    emit schedulesSorted(static_cast<int>(m_schedules.size()));
 }
 
 void SchedulesDisplayController::saveScheduleAsCSV() {
     int currentIndex = m_scheduleModel->currentScheduleIndex();
-    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {
+    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_schedules.size())) {
         QString fileName = QFileDialog::getSaveFileName(nullptr,
                                                         "Save Schedule as CSV",
                                                         QDir::homePath() + "/" + generateFilename("",
@@ -106,15 +117,15 @@ void SchedulesDisplayController::saveScheduleAsCSV() {
                                                         "CSV Files (*.csv)");
         if (!fileName.isEmpty()) {
             modelConnection->executeOperation(ModelOperation::SAVE_SCHEDULE,
-                                              &m_filteredSchedules[currentIndex], fileName.toLocal8Bit().constData());
+                                              &m_schedules[currentIndex], fileName.toLocal8Bit().constData());
         }
     }
 }
 
 void SchedulesDisplayController::printScheduleDirectly() {
     int currentIndex = m_scheduleModel->currentScheduleIndex();
-    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_filteredSchedules.size())) {
-        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_filteredSchedules[currentIndex], "");
+    if (currentIndex >= 0 && currentIndex < static_cast<int>(m_schedules.size())) {
+        modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &m_schedules[currentIndex], "");
     }
 }
 

@@ -312,7 +312,7 @@ Page {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: filterMenu.open()
+                    onClicked: sortMenu.open()
                 }
             }
         }
@@ -342,14 +342,13 @@ Page {
         }
     }
 
-    // filter menu link
-    FilterMenu {
-        id: filterMenu
+    // Sorting menu link
+    SortMenu {
+        id: sortMenu
         parent: Overlay.overlay
-
-        onFiltersApplied: function(filterData) {
+        onSortingApplied: function(sortingData) {
             if (controller) {
-                controller.applyFilters(filterData)
+                controller.applySorting(sortingData)
             }
         }
     }
