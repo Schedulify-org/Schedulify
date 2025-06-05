@@ -132,6 +132,251 @@ Page {
                 }
             }
 
+            RowLayout {
+                id: topButtonsRow
+                width: parent.width
+                Layout.fillWidth: true
+                spacing: 10
+                Layout.alignment: Qt.AlignHCenter
+
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: Math.max(navigationRow.implicitWidth + 32, 280)
+                    Layout.preferredHeight: 56
+
+                    color: "#f8fafc"
+                    radius: 12
+                    border.color: "#e2e8f0"
+                    border.width: 1
+
+                    RowLayout {
+                        id: navigationRow
+                        anchors.centerIn: parent
+                        spacing: 12
+
+                        Rectangle {
+                            id: prevButton
+                            radius: 6
+                            width: 36
+                            height: 36
+
+                            property bool isPrevEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoPrevious : false
+
+                            color: {
+                                if (!isPrevEnabled) return "#e5e7eb";
+                                return prevMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                            }
+
+                            opacity: isPrevEnabled ? 1.0 : 0.5
+
+                            Text {
+                                text: "←"
+                                anchors.centerIn: parent
+                                color: parent.isPrevEnabled ? "white" : "#9ca3af"
+                                font.pixelSize: 16
+                                font.bold: true
+                            }
+
+                            MouseArea {
+                                id: prevMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: parent.isPrevEnabled
+                                cursorShape: parent.isPrevEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isPrevEnabled
+                                onClicked: {
+                                    if (scheduleModel) {
+                                        scheduleModel.previousSchedule()
+                                    }
+                                }
+                            }
+                        }
+
+                        Label {
+                            text: "Schedule"
+                            font.pixelSize: 15
+                            font.weight: Font.Medium
+                            color: "#475569"
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: Math.max(inputField.contentWidth + 24, 60)
+                            Layout.preferredHeight: 40
+
+                            color: "#ffffff"
+                            radius: 8
+                            border.color: {
+                                if (inputField.activeFocus) return "#3b82f6";
+                                if (!inputField.isValidInput && inputField.text !== "") return "#ef4444";
+                                return "#cbd5e1";
+                            }
+                            border.width: inputField.activeFocus ? 2 : 1
+
+                            TextField {
+                                id: inputField
+                                anchors.fill: parent
+                                anchors.margins: inputField.activeFocus ? 2 : 1
+
+                                placeholderText: currentIndex + 1
+                                placeholderTextColor: "#94a3b8"
+
+                                background: Rectangle {
+                                    color: "transparent"
+                                    radius: 6
+                                }
+
+                                color: "#1f2937"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                horizontalAlignment: TextInput.AlignHCenter
+
+                                leftPadding: 12
+                                rightPadding: 12
+                                topPadding: 8
+                                bottomPadding: 8
+
+                                selectByMouse: true
+
+                                property bool isValidInput: true
+
+                                onTextChanged: {
+                                    var userInput = parseInt(text)
+                                    isValidInput = text === "" || (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules)
+                                }
+
+                                onEditingFinished: {
+                                    var userInput = parseInt(inputField.text)
+                                    if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
+                                        scheduleModel.jumpToSchedule(userInput)
+                                    }
+                                    inputField.text = ""
+                                    inputField.focus = false
+                                }
+
+                                Keys.onReturnPressed: {
+                                    var userInput = parseInt(inputField.text)
+                                    if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
+                                        scheduleModel.jumpToSchedule(userInput)
+                                    }
+                                    inputField.text = ""
+                                    inputField.focus = false
+                                }
+
+                                Keys.onEscapePressed: {
+                                    text = ""
+                                    focus = false
+                                }
+                            }
+
+                            // Error tooltip for invalid input
+                            ToolTip {
+                                id: errorTooltip
+                                text: `Please enter a number between 1 and ${totalSchedules}`
+                                visible: !inputField.isValidInput && inputField.text !== "" && inputField.activeFocus
+                                delay: 0
+                                timeout: 0
+
+                                background: Rectangle {
+                                    color: "#ef4444"
+                                    radius: 4
+                                    border.color: "#dc2626"
+                                }
+
+                                contentItem: Text {
+                                    text: errorTooltip.text
+                                    color: "white"
+                                    font.pixelSize: 11
+                                }
+                            }
+                        }
+
+                        Label {
+                            text: "of"
+                            font.pixelSize: 15
+                            font.weight: Font.Medium
+                            color: "#475569"
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: totalLabel.implicitWidth + 16
+                            Layout.preferredHeight: 32
+
+                            color: totalSchedules > 0 ? "#dbeafe" : "#f1f5f9"
+                            radius: 6
+
+                            Label {
+                                id: totalLabel
+                                anchors.centerIn: parent
+                                text: totalSchedules > 0 ? totalSchedules : "No available schedules"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                            }
+                        }
+
+                        Rectangle {
+                            id: nextButton
+                            radius: 6
+                            width: 36
+                            height: 36
+
+                            property bool isNextEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoNext : false
+
+                            color: {
+                                if (!isNextEnabled) return "#e5e7eb";
+                                return nextMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                            }
+
+                            opacity: isNextEnabled ? 1.0 : 0.5
+
+                            Text {
+                                text: "→"
+                                anchors.centerIn: parent
+                                color: parent.isNextEnabled ? "white" : "#9ca3af"
+                                font.pixelSize: 16
+                                font.bold: true
+                            }
+
+                            MouseArea {
+                                id: nextMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: parent.isNextEnabled
+                                cursorShape: parent.isNextEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isNextEnabled
+                                onClicked: {
+                                    if (scheduleModel) {
+                                        scheduleModel.nextSchedule()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Invisible MouseArea to detect clicks outside the input field
+                MouseArea {
+                    id: outsideClickArea
+                    anchors.fill: parent
+                    z: -1
+                    propagateComposedEvents: true
+                    onPressed: {
+                        // Check if the input field has focus and if the click is outside the input area
+                        if (inputField.activeFocus) {
+                            var inputRect = inputField.parent
+                            var globalInputPos = inputRect.mapToItem(outsideClickArea, 0, 0)
+
+                            if (mouse.x < globalInputPos.x ||
+                                mouse.x > globalInputPos.x + inputRect.width ||
+                                mouse.y < globalInputPos.y ||
+                                mouse.y > globalInputPos.y + inputRect.height) {
+                                inputField.focus = false
+                                inputField.text = ""
+                            }
+                        }
+                        mouse.accepted = false
+                    }
+                }
+            }
+
             Button {
                 id: logButtonC
                 anchors {
@@ -394,115 +639,7 @@ Page {
             anchors.margins: 10
 
             // table's navigation and info
-            RowLayout {
-                id: topButtonsRow
-                width: parent.width
-                Layout.fillWidth: true
-                spacing: 10
 
-                Rectangle {
-                    id: prevButton
-                    radius: 4
-
-                    property bool isPrevEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoPrevious : false
-
-                    color: {
-                        if (!isPrevEnabled) return "#e5e7eb";
-                        return prevMouseArea.containsMouse ? "#35455c" : "#1f2937";
-                    }
-
-                    implicitWidth: 50
-                    implicitHeight: 40
-                    Layout.alignment: Qt.AlignLeft
-                    opacity: isPrevEnabled ? 1.0 : 0.5
-
-                    Text {
-                        text: "←"
-                        anchors.centerIn: parent
-                        color: parent.isPrevEnabled ? "white" : "#9ca3af"
-                        font.pixelSize: 20
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: prevMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: parent.isPrevEnabled
-                        cursorShape: parent.isPrevEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                        enabled: parent.isPrevEnabled
-                        onClicked: {
-                            if (scheduleModel) {
-                                scheduleModel.previousSchedule()
-                            }
-                        }
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                ColumnLayout{
-                    Layout.alignment: Qt.AlignHCenter
-
-                    Label {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: "Schedule Options"
-                        font.pixelSize: 20
-                        color: "#3a3e45"
-                    }
-
-                    Label {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: totalSchedules > 0 ?
-                            "Schedule " + (currentIndex + 1) + " of " + totalSchedules : "No available schedules"
-                        font.pixelSize: 15
-                        color: "#3a3e45"
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                Rectangle {
-                    id: nextButton
-                    radius: 4
-
-                    property bool isNextEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoNext : false
-
-                    color: {
-                        if (!isNextEnabled) return "#e5e7eb";
-                        return nextMouseArea.containsMouse ? "#35455c" : "#1f2937";
-                    }
-
-                    implicitWidth: 50
-                    implicitHeight: 40
-                    Layout.alignment: Qt.AlignRight
-                    opacity: isNextEnabled ? 1.0 : 0.5
-
-                    Text {
-                        text: "→"
-                        anchors.centerIn: parent
-                        color: parent.isNextEnabled ? "white" : "#9ca3af"
-                        font.pixelSize: 20
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: nextMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: parent.isNextEnabled
-                        cursorShape: parent.isNextEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                        enabled: parent.isNextEnabled
-                        onClicked: {
-                            if (scheduleModel) {
-                                scheduleModel.nextSchedule()
-                            }
-                        }
-                    }
-                }
-            }
 
             Item {
                 Layout.fillWidth: true

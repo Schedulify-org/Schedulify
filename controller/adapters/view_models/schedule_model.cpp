@@ -64,3 +64,17 @@ bool ScheduleModel::canGoNext() const {
 bool ScheduleModel::canGoPrevious() const {
     return m_currentScheduleIndex > 0 && !m_schedules.empty();
 }
+void ScheduleModel::jumpToSchedule(int userScheduleNumber) {
+    // Convert from 1-based user input to 0-based array index
+    int index = userScheduleNumber - 1;
+
+    if (canJumpToSchedule(index)) {
+        setCurrentScheduleIndex(index);
+    }
+    // Remove the emit here - setCurrentScheduleIndex already emits it
+}
+
+bool ScheduleModel::canJumpToSchedule(int index) {
+    // Fix: include both bounds checking
+    return index >= 0 && index < static_cast<int>(m_schedules.size());
+}
