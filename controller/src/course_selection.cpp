@@ -59,7 +59,6 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 
         cleanupValidatorThread();
 
-        // Set validation in progress FIRST, before clearing errors
         setValidationInProgress(true);
 
         allCourses = courses;
@@ -79,11 +78,10 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         blockTimes.clear();
         updateBlockTimesModel();
 
-        // Clear validation errors AFTER setting validation in progress
         setValidationErrors(QStringList());
 
         int timeoutMs = std::min(VALIDATION_TIMEOUT_MS,
-                                 static_cast<int>(courses.size() * 100 + 10000)); // 100ms per course + 10s base
+                                 static_cast<int>(courses.size() * 100 + 10000));
 
         QTimer::singleShot(100, this, [this, courses, timeoutMs]() {
             validateCourses(courses, timeoutMs);
@@ -647,6 +645,21 @@ void CourseSelectionController::createNewCourse(const QString& courseName, const
     }
 
     Logger::get().logInfo("New course created: " + courseName.toStdString() + ", "  + courseId.toStdString());
+
+    cleanupValidatorThread();
+
+    setValidationInProgress(true);
+
+    setValidationErrors(QStringList());
+
+    vector <Course> coursesToValidate = allCourses;
+
+    int timeoutMs = std::min(VALIDATION_TIMEOUT_MS,
+                             static_cast<int>(coursesToValidate.size() * 100 + 10000)); // 100ms per course + 10s base
+
+    QTimer::singleShot(100, this, [this, coursesToValidate, timeoutMs]() {
+        validateCourses(coursesToValidate, timeoutMs);
+    });
 }
 
 Course CourseSelectionController::createCourseFromData(const QString& courseName, const QString& courseId,

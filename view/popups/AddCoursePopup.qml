@@ -1102,7 +1102,7 @@ Popup {
                             return;
                         }
 
-                        // Collect session groups data
+                        // Collect session groups data and validate building/room fields
                         var sessionGroups = [];
                         var hasLecture = false;
 
@@ -1175,18 +1175,29 @@ Popup {
 
                             var sessionsModel = sessionsRepeater.model;
 
-                            // Collect sessions for this group
+                            // Collect sessions for this group and validate building/room
                             var groupSessions = [];
                             for (var sessionIndex = 0; sessionIndex < sessionsModel.count; sessionIndex++) {
                                 var sessionData = sessionsModel.get(sessionIndex);
+
+                                // Validate building and room fields
+                                if (!sessionData.building || sessionData.building.trim() === "") {
+                                    showError("All sessions must have a building specified (Group " + (groupIndex + 1) + ", Session " + (sessionIndex + 1) + ")")
+                                    return;
+                                }
+
+                                if (!sessionData.room || sessionData.room.trim() === "") {
+                                    showError("All sessions must have a room specified (Group " + (groupIndex + 1) + ", Session " + (sessionIndex + 1) + ")")
+                                    return;
+                                }
 
                                 // Format the session data properly
                                 var session = {
                                     day: sessionData.day,
                                     startTime: String(sessionData.startHour).padStart(2, '0') + ":00",
                                     endTime: String(sessionData.endHour).padStart(2, '0') + ":00",
-                                    building: sessionData.building || "",
-                                    room: sessionData.room || ""
+                                    building: sessionData.building.trim(),
+                                    room: sessionData.room.trim()
                                 };
 
                                 groupSessions.push(session);
