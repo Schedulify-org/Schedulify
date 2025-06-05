@@ -142,7 +142,7 @@ Page {
                 // Page Title
                 Label {
                     id: titleLabel
-                    text: "Course Selection & Schedule Preferences"
+                    text: "Course Selection"
                     font.pixelSize: 20
                     color: "#1f2937"
                     anchors {
@@ -287,12 +287,13 @@ Page {
                 leftMargin: 16
                 rightMargin: 16
             }
-            height: validationExpanded ? validationContent.implicitHeight + 32 : 60
+            // Fixed height calculation: collapsed = 60, expanded = status row (44) + spacing (12) + fixed message area (120) + margins (32)
+            height: validationExpanded ? 208 : 60
             radius: 8
             color: {
-                if (validationInProgress) return "#fef3c7"
-                if (validationErrors.length === 0) return "#d1fae5"
-                return "#fed7d7"
+                if (validationInProgress) return "#fff6dc"
+                if (validationErrors.length === 0) return "#e1fff1"
+                return "#ffecec"
             }
             border.color: {
                 if (validationInProgress) return "#f59e0b"
@@ -398,14 +399,15 @@ Page {
                     }
                 }
 
-                // Error Messages (only visible when expanded)
+                // Error Messages (only visible when expanded) - Fixed height with scrolling
                 Rectangle {
                     visible: validationExpanded && validationErrors && validationErrors.length > 0
                     anchors {
                         left: parent.left
                         right: parent.right
                     }
-                    height: visible ? errorsList.contentHeight + 16 : 0
+                    // Fixed height to accommodate approximately 2 rows of messages
+                    height: visible ? 120 : 0
                     color: "#fef2f2"
                     radius: 6
                     border.color: "#fca5a5"
@@ -419,16 +421,18 @@ Page {
                         }
                         clip: true
                         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
                         Column {
+                            id: messagesColumn
                             width: errorsList.width
                             spacing: 8
 
                             Repeater {
                                 model: validationErrors
                                 delegate: Rectangle {
-                                    width: parent.width
-                                    height: errorText.contentHeight + 16
+                                    width: messagesColumn.width
+                                    height: Math.max(40, errorText.contentHeight + 16) // Minimum height for consistency
                                     color: {
                                         var msg = modelData;
                                         if (msg.includes("[Parser Warning]")) return "#fffbeb"
@@ -451,8 +455,9 @@ Page {
                                         anchors {
                                             left: parent.left
                                             right: parent.right
-                                            top: parent.top
-                                            margins: 8
+                                            verticalCenter: parent.verticalCenter
+                                            leftMargin: 8
+                                            rightMargin: 8
                                         }
                                         text: {
                                             // Clean up the message by removing prefixes for display
@@ -473,6 +478,8 @@ Page {
                                             return "#991b1b"
                                         }
                                         wrapMode: Text.WordWrap
+                                        maximumLineCount: 2 // Limit to 2 lines per message for consistency
+                                        elide: Text.ElideRight
                                     }
                                 }
                             }
