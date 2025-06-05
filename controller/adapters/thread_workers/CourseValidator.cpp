@@ -18,8 +18,6 @@ void CourseValidator::validateCourses() {
     locker.unlock(); // Release lock for the actual work
 
     try {
-        Logger::get().logInfo("Starting validation of " + std::to_string(courses.size()) + " courses");
-
         // Emit initial progress
         emit validationProgress(0);
 

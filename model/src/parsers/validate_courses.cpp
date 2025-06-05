@@ -18,22 +18,14 @@ vector<string> validate_courses(vector<Course> courses) {
 
     errors.reserve(50);
 
-    Logger::get().logInfo("Starting optimized validation of " + to_string(courses.size()) + " courses");
-
     size_t processed = 0;
     for (const auto& course : courses) {
-        Logger::get().logInfo("Processing course: " + course.raw_id);
 
         processSessionGroups(course.Lectures, course.raw_id, schedule, errors);
         processSessionGroups(course.labs, course.raw_id, schedule, errors);
         processSessionGroups(course.Tirgulim, course.raw_id, schedule, errors);
 
         processed++;
-        if (processed % 50 == 0) {
-            Logger::get().logInfo("Processed " + to_string(processed) + "/" +
-                                  to_string(courses.size()) + " courses. Found " +
-                                  to_string(errors.size()) + " conflicts so far.");
-        }
     }
 
     Logger::get().logInfo("Validation completed. Processed " + to_string(processed) +

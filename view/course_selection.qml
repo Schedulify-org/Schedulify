@@ -8,11 +8,27 @@ import "."
 Page {
     id: courseListScreen
 
+    // Add properties for validation state
+    property bool validationInProgress: courseSelectionController ? courseSelectionController.validationInProgress : false
+    property var validationErrors: courseSelectionController ? courseSelectionController.validationErrors : []
+    property bool validationExpanded: false
+
     Connections {
         target: courseSelectionController
 
         function onErrorMessage(message) {
             showErrorMessage(message);
+        }
+
+        function onValidationStateChanged() {
+            // Update local properties when validation state changes
+            validationInProgress = courseSelectionController.validationInProgress;
+            validationErrors = courseSelectionController.validationErrors;
+
+            // Auto-collapse when validation starts
+            if (validationInProgress) {
+                validationExpanded = false;
+            }
         }
     }
 
@@ -221,11 +237,179 @@ Page {
             }
         }
 
+        // Validation Status Row
+        Rectangle {
+            id: validationStatusRow
+            anchors {
+                top: header.bottom
+                topMargin: 16
+                left: parent.left
+                right: parent.right
+                leftMargin: 16
+                rightMargin: 16
+            }
+            height: validationExpanded ? validationContent.implicitHeight + 32 : 60
+            radius: 8
+            color: {
+                if (validationInProgress) return "#fef3c7"
+                if (validationErrors.length === 0) return "#d1fae5"
+                return "#fed7d7"
+            }
+            border.color: {
+                if (validationInProgress) return "#f59e0b"
+                if (validationErrors.length === 0) return "#10b981"
+                return "#f56565"
+            }
+            border.width: 1
+
+            Behavior on height {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Column {
+                id: validationContent
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: parent.top
+                    margins: 16
+                }
+                spacing: 12
+
+                // Status Row
+                Row {
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                    }
+                    height: 28
+                    spacing: 12
+
+                    // Status Icon
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            if (validationInProgress) return "⏳"
+                            if (validationErrors.length === 0) return "✅"
+                            return "⚠️"
+                        }
+                        font.pixelSize: 20
+                    }
+
+                    // Status Text
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            if (validationInProgress) return "Scanning courses..."
+                            if (validationErrors.length === 0) return "All courses parsed correctly"
+                            return "Your courses have some issues (" + validationErrors.length + " warnings)"
+                        }
+                        font.pixelSize: 16
+                        font.bold: true
+                        color: {
+                            if (validationInProgress) return "#92400e"
+                            if (validationErrors.length === 0) return "#065f46"
+                            return "#b91c1c"
+                        }
+                    }
+
+                    // Expand/Collapse Button (only show when there are errors)
+                    Button {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: validationErrors.length > 0
+                        width: 24
+                        height: 24
+                        background: Rectangle {
+                            color: "transparent"
+                        }
+                        contentItem: Text {
+                            text: validationExpanded ? "▼" : "▶"
+                            font.pixelSize: 12
+                            color: "#b91c1c"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: validationExpanded = !validationExpanded
+                    }
+                }
+
+                // Error Messages (only visible when expanded)
+                Rectangle {
+                    visible: validationExpanded && validationErrors.length > 0
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                    }
+                    height: visible ? errorsList.contentHeight + 16 : 0
+                    color: "#fef2f2"
+                    radius: 6
+                    border.color: "#fca5a5"
+                    border.width: 1
+
+                    ScrollView {
+                        id: errorsList
+                        anchors {
+                            fill: parent
+                            margins: 8
+                        }
+                        clip: true
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                        Column {
+                            width: errorsList.width
+                            spacing: 8
+
+                            Repeater {
+                                model: validationErrors
+                                delegate: Rectangle {
+                                    width: parent.width
+                                    height: errorText.contentHeight + 16
+                                    color: "#ffffff"
+                                    radius: 4
+                                    border.color: "#f87171"
+                                    border.width: 1
+
+                                    Text {
+                                        id: errorText
+                                        anchors {
+                                            left: parent.left
+                                            right: parent.right
+                                            top: parent.top
+                                            margins: 8
+                                        }
+                                        text: modelData
+                                        font.pixelSize: 12
+                                        color: "#991b1b"
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: validationErrors.length > 0
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    if (validationErrors.length > 0) {
+                        validationExpanded = !validationExpanded
+                    }
+                }
+            }
+        }
+
         // Main content
         Item {
             id: mainContent
             anchors {
-                top: header.bottom
+                top: validationStatusRow.bottom
+                topMargin: 16
                 left: parent.left
                 right: parent.right
                 bottom: footer.top

@@ -37,6 +37,8 @@ Q_OBJECT
     Q_PROPERTY(CourseModel* selectedCoursesModel READ selectedCoursesModel CONSTANT)
     Q_PROPERTY(CourseModel* filteredCourseModel READ filteredCourseModel CONSTANT)
     Q_PROPERTY(CourseModel* blocksModel READ blocksModel CONSTANT)
+    Q_PROPERTY(bool validationInProgress READ validationInProgress NOTIFY validationStateChanged)
+    Q_PROPERTY(QStringList validationErrors READ validationErrors NOTIFY validationStateChanged)
 
 public:
     explicit CourseSelectionController(QObject *parent = nullptr);
@@ -46,6 +48,8 @@ public:
     [[nodiscard]] CourseModel* selectedCoursesModel() const { return m_selectedCoursesModel; }
     [[nodiscard]] CourseModel* filteredCourseModel() const { return m_filteredCourseModel; }
     [[nodiscard]] CourseModel* blocksModel() const { return m_blocksModel; }
+    [[nodiscard]] bool validationInProgress() const { return m_validationInProgress; }
+    [[nodiscard]] QStringList validationErrors() const { return m_validationErrors; }
 
     void initiateCoursesData(const vector<Course>& courses);
 
@@ -69,6 +73,7 @@ signals:
     void selectionChanged();
     void blockTimesChanged();
     void errorMessage(const QString &message);
+    void validationStateChanged();
 
 private:
     CourseModel* m_courseModel;
@@ -77,6 +82,8 @@ private:
     CourseModel* m_blocksModel;
     QTimer* validationTimeoutTimer = nullptr;
     bool validationCompleted = false;
+    bool m_validationInProgress = false;
+    QStringList m_validationErrors;
     vector<Course> allCourses;
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
@@ -97,6 +104,8 @@ private:
     void setupValidationTimeout();
     void cleanupValidation();
     void cleanupValidatorThread();
+    void setValidationInProgress(bool inProgress);
+    void setValidationErrors(const QStringList& errors);
 };
 
 #endif //COURSE_SELECTION_H
