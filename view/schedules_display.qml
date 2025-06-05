@@ -425,15 +425,65 @@ Page {
                         font.pixelSize: 20
                         color: "#3a3e45"
                     }
-
-                    Label {
+                    RowLayout{
                         Layout.alignment: Qt.AlignHCenter
-                        text: totalSchedules > 0 ?
-                            "Schedule " + (currentIndex + 1) + " of " + totalSchedules : "No available schedules"
-                        font.pixelSize: 15
-                        color: "#3a3e45"
-                    }
-                }
+
+                        Label{
+                            text: "Schedule "
+                            font.pixelSize: 15
+                            color: "#3a3e45"
+                        }
+
+                        TextField {
+                            id: inputField
+                            placeholderText: currentIndex + 1
+                            placeholderTextColor: "#3a3e45"
+
+                            background: Rectangle {
+                                color: "transparent"
+                                radius: 6
+                            }
+
+                            color: "#1f2937"
+                            font.pixelSize: 14
+                            leftPadding: 12
+                            rightPadding: 12
+                            topPadding: 8
+                            bottomPadding: 8
+
+                            onEditingFinished: {
+                                var userInput = parseInt(inputField.text)
+                                if (!isNaN(userInput) && userInput > 0) {
+                                    scheduleModel.jumpToSchedule(userInput)
+                                }
+                                inputField.text = ""           // Clear the text
+                                inputField.focus = false       // Remove focus
+                            }
+
+                            // Alternative: Handle Enter key specifically
+                            Keys.onReturnPressed: {
+                                var userInput = parseInt(inputField.text)
+                                if (!isNaN(userInput) && userInput > 0) {
+                                    scheduleModel.jumpToSchedule(userInput)
+                                }
+                                inputField.text = ""
+                                inputField.focus = false
+                            }
+                        }
+
+                        Label{
+                            text: "of "
+                            font.pixelSize: 15
+                            color: "#3a3e45"
+                        }
+
+                        Label{
+                            text: totalSchedules > 0 ?
+                                totalSchedules : "No available schedules"
+                            font.pixelSize: 15
+                            color: "#3a3e45"
+                        }
+                    }}
 
                 Item {
                     Layout.fillWidth: true

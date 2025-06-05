@@ -12,6 +12,7 @@ Q_OBJECT
     Q_PROPERTY(int scheduleCount READ scheduleCount NOTIFY scheduleCountChanged)
     Q_PROPERTY(bool canGoNext READ canGoNext NOTIFY currentScheduleIndexChanged)
     Q_PROPERTY(bool canGoPrevious READ canGoPrevious NOTIFY currentScheduleIndexChanged)
+    // Q_PROPERTY(bool canJumpToSchedule READ canJumpToSchedule NOTIFY currentScheduleIndexChanged)
 
 public:
     explicit ScheduleModel(QObject *parent = nullptr);
@@ -32,6 +33,8 @@ public:
     Q_INVOKABLE void previousSchedule();
     Q_INVOKABLE bool canGoNext() const;
     Q_INVOKABLE bool canGoPrevious() const;
+    Q_INVOKABLE bool canJumpToSchedule(int index) ;
+    Q_INVOKABLE void jumpToSchedule(int index) ;
 
 signals:
     void currentScheduleIndexChanged();
