@@ -31,6 +31,18 @@ Page {
         }
     }
 
+    property var logWindow: null
+
+    Component.onDestruction: {
+        if (logWindow) {
+            logWindow.destroy(); // Explicitly destroy
+            logWindow = null;
+            if (logDisplayController) {
+                logDisplayController.setLogWindowOpen(false);
+            }
+        }
+    }
+
     function showErrorMessage(msg) {
         errorDialogText = msg;
         errorDialog.open();
@@ -117,16 +129,30 @@ Page {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (!logDisplayController.isLogWindowOpen) {
+                        // Check if we already have a log window open
+                        if (logWindow && logWindow.visible) {
+                            // Bring existing window to front
+                            logWindow.raise();
+                            logWindow.requestActivate();
+                            return;
+                        }
+
+                        // Create new log window if none exists or if controller says none is open
+                        if (!logDisplayController.isLogWindowOpen || !logWindow) {
                             var component = Qt.createComponent("qrc:/log_display.qml");
                             if (component.status === Component.Ready) {
                                 logDisplayController.setLogWindowOpen(true);
-                                var logWindow = component.createObject(inputScreen, {
-                                    "onClosing": function(close) {
+                                logWindow = component.createObject(inputScreen);
+
+                                if (logWindow) {
+                                    // Connect closing signal properly
+                                    logWindow.closing.connect(function(close) {
                                         logDisplayController.setLogWindowOpen(false);
-                                    }
-                                });
-                                logWindow.show();
+                                        logWindow = null; // Clear our reference
+                                    });
+
+                                    logWindow.show();
+                                }
                             } else {
                                 console.error("Error creating log window:", component.errorString());
                             }

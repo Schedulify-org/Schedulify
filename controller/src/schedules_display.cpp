@@ -11,7 +11,7 @@ SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
 }
 
 SchedulesDisplayController::~SchedulesDisplayController() {
-    delete modelConnection;
+    modelConnection = nullptr;
 }
 
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {

@@ -13,13 +13,11 @@ Page {
     property var validationErrors: courseSelectionController ? courseSelectionController.validationErrors : []
     property bool validationExpanded: false
 
-    // Add property to track our log window
     property var logWindow: null
 
-    // Clean up log window when this page is destroyed
     Component.onDestruction: {
         if (logWindow) {
-            logWindow.close();
+            logWindow.destroy(); // Explicitly destroy
             logWindow = null;
             if (logDisplayController) {
                 logDisplayController.setLogWindowOpen(false);
@@ -229,14 +227,15 @@ Page {
                                 var component = Qt.createComponent("qrc:/log_display.qml");
                                 if (component.status === Component.Ready) {
                                     logDisplayController.setLogWindowOpen(true);
-                                    logWindow = component.createObject(null, { // Create as independent window
-                                        "onClosing": function(close) {
-                                            logDisplayController.setLogWindowOpen(false);
-                                            logWindow = null; // Clear our reference
-                                        }
-                                    });
+                                    logWindow = component.createObject(courseListScreen);
 
                                     if (logWindow) {
+                                        // Connect closing signal properly
+                                        logWindow.closing.connect(function(close) {
+                                            logDisplayController.setLogWindowOpen(false);
+                                            logWindow = null; // Clear our reference
+                                        });
+
                                         logWindow.show();
                                     }
                                 } else {

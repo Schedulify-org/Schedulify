@@ -30,7 +30,6 @@ CourseSelectionController::~CourseSelectionController() {
     }
 
     if (modelConnection) {
-        delete modelConnection;
         modelConnection = nullptr;
     }
 }
