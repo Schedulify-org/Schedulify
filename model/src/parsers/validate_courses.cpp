@@ -1,188 +1,131 @@
 #include "validate_courses.h"
+#include <algorithm>
+#include <sstream>
+
+OptimizedSlot::OptimizedSlot(const string& start, const string& end, const string& id)
+        : start_time(start), end_time(end), course_id(id) {
+    start_minutes = toMinutes(start);
+    end_minutes = toMinutes(end);
+}
+
+bool OptimizedSlot::overlapsWith(const OptimizedSlot& other) const {
+    return (start_minutes < other.end_minutes && other.start_minutes < end_minutes);
+}
 
 vector<string> validate_courses(vector<Course> courses) {
-    vector<Building> Buildings = {};
-	vector<string> errors;
-    for (auto course : courses) {
-        Logger::get().logInfo("start working on course " + course.raw_id);
+    BuildingSchedule schedule;
+    vector<string> errors;
 
-        // Process Lectures
-        for (auto group : course.Lectures) {
-            for (auto session : group.sessions) {
-                // This will now work with your operator==
-                auto buildingIt = std::find(Buildings.begin(), Buildings.end(), session.building_number);
+    errors.reserve(50);
 
-                if (buildingIt == Buildings.end()) {
-                    // Building doesn't exist, create new one
-                    Slot s = {session.start_time, session.end_time, course.raw_id};
-                    Day_of_week day = {session.day_of_week, {s}}; // Create day with the slot
-                    Room r = {session.room_number, {day}}; // Create room with the day
-                    Building b = {session.building_number, {r}}; // Create building with the room
-                    Buildings.push_back(b);
-                } else {
-                    // Building exists, check if room exists
-                    auto roomIt = std::find(buildingIt->Room.begin(), buildingIt->Room.end(), session.room_number);
+    Logger::get().logInfo("Starting optimized validation of " + to_string(courses.size()) + " courses");
 
-                    if (roomIt == buildingIt->Room.end()) {
-                        // Room doesn't exist in building, create new room
-                        Slot s = {session.start_time, session.end_time, course.raw_id};
-                        Day_of_week day = {session.day_of_week, {s}};
-                        Room r = {session.room_number, {day}};
-                        buildingIt->Room.push_back(r);
-                    } else {
-                        // Room exists, check if day exists
-                        auto dayIt = std::find_if(roomIt->Day_of_week.begin(), roomIt->Day_of_week.end(),
-                            [&session](const Day_of_week& day) {
-                                return day.id == session.day_of_week;
-                            });
+    size_t processed = 0;
+    for (const auto& course : courses) {
+        Logger::get().logInfo("Processing course: " + course.raw_id);
 
-                        if (dayIt == roomIt->Day_of_week.end()) {
-                            // Day doesn't exist, create new day
-                            Slot s = {session.start_time, session.end_time, course.raw_id};
-                            Day_of_week day = {session.day_of_week, {s}};
-                            roomIt->Day_of_week.push_back(day);
-                        } else {
-                            // Day exists, just add the slot
-                            Slot s = {session.start_time, session.end_time, course.raw_id};
-                            for (Slot st : dayIt->Slot) {
-                              if(isOverLapping(s, st)) errors.push_back("Course " + course.raw_id + " has overlapping sessions with " + st.id);
-                            }
-                            dayIt->Slot.push_back(s);
-                        }
-                    }
-                }
-            }
+        processSessionGroups(course.Lectures, course.raw_id, schedule, errors);
+        processSessionGroups(course.labs, course.raw_id, schedule, errors);
+        processSessionGroups(course.Tirgulim, course.raw_id, schedule, errors);
+
+        processed++;
+        if (processed % 50 == 0) {
+            Logger::get().logInfo("Processed " + to_string(processed) + "/" +
+                                  to_string(courses.size()) + " courses. Found " +
+                                  to_string(errors.size()) + " conflicts so far.");
         }
-
-        // Process Labs
-        for (auto group : course.labs) {
-            for (auto session : group.sessions) {
-                auto buildingIt = std::find(Buildings.begin(), Buildings.end(), session.building_number);
-
-                if (buildingIt == Buildings.end()) {
-                    // Building doesn't exist, create new one
-                    Slot s = {session.start_time, session.end_time, course.raw_id};
-                    Day_of_week day = {session.day_of_week, {s}};
-                    Room r = {session.room_number, {day}};
-                    Building b = {session.building_number, {r}};
-                    Buildings.push_back(b);
-                } else {
-                    // Building exists, check if room exists
-                    auto roomIt = std::find(buildingIt->Room.begin(), buildingIt->Room.end(), session.room_number);
-
-                    if (roomIt == buildingIt->Room.end()) {
-                        // Room doesn't exist in building, create new room
-                        Slot s = {session.start_time, session.end_time, course.raw_id};
-                        Day_of_week day = {session.day_of_week, {s}};
-                        Room r = {session.room_number, {day}};
-                        buildingIt->Room.push_back(r);
-                    } else {
-                        // Room exists, check if day exists
-                        auto dayIt = std::find_if(roomIt->Day_of_week.begin(), roomIt->Day_of_week.end(),
-                            [&session](const Day_of_week& day) {
-                                return day.id == session.day_of_week;
-                            });
-
-                        if (dayIt == roomIt->Day_of_week.end()) {
-                            // Day doesn't exist, create new day
-                            Slot s = {session.start_time, session.end_time, course.raw_id};
-                            Day_of_week day = {session.day_of_week, {s}};
-                            roomIt->Day_of_week.push_back(day);
-                        } else {
-                            // Day exists, just add the slot
-
-                            Slot s = {session.start_time, session.end_time, course.raw_id};
-                            for (Slot st : dayIt->Slot) {
-                              if(isOverLapping(s, st)) errors.push_back("Course " + course.raw_id + " has overlapping sessions with " + st.id);
-                            }
-                            dayIt->Slot.push_back(s);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Process Tirgulim
-        for (auto group : course.Tirgulim) {
-            for (auto session : group.sessions) {
-                auto buildingIt = std::find(Buildings.begin(), Buildings.end(), session.building_number);
-
-                if (buildingIt == Buildings.end()) {
-                    // Building doesn't exist, create new one
-                    Slot s = {session.start_time, session.end_time, course.raw_id};
-                    Day_of_week day = {session.day_of_week, {s}};
-                    Room r = {session.room_number, {day}};
-                    Building b = {session.building_number, {r}};
-                    Buildings.push_back(b);
-                } else {
-                    // Building exists, check if room exists
-                    auto roomIt = std::find(buildingIt->Room.begin(), buildingIt->Room.end(), session.room_number);
-
-                    if (roomIt == buildingIt->Room.end()) {
-                        // Room doesn't exist in building, create new room
-                        Slot s = {session.start_time, session.end_time, course.raw_id};
-                        Day_of_week day = {session.day_of_week, {s}};
-                        Room r = {session.room_number, {day}};
-                        buildingIt->Room.push_back(r);
-                    } else {
-                        // Room exists, check if day exists
-                        auto dayIt = std::find_if(roomIt->Day_of_week.begin(), roomIt->Day_of_week.end(),
-                            [&session](const Day_of_week& day) {
-                                return day.id == session.day_of_week;
-                            });
-
-                        if (dayIt == roomIt->Day_of_week.end()) {
-                            // Day doesn't exist, create new day
-                            Slot s = {session.start_time, session.end_time, course.raw_id};
-                            Day_of_week day = {session.day_of_week, {s}};
-                            roomIt->Day_of_week.push_back(day);
-                        } else {
-                            // Day exists, just add the slot
-                            Slot s = {session.start_time, session.end_time, course.raw_id};
-                            for (Slot st : dayIt->Slot) {
-                              if(isOverLapping(s, st)) errors.push_back("Course " + course.raw_id + " has overlapping sessions with " + st.id);
-                            }
-
-                            dayIt->Slot.push_back(s);
-                        }
-                    }
-                }
-            }
-        }
-        Logger::get().logInfo("finish working on course " + course.raw_id);
     }
-    Logger::get().logInfo("finish working validator, continue");
+
+    Logger::get().logInfo("Validation completed. Processed " + to_string(processed) +
+                          " courses with " + to_string(errors.size()) + " conflicts found");
 
     return errors;
 }
 
-int toMinutes(const std::string& t) {
-
-    size_t colonPos = t.find(':'); // Find the position of the colon separator
-
-
-    // Extract hour and minute substrings
-    std::string hourStr = t.substr(0, colonPos);
-    std::string minuteStr = t.substr(colonPos + 1);
-
-
-    // Convert to integers
-    int hours = std::stoi(hourStr);
-    int minutes = std::stoi(minuteStr);
-
-
-    // Convert to total minutes
-    return hours * 60 + minutes;
+void processSessionGroups(const vector<Group>& groups, const string& courseId,
+                          BuildingSchedule& schedule, vector<string>& errors) {
+    for (const auto& group : groups) {
+        for (const auto& session : group.sessions) {
+            processSession(session, courseId, schedule, errors);
+        }
+    }
 }
 
-bool isOverLapping(const Slot &s1, const Slot &s2) {
-    int start1 = toMinutes(s1.start_time);
-    int end1 = toMinutes(s1.end_time);
-    int start2 = toMinutes(s2.start_time);
-    int end2 = toMinutes(s2.end_time);
+void processSession(const Session& session, const string& courseId,
+                    BuildingSchedule& schedule, vector<string>& errors) {
+    if (session.building_number.empty() || session.room_number.empty()) {
+        errors.push_back("Course " + courseId + " has invalid room information");
+        return;
+    }
 
-    // Return true if the time intervals overlap
-    return (start1 < end2 && start2 < end1);
+    if (session.start_time.empty() || session.end_time.empty()) {
+        errors.push_back("Course " + courseId + " has invalid time information");
+        return;
+    }
+
+    RoomKey roomKey = createRoomKey(session.building_number, session.room_number);
+
+    RoomSchedule& roomSchedule = schedule[roomKey];
+    DaySlots& daySlots = roomSchedule[session.day_of_week];
+
+    OptimizedSlot newSlot(session.start_time, session.end_time, courseId);
+
+    if (newSlot.start_minutes == -1 || newSlot.end_minutes == -1) {
+        errors.push_back("Course " + courseId + " has invalid time format");
+        return;
+    }
+
+    if (newSlot.start_minutes >= newSlot.end_minutes) {
+        errors.push_back("Course " + courseId + " has start time after end time");
+        return;
+    }
+
+    for (const auto& existingSlot : daySlots) {
+        if (newSlot.overlapsWith(existingSlot)) {
+            stringstream errorMsg;
+            errorMsg << "Course " << courseId << " overlaps with " << existingSlot.course_id
+                     << " in " << session.building_number << "-" << session.room_number
+                     << " on day " << session.day_of_week
+                     << " (" << session.start_time << "-" << session.end_time
+                     << " vs " << existingSlot.start_time << "-" << existingSlot.end_time << ")";
+            errors.push_back(errorMsg.str());
+        }
+    }
+
+    daySlots.push_back(move(newSlot));
 }
 
+string createRoomKey(const string& building, const string& room) {
+    return building + "_" + room;
+}
 
+int toMinutes(const string& timeStr) {
+    if (timeStr.empty()) {
+        return -1;
+    }
+
+    size_t colonPos = timeStr.find(':');
+    if (colonPos == string::npos) {
+        return -1;
+    }
+
+    try {
+        string hourStr = timeStr.substr(0, colonPos);
+        string minuteStr = timeStr.substr(colonPos + 1);
+
+        int hours = stoi(hourStr);
+        int minutes = stoi(minuteStr);
+
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            return -1;
+        }
+
+        return hours * 60 + minutes;
+    } catch (const exception&) {
+        return -1;
+    }
+}
+
+bool isOverLapping(const OptimizedSlot& s1, const OptimizedSlot& s2) {
+    return s1.overlapsWith(s2);
+}
