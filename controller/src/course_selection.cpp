@@ -649,7 +649,6 @@ void CourseSelectionController::createNewCourse(const QString& courseName, const
     Logger::get().logInfo("New course created: " + courseName.toStdString() + ", "  + courseId.toStdString());
 }
 
-// Add this function to course_selection.cpp
 Course CourseSelectionController::createCourseFromData(const QString& courseName, const QString& courseId,
                                                        const QString& teacherName, const QVariantList& sessionGroups) {
     Course course;
