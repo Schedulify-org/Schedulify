@@ -16,5 +16,8 @@
         <file>icons/ic-save.svg</file>
         <file>icons/ic-cancel.svg</file>
         <file>icons/ic-preference.svg</file>
+        <file>icons/ic-loading.svg</file>
+        <file>icons/ic-valid.svg</file>
+        <file>icons/ic-warning.svg</file>
     </qresource>
 </RCC>

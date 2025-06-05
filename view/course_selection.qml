@@ -8,11 +8,43 @@ import "."
 Page {
     id: courseListScreen
 
+    // Add properties for validation state
+    property bool validationInProgress: courseSelectionController ? courseSelectionController.validationInProgress : false
+    property var validationErrors: courseSelectionController ? courseSelectionController.validationErrors : []
+    property bool validationExpanded: false
+
+    // Add property to track our log window
+    property var logWindow: null
+
+    // Clean up log window when this page is destroyed
+    Component.onDestruction: {
+        if (logWindow) {
+            logWindow.close();
+            logWindow = null;
+            if (logDisplayController) {
+                logDisplayController.setLogWindowOpen(false);
+            }
+        }
+    }
+
     Connections {
         target: courseSelectionController
 
         function onErrorMessage(message) {
             showErrorMessage(message);
+        }
+
+        function onValidationStateChanged() {
+            // Update local properties when validation state changes
+            if (courseSelectionController) {
+                validationInProgress = courseSelectionController.validationInProgress;
+                validationErrors = courseSelectionController.validationErrors || [];
+
+                // Auto-collapse when validation starts
+                if (validationInProgress) {
+                    validationExpanded = false;
+                }
+            }
         }
     }
 
@@ -92,7 +124,17 @@ Page {
                         id: coursesBackMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: courseSelectionController.goBack()
+                        onClicked: {
+                            // Clean up log window before navigating back
+                            if (logWindow) {
+                                logWindow.close();
+                                logWindow = null;
+                                if (logDisplayController) {
+                                    logDisplayController.setLogWindowOpen(false);
+                                }
+                            }
+                            courseSelectionController.goBack();
+                        }
                         cursorShape: Qt.PointingHandCursor
                     }
                 }
@@ -100,7 +142,7 @@ Page {
                 // Page Title
                 Label {
                     id: titleLabel
-                    text: "Course Selection & Schedule Preferences"
+                    text: "Course Selection"
                     font.pixelSize: 20
                     color: "#1f2937"
                     anchors {
@@ -165,16 +207,29 @@ Page {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (!logDisplayController.isLogWindowOpen) {
+                            // Check if we already have a log window open
+                            if (logWindow && logWindow.visible) {
+                                // Bring existing window to front
+                                logWindow.raise();
+                                logWindow.requestActivate();
+                                return;
+                            }
+
+                            // Create new log window if none exists or if controller says none is open
+                            if (!logDisplayController.isLogWindowOpen || !logWindow) {
                                 var component = Qt.createComponent("qrc:/log_display.qml");
                                 if (component.status === Component.Ready) {
                                     logDisplayController.setLogWindowOpen(true);
-                                    var logWindow = component.createObject(courseListScreen, {
+                                    logWindow = component.createObject(null, { // Create as independent window
                                         "onClosing": function(close) {
                                             logDisplayController.setLogWindowOpen(false);
+                                            logWindow = null; // Clear our reference
                                         }
                                     });
-                                    logWindow.show();
+
+                                    if (logWindow) {
+                                        logWindow.show();
+                                    }
                                 } else {
                                     console.error("Error creating log window:", component.errorString());
                                 }
@@ -221,11 +276,235 @@ Page {
             }
         }
 
+        // Validation Status Row
+        Rectangle {
+            id: validationStatusRow
+            anchors {
+                top: header.bottom
+                topMargin: 16
+                left: parent.left
+                right: parent.right
+                leftMargin: 16
+                rightMargin: 16
+            }
+            height: validationExpanded ? 208 : 60
+            radius: 8
+            color: {
+                if (validationInProgress) return "#fff6dc"
+                if (validationErrors.length === 0) return "#e1fff1"
+                return "#ffecec"
+            }
+            border.color: {
+                if (validationInProgress) return "#f59e0b"
+                if (validationErrors.length === 0) return "#10b981"
+                return "#f56565"
+            }
+            border.width: 1
+
+            Behavior on height {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            Column {
+                id: validationContent
+                anchors {
+                    left: parent.left
+                    right: parent.right
+                    top: parent.top
+                    margins: 16
+                }
+                spacing: 12
+
+                Row {
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                    }
+                    height: 28
+                    spacing: 12
+
+                    // Status Icon
+                    Image {
+                        id: statusIcon
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 30
+                        height: 30
+                        source: {
+                            if (validationInProgress) return "qrc:/icons/ic-loading.svg"
+                            if (validationErrors.length === 0) return "qrc:/icons/ic-valid.svg"
+                            return "qrc:/icons/ic-warning.svg"
+                        }
+                        sourceSize.width: 30
+                        sourceSize.height: 30
+                    }
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: {
+                            if (validationInProgress) return "Scanning courses..."
+                            if (!validationErrors || validationErrors.length === 0) return "All courses parsed correctly"
+
+                            // Count different types of messages
+                            var parserWarnings = 0;
+                            var parserErrors = 0;
+                            var validationErrorCount = 0;
+
+                            for (var i = 0; i < validationErrors.length; i++) {
+                                var msg = validationErrors[i];
+                                if (msg.includes("[Parser Warning]")) {
+                                    parserWarnings++;
+                                } else if (msg.includes("[Parser Error]")) {
+                                    parserErrors++;
+                                } else if (msg.includes("[Validation]")) {
+                                    validationErrorCount++;
+                                }
+                            }
+
+                            var totalIssues = parserWarnings + parserErrors + validationErrorCount;
+
+                            if (parserErrors > 0 || validationErrorCount > 0) {
+                                return "Found " + totalIssues + " issues in your course file"
+                            } else {
+                                return "Found " + parserWarnings + " warnings in your course file"
+                            }
+                        }
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: {
+                            if (validationInProgress) return "#92400e"
+                            if (!validationErrors || validationErrors.length === 0) return "#065f46"
+                            return "#b91c1c"
+                        }
+                    }
+
+                    Button {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: validationErrors && validationErrors.length > 0
+                        width: 24
+                        height: 24
+                        background: Rectangle {
+                            color: "transparent"
+                        }
+                        contentItem: Text {
+                            text: validationExpanded ? "▼" : "▶"
+                            font.pixelSize: 12
+                            color: "#b91c1c"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: validationExpanded = !validationExpanded
+                    }
+                }
+
+                Rectangle {
+                    visible: validationExpanded && validationErrors && validationErrors.length > 0
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                    }
+                    // Fixed height to accommodate approximately 2 rows of messages
+                    height: visible ? 120 : 0
+                    color: "#fef2f2"
+                    radius: 6
+                    border.color: "#fca5a5"
+                    border.width: 1
+
+                    ScrollView {
+                        id: errorsList
+                        anchors {
+                            fill: parent
+                            margins: 8
+                        }
+                        clip: true
+                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+                        Column {
+                            id: messagesColumn
+                            width: errorsList.width
+                            spacing: 8
+
+                            Repeater {
+                                model: validationErrors
+                                delegate: Rectangle {
+                                    width: messagesColumn.width
+                                    height: Math.max(40, errorText.contentHeight + 16) // Minimum height for consistency
+                                    color: {
+                                        var msg = modelData;
+                                        if (msg.includes("[Parser Warning]")) return "#fffbeb"
+                                        if (msg.includes("[Parser Error]")) return "#fef2f2"
+                                        if (msg.includes("[Validation]")) return "#fef2f2"
+                                        return "#ffffff"
+                                    }
+                                    radius: 4
+                                    border.color: {
+                                        var msg = modelData;
+                                        if (msg.includes("[Parser Warning]")) return "#fbbf24"
+                                        if (msg.includes("[Parser Error]")) return "#f87171"
+                                        if (msg.includes("[Validation]")) return "#f87171"
+                                        return "#e5e7eb"
+                                    }
+                                    border.width: 1
+
+                                    Text {
+                                        id: errorText
+                                        anchors {
+                                            left: parent.left
+                                            right: parent.right
+                                            verticalCenter: parent.verticalCenter
+                                            leftMargin: 8
+                                            rightMargin: 8
+                                        }
+                                        text: {
+                                            // Clean up the message by removing prefixes for display
+                                            var msg = modelData;
+                                            if (msg.includes("[Parser Warning] ")) {
+                                                return "⚠️ " + msg.replace("[Parser Warning] ", "");
+                                            } else if (msg.includes("[Parser Error] ")) {
+                                                return "❌ " + msg.replace("[Parser Error] ", "");
+                                            } else if (msg.includes("[Validation] ")) {
+                                                return "🔍 " + msg.replace("[Validation] ", "");
+                                            }
+                                            return msg;
+                                        }
+                                        font.pixelSize: 12
+                                        color: {
+                                            var msg = modelData;
+                                            if (msg.includes("[Parser Warning]")) return "#92400e"
+                                            return "#991b1b"
+                                        }
+                                        wrapMode: Text.WordWrap
+                                        maximumLineCount: 2 // Limit to 2 lines per message for consistency
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: validationErrors && validationErrors.length > 0
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: {
+                    if (validationErrors && validationErrors.length > 0) {
+                        validationExpanded = !validationExpanded
+                    }
+                }
+            }
+        }
+
         // Main content
         Item {
             id: mainContent
             anchors {
-                top: header.bottom
+                top: validationStatusRow.bottom
+                topMargin: 16
                 left: parent.left
                 right: parent.right
                 bottom: footer.top
