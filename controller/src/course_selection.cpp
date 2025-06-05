@@ -15,8 +15,30 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
 }
 
 CourseSelectionController::~CourseSelectionController() {
+    Logger::get().logInfo("CourseSelectionController destructor called");
+
+    // Clean up validator thread FIRST
     cleanupValidatorThread();
-    delete modelConnection;
+
+    // Clean up worker thread if it exists
+    if (workerThread) {
+        if (workerThread->isRunning()) {
+            workerThread->quit();
+            if (!workerThread->wait(3000)) {
+                workerThread->terminate();
+                workerThread->wait(1000);
+            }
+        }
+        workerThread = nullptr;
+    }
+
+    // Clean up model connection
+    if (modelConnection) {
+        delete modelConnection;
+        modelConnection = nullptr;
+    }
+
+    Logger::get().logInfo("CourseSelectionController destructor completed");
 }
 
 void CourseSelectionController::setValidationInProgress(bool inProgress) {
@@ -34,9 +56,18 @@ void CourseSelectionController::setValidationErrors(const QStringList& errors) {
 }
 
 void CourseSelectionController::initiateCoursesData(const vector<Course>& courses) {
-    if (courses.empty()) {
-        Logger::get().logError("Empty courses vector provided to initiateCoursesData");
-    } else {
+    Logger::get().logInfo("Initiating courses data with " + std::to_string(courses.size()) + " courses");
+
+    try {
+        if (courses.empty()) {
+            Logger::get().logError("Empty courses vector provided to initiateCoursesData");
+            setValidationErrors(QStringList{"No courses found in file"});
+            return;
+        }
+
+        // Clean up any previous validation
+        cleanupValidatorThread();
+
         // Initialize the course model with the data
         allCourses = courses;
         m_courseModel->populateCoursesData(courses);
@@ -45,7 +76,7 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         filteredCourses = courses;
         filteredIndicesMap.clear();
         for (size_t i = 0; i < courses.size(); ++i) {
-            filteredIndicesMap.push_back(i);
+            filteredIndicesMap.push_back(static_cast<int>(i));
         }
         m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
 
@@ -61,7 +92,16 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
 
         // Clear previous validation errors and start validation
         setValidationErrors(QStringList());
-        validateCourses(courses);
+
+        // Start validation with a small delay to ensure UI is ready
+        QTimer::singleShot(100, this, [this, courses]() {
+            validateCourses(courses);
+        });
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception in initiateCoursesData: " + std::string(e.what()));
+        setValidationErrors(QStringList{"Error initializing course data: " + QString::fromStdString(e.what())});
+        setValidationInProgress(false);
     }
 }
 
@@ -155,38 +195,76 @@ void CourseSelectionController::onValidationTimeout() {
 }
 
 void CourseSelectionController::onCoursesValidated(vector<string>* errors) {
+    // Prevent race condition with timeout - stop timer IMMEDIATELY
     if (validationTimeoutTimer && validationTimeoutTimer->isActive()) {
         validationTimeoutTimer->stop();
+        Logger::get().logInfo("Validation completed - timeout timer stopped");
     }
 
+    // Prevent race condition with timeout
     if (validationCompleted) {
-        delete errors;
+        Logger::get().logInfo("Validation completed but already handled - ignoring duplicate signal");
+        if (errors) {
+            delete errors; // Clean up if this is a duplicate
+        }
         return;
     }
 
+    // Mark as completed AFTER stopping the timer
     validationCompleted = true;
     setValidationInProgress(false);
 
+    Logger::get().logInfo("Validation completed successfully");
+
+    // Handle null errors pointer safely
     if (!errors) {
         Logger::get().logError("Received null errors pointer from validation");
         emit errorMessage("Validation failed due to internal error");
         return;
     }
 
-    Logger::get().logInfo("Validation completed with " + std::to_string(errors->size()) + " errors found");
+    Logger::get().logInfo("Validation completed with " + std::to_string(errors->size()) + " total messages found");
 
+    // Convert std::vector<string> to QStringList BEFORE deleting
     QStringList qmlErrors;
-    for (const auto& error : *errors) {
-        qmlErrors.append(QString::fromStdString(error));
+
+    try {
+        for (const auto& message : *errors) {
+            qmlErrors.append(QString::fromStdString(message));
+        }
+
+        // Count message types for logging
+        int warningCount = 0;
+        int errorCount = 0;
+
+        for (const auto& message : *errors) {
+            if (message.find("[Parser Warning]") != string::npos) {
+                warningCount++;
+            } else {
+                errorCount++;
+            }
+        }
+
+        Logger::get().logInfo("Found " + std::to_string(warningCount) + " warnings and " +
+                              std::to_string(errorCount) + " errors/validation issues");
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception while processing validation results: " + std::string(e.what()));
+        qmlErrors.clear();
+        qmlErrors.append("Error processing validation results");
     }
+
+    // Clean up the errors vector AFTER processing
+    delete errors;
+    errors = nullptr;
+
+    // Set validation errors AFTER cleanup
     setValidationErrors(qmlErrors);
 
-    if (!errors->empty()) {
-        for (size_t i = 0; i < std::min(errors->size(), size_t(5)); ++i) {
-            Logger::get().logWarning("Validation error: " + (*errors)[i]);
-        }
+    if (!qmlErrors.isEmpty()) {
+        Logger::get().logInfo("Messages sent to UI for display");
     } else {
-        Logger::get().logInfo("Course validation passed - no conflicts found");
+        Logger::get().logInfo("Course parsing and validation passed - no issues found");
     }
 }
 
@@ -206,13 +284,24 @@ void CourseSelectionController::cleanupValidation() {
 }
 
 void CourseSelectionController::cleanupValidatorThread() {
+    Logger::get().logInfo("Starting validator thread cleanup");
+
     if (validatorThread) {
+        // First, try to cancel any running validation
+        auto workers = validatorThread->findChildren<CourseValidator*>();
+        for (auto* worker : workers) {
+            worker->cancelValidation();
+        }
 
         if (validatorThread->isRunning()) {
+            Logger::get().logInfo("Waiting for validator thread to finish gracefully");
             validatorThread->quit();
-            if (!validatorThread->wait(3000)) {
+            if (!validatorThread->wait(5000)) { // Wait up to 5 seconds
+                Logger::get().logWarning("Thread didn't quit gracefully, terminating");
                 validatorThread->terminate();
-                validatorThread->wait(1000);
+                if (!validatorThread->wait(2000)) { // Wait up to 2 more seconds
+                    Logger::get().logError("Thread didn't terminate, forcing cleanup");
+                }
             }
         }
 
@@ -220,13 +309,18 @@ void CourseSelectionController::cleanupValidatorThread() {
         validatorThread = nullptr;
     }
 
+    // Also clean up timeout timer
     if (validationTimeoutTimer) {
         validationTimeoutTimer->stop();
         validationTimeoutTimer->deleteLater();
         validationTimeoutTimer = nullptr;
     }
 
+    // Ensure validation state is clean
     setValidationInProgress(false);
+    validationCompleted = false;
+
+    Logger::get().logInfo("Validator thread cleanup completed");
 }
 
 void CourseSelectionController::addBlockTime(const QString& day, const QString& startTime, const QString& endTime) {

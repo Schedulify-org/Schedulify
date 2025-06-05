@@ -22,12 +22,14 @@ Page {
 
         function onValidationStateChanged() {
             // Update local properties when validation state changes
-            validationInProgress = courseSelectionController.validationInProgress;
-            validationErrors = courseSelectionController.validationErrors;
+            if (courseSelectionController) {
+                validationInProgress = courseSelectionController.validationInProgress;
+                validationErrors = courseSelectionController.validationErrors || [];
 
-            // Auto-collapse when validation starts
-            if (validationInProgress) {
-                validationExpanded = false;
+                // Auto-collapse when validation starts
+                if (validationInProgress) {
+                    validationExpanded = false;
+                }
             }
         }
     }
@@ -304,14 +306,37 @@ Page {
                         anchors.verticalCenter: parent.verticalCenter
                         text: {
                             if (validationInProgress) return "Scanning courses..."
-                            if (validationErrors.length === 0) return "All courses parsed correctly"
-                            return "Your courses have some issues (" + validationErrors.length + " warnings)"
+                            if (!validationErrors || validationErrors.length === 0) return "All courses parsed correctly"
+
+                            // Count different types of messages
+                            var parserWarnings = 0;
+                            var parserErrors = 0;
+                            var validationErrorCount = 0;
+
+                            for (var i = 0; i < validationErrors.length; i++) {
+                                var msg = validationErrors[i];
+                                if (msg.includes("[Parser Warning]")) {
+                                    parserWarnings++;
+                                } else if (msg.includes("[Parser Error]")) {
+                                    parserErrors++;
+                                } else if (msg.includes("[Validation]")) {
+                                    validationErrorCount++;
+                                }
+                            }
+
+                            var totalIssues = parserWarnings + parserErrors + validationErrorCount;
+
+                            if (parserErrors > 0 || validationErrorCount > 0) {
+                                return "Found " + totalIssues + " issues in your course file"
+                            } else {
+                                return "Found " + parserWarnings + " warnings in your course file"
+                            }
                         }
                         font.pixelSize: 16
                         font.bold: true
                         color: {
                             if (validationInProgress) return "#92400e"
-                            if (validationErrors.length === 0) return "#065f46"
+                            if (!validationErrors || validationErrors.length === 0) return "#065f46"
                             return "#b91c1c"
                         }
                     }
@@ -319,7 +344,7 @@ Page {
                     // Expand/Collapse Button (only show when there are errors)
                     Button {
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: validationErrors.length > 0
+                        visible: validationErrors && validationErrors.length > 0
                         width: 24
                         height: 24
                         background: Rectangle {
@@ -338,7 +363,7 @@ Page {
 
                 // Error Messages (only visible when expanded)
                 Rectangle {
-                    visible: validationExpanded && validationErrors.length > 0
+                    visible: validationExpanded && validationErrors && validationErrors.length > 0
                     anchors {
                         left: parent.left
                         right: parent.right
@@ -367,9 +392,21 @@ Page {
                                 delegate: Rectangle {
                                     width: parent.width
                                     height: errorText.contentHeight + 16
-                                    color: "#ffffff"
+                                    color: {
+                                        var msg = modelData;
+                                        if (msg.includes("[Parser Warning]")) return "#fffbeb"
+                                        if (msg.includes("[Parser Error]")) return "#fef2f2"
+                                        if (msg.includes("[Validation]")) return "#fef2f2"
+                                        return "#ffffff"
+                                    }
                                     radius: 4
-                                    border.color: "#f87171"
+                                    border.color: {
+                                        var msg = modelData;
+                                        if (msg.includes("[Parser Warning]")) return "#fbbf24"
+                                        if (msg.includes("[Parser Error]")) return "#f87171"
+                                        if (msg.includes("[Validation]")) return "#f87171"
+                                        return "#e5e7eb"
+                                    }
                                     border.width: 1
 
                                     Text {
@@ -380,9 +417,24 @@ Page {
                                             top: parent.top
                                             margins: 8
                                         }
-                                        text: modelData
+                                        text: {
+                                            // Clean up the message by removing prefixes for display
+                                            var msg = modelData;
+                                            if (msg.includes("[Parser Warning] ")) {
+                                                return "⚠️ " + msg.replace("[Parser Warning] ", "");
+                                            } else if (msg.includes("[Parser Error] ")) {
+                                                return "❌ " + msg.replace("[Parser Error] ", "");
+                                            } else if (msg.includes("[Validation] ")) {
+                                                return "🔍 " + msg.replace("[Validation] ", "");
+                                            }
+                                            return msg;
+                                        }
                                         font.pixelSize: 12
-                                        color: "#991b1b"
+                                        color: {
+                                            var msg = modelData;
+                                            if (msg.includes("[Parser Warning]")) return "#92400e"
+                                            return "#991b1b"
+                                        }
                                         wrapMode: Text.WordWrap
                                     }
                                 }
@@ -394,10 +446,10 @@ Page {
 
             MouseArea {
                 anchors.fill: parent
-                enabled: validationErrors.length > 0
+                enabled: validationErrors && validationErrors.length > 0
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
-                    if (validationErrors.length > 0) {
+                    if (validationErrors && validationErrors.length > 0) {
                         validationExpanded = !validationExpanded
                     }
                 }

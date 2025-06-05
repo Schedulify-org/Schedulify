@@ -13,28 +13,40 @@ std::string getFileExtension(const std::string& filename) {
 vector<Course> Model::generateCourses(const string& path) {
     vector<Course> courses;
 
-    // Determine file type and use appropriate parser
-    std::string extension = getFileExtension(path);
+    // Start collecting logger messages for parsing
+    Logger::get().startCollecting();
 
-    if (extension == "xlsx") {
-        Logger::get().logInfo("Parsing Excel file: " + path);
-        ExcelCourseParser excelParser;
-        courses = excelParser.parseExcelFile(path);
-    }
-    else if (extension == "txt") {
-        Logger::get().logInfo("Parsing text file: " + path);
-        courses = parseCourseDB(path);
-    }
-    else {
-        Logger::get().logError("Unsupported file format: " + extension + ". Supported formats: .txt, .xlsx");
-        return courses; // Return empty vector
+    try {
+        // Determine file type and use appropriate parser
+        std::string extension = getFileExtension(path);
+
+        if (extension == "xlsx") {
+            Logger::get().logInfo("Parsing Excel file: " + path);
+            ExcelCourseParser excelParser;
+            courses = excelParser.parseExcelFile(path);
+        }
+        else if (extension == "txt") {
+            Logger::get().logInfo("Parsing text file: " + path);
+            courses = parseCourseDB(path);
+        }
+        else {
+            Logger::get().logError("Unsupported file format: " + extension + ". Supported formats: .txt, .xlsx");
+            Logger::get().stopCollecting();
+            return courses; // Return empty vector
+        }
+
+        if (courses.empty()) {
+            Logger::get().logError("Error while parsing input data from file: " + path + ". No courses found.");
+        } else {
+            Logger::get().logInfo("Successfully parsed " + std::to_string(courses.size()) + " courses from " + path);
+        }
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during parsing: " + string(e.what()));
     }
 
-    if (courses.empty()) {
-        Logger::get().logError("Error while parsing input data from file: " + path + ". No courses found.");
-    } else {
-        Logger::get().logInfo("Successfully parsed " + std::to_string(courses.size()) + " courses from " + path);
-    }
+    // Keep collecting enabled for validation phase
+    // Don't stop here - let validation method handle it
 
     return courses;
 }
@@ -42,9 +54,22 @@ vector<Course> Model::generateCourses(const string& path) {
 vector<string> Model::validateCourses(const vector<Course>& courses) {
     if (courses.empty()) {
         Logger::get().logError("No courses were found");
-        return {};
+        Logger::get().stopCollecting();
+        return {}; // Return empty vector, not reference to member
     }
-    return validate_courses(courses);
+
+    vector<string> validationErrors = validate_courses(courses);
+
+    vector<string> allCollectedMessages = Logger::get().getAllCollectedMessages();
+
+    for (const auto& error : validationErrors) {
+        allCollectedMessages.push_back("[Validation] " + error);
+    }
+
+    Logger::get().stopCollecting();
+    Logger::get().clearCollected();
+
+    return allCollectedMessages;
 }
 
 vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userInput) {
@@ -89,8 +114,8 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         case ModelOperation::VALIDATE_COURSES:
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
-                courseFileErrors = validateCourses(*courses);
-                return &courseFileErrors;
+                auto* validationResult = new vector<string>(validateCourses(*courses));
+                return validationResult;
             } else {
                 Logger::get().logError("No courses were found, aborting...");
                 return nullptr;
