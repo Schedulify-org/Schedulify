@@ -2,7 +2,7 @@
 #define PARSE_TO_XLSX_H
 
 #include "model_interfaces.h"
-#include "logger/logger.h"
+#include "logger.h"
 
 #include <iostream>
 #include <fstream>

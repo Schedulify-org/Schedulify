@@ -22,7 +22,7 @@ QColor LogDisplayController::getColorForLogLevel(LogLevel level) {
         case LogLevel::INITIATE: return {"#0077CC"};
         case LogLevel::INFO:     return {"#00AA00"};
         case LogLevel::WARNING:  return {"#FFAA00"};
-        case LogLevel::ERROR:    return {"#DD0000"};
+        case LogLevel::ERR:    return {"#DD0000"};
         default:                 return {"#888888"};
     }
 }
@@ -32,7 +32,7 @@ QString LogDisplayController::getStringForLogLevel(LogLevel level) {
         case LogLevel::INITIATE: return "INITIATE";
         case LogLevel::INFO:     return "INFO";
         case LogLevel::WARNING:  return "WARNING";
-        case LogLevel::ERROR:    return "ERROR";
+        case LogLevel::ERR:    return "ERROR";
         default:                 return "UNKNOWN";
     }
 }

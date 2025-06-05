@@ -5,6 +5,15 @@
 #include <vector>
 
 using namespace std;
+
+enum class SessionType {
+    LECTURE,
+    TUTORIAL,
+    LAB,
+    BLOCK,
+    UNSUPPORTED
+};
+
 class Session {
 public:
     int day_of_week;
@@ -16,7 +25,7 @@ public:
 
 class Group {
 public:
-    string type;
+    SessionType type;
     vector<Session> sessions;
 };
 
@@ -29,8 +38,8 @@ public:
     vector<Group> Lectures;
     vector<Group> Tirgulim;
     vector<Group> labs;
+    vector<Group> blocks;
 };
-
 
 struct ScheduleItem {
     string courseName;
@@ -49,6 +58,11 @@ struct ScheduleDay {
 
 struct InformativeSchedule {
     int index;
+    int amount_days = 0;
+    int amount_gaps = 0;
+    int gaps_time = 0;
+    int avg_start = 0;
+    int avg_end = 0;
     vector<ScheduleDay> week;
 };
 

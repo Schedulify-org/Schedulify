@@ -1,4 +1,4 @@
-#include "schedule_algorithm/ScheduleBuilder.h"
+#include "ScheduleBuilder.h"
 
 using namespace std;
 
@@ -6,17 +6,16 @@ unordered_map<int, CourseInfo> ScheduleBuilder::courseInfoMap;
 
 // Checks if there is a time conflict between two CourseSelections
 bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelection& b) {
-    vector<const Session*> aSessions = getSessions(a); // Extract sessions from selection a
-    vector<const Session*> bSessions = getSessions(b); // Extract sessions from selection b
+    vector<const Session*> aSessions = getSessions(a);
+    vector<const Session*> bSessions = getSessions(b);
 
     // Compare each session in a with each session in b
     for (const auto* s1 : aSessions) {
         for (const auto* s2 : bSessions) {
-            // Return true immediately if any overlapping sessions are found
             if (TimeUtils::isOverlap(s1, s2)) return true;
         }
     }
-    return false; // No conflicts found
+    return false;
 }
 
 // Recursive backtracking function to build all valid schedules
@@ -100,7 +99,6 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
         const vector<string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
         for (const auto& selection : selections) {
-
             if (selection.lectureGroup) {
                 processGroupSessions(selection, selection.lectureGroup, "Lecture", daySchedules);
             }
@@ -112,26 +110,38 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
             if (selection.labGroup) {
                 processGroupSessions(selection, selection.labGroup, "Lab", daySchedules);
             }
+
+            if (selection.blockGroup) {
+                processGroupSessions(selection, selection.blockGroup, "Block", daySchedules);
+            }
         }
 
         for (int day = 0; day < 7; day++) {
-            if (daySchedules.find(day) != daySchedules.end()) {
-                auto& dayItems = daySchedules[day];
+            ScheduleDay scheduleDay;
+            scheduleDay.day = dayNames[day];
+
+            int algorithmDay = day + 1;
+
+            if (daySchedules.find(algorithmDay) != daySchedules.end()) {
+                auto& dayItems = daySchedules[algorithmDay];
                 sort(dayItems.begin(), dayItems.end(), [](const ScheduleItem& a, const ScheduleItem& b) {
                     return TimeUtils::toMinutes(a.start) < TimeUtils::toMinutes(b.start);
                 });
-
-                ScheduleDay scheduleDay;
-                scheduleDay.day = dayNames[day];
                 scheduleDay.day_items = dayItems;
-
-                schedule.week.push_back(scheduleDay);
             }
+
+            schedule.week.push_back(scheduleDay);
         }
 
     } catch (const exception& e) {
         Logger::get().logError("Exception in convertToInformativeSchedule: " + string(e.what()));
         schedule.week.clear();
+        const vector<string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+        for (int day = 0; day < 7; day++) {
+            ScheduleDay scheduleDay;
+            scheduleDay.day = dayNames[day];
+            schedule.week.push_back(scheduleDay);
+        }
     }
 
     return schedule;
@@ -149,6 +159,7 @@ void ScheduleBuilder::processGroupSessions(const CourseSelection& selection,
         string courseRawId = getCourseRawIdById(selection.courseId);
 
         for (const auto& session : group->sessions) {
+
             ScheduleItem item;
             item.courseName = courseName;
             item.raw_id = courseRawId;

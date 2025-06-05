@@ -1,4 +1,4 @@
-#include "parsers/parseToCsv.h"
+#include "parseToCsv.h"
 
 int getHourFromTimeString(const string& timeStr) {
     try {

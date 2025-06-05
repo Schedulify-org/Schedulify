@@ -1,5 +1,5 @@
-#include "main/main_model.h"
-#include "parsers/excel_parser.h"  // ADD THIS INCLUDE
+#include "main_model.h"
+#include "excel_parser.h"
 #include <algorithm>
 #include <cctype>
 
@@ -49,7 +49,7 @@ vector<Course> Model::generateCourses(const string& path) {
 
 // REST OF YOUR METHODS REMAIN THE SAME
 vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userInput) {
-    if (userInput.empty() || userInput.size() > 7) {
+    if (userInput.empty() || userInput.size() > 8) {
         Logger::get().logError("invalid amount of courses, aborting...");
         return {};
     }
