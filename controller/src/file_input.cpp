@@ -6,7 +6,7 @@ FileInputController::FileInputController(QObject *parent)
 }
 
 FileInputController::~FileInputController() {
-    delete modelConnection;
+    modelConnection = nullptr;
 }
 
 void FileInputController::handleUploadAndContinue() {
