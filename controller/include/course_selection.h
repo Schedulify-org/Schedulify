@@ -59,6 +59,8 @@ public:
     Q_INVOKABLE void resetFilter();
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
+    Q_INVOKABLE void createNewCourse(const QString& courseName, const QString& courseId,
+                                     const QString& teacherName, const QVariantList& sessionGroups);
 
     Q_INVOKABLE void addBlockTime(const QString& day, const QString& startTime, const QString& endTime);
     Q_INVOKABLE void removeBlockTime(int index);
@@ -93,6 +95,7 @@ private:
 
     vector<int> selectedIndices;
     vector<int> filteredIndicesMap;
+    QString currentSearchText;
     IModel* modelConnection;
     QThread* validatorThread = nullptr;
     QThread* workerThread = nullptr;
@@ -100,6 +103,8 @@ private:
     void updateBlockTimesModel();
     Course createSingleBlockTimeCourse();
     static int getDayNumber(const QString& dayName);
+    Course createCourseFromData(const QString& courseName, const QString& courseId,
+                                const QString& teacherName, const QVariantList& sessionGroups);
     void validateCourses(const vector<Course>& courses, int timeoutMs);
     void onCoursesValidated(vector<string>* errors);
     void cleanupValidation();
