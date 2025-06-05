@@ -4,6 +4,8 @@ vector<string> validate_courses(vector<Course> courses) {
     vector<Building> Buildings = {};
 	vector<string> errors;
     for (auto course : courses) {
+        Logger::get().logInfo("start working on course " + course.raw_id);
+
         // Process Lectures
         for (auto group : course.Lectures) {
             for (auto session : group.sessions) {
@@ -147,7 +149,10 @@ vector<string> validate_courses(vector<Course> courses) {
                 }
             }
         }
+        Logger::get().logInfo("finish working on course " + course.raw_id);
     }
+    Logger::get().logInfo("finish working validator, continue");
+
     return errors;
 }
 

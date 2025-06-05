@@ -3,6 +3,7 @@
 
 #include "course_model.h"
 #include "ScheduleGenerator.h"
+#include "CourseValidator.h"
 #include "model_access.h"
 #include "controller_manager.h"
 #include "schedules_display.h"
@@ -62,6 +63,7 @@ public:
 
 private slots:
     void onSchedulesGenerated(vector<InformativeSchedule>* schedules);
+    void onValidationTimeout();
 
 signals:
     void selectionChanged();
@@ -73,24 +75,28 @@ private:
     CourseModel* m_selectedCoursesModel;
     CourseModel* m_filteredCourseModel;
     CourseModel* m_blocksModel;
-
+    QTimer* validationTimeoutTimer = nullptr;
+    bool validationCompleted = false;
     vector<Course> allCourses;
     vector<Course> selectedCourses;
     vector<Course> filteredCourses;
-    vector<Course> blockTimes; // This will store the single block times course for display
-    vector<BlockTime> userBlockTimes; // This stores the actual block time data
+    vector<Course> blockTimes;
+    vector<BlockTime> userBlockTimes;
 
     vector<int> selectedIndices;
     vector<int> filteredIndicesMap;
     IModel* modelConnection;
+    QThread* validatorThread = nullptr;
     QThread* workerThread = nullptr;
 
-    // Helper methods
     void updateBlockTimesModel();
-    Course createSingleBlockTimeCourse(); // NEW: Creates a single course with all block times
+    Course createSingleBlockTimeCourse();
     static int getDayNumber(const QString& dayName);
-
-    // REMOVED: createBlockTimeCourse and createBlockGroup methods are no longer needed
+    void validateCourses(const vector<Course>& courses);
+    void onCoursesValidated(vector<string>* errors);
+    void setupValidationTimeout();
+    void cleanupValidation();
+    void cleanupValidatorThread();
 };
 
 #endif //COURSE_SELECTION_H

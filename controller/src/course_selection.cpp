@@ -8,11 +8,13 @@ CourseSelectionController::CourseSelectionController(QObject *parent)
         , m_filteredCourseModel(new CourseModel(this))
         , m_blocksModel(new CourseModel(this))
         , workerThread(nullptr)
+        , validatorThread(nullptr)
 {
     modelConnection = ModelAccess::getModel();
 }
 
 CourseSelectionController::~CourseSelectionController() {
+    cleanupValidatorThread();
     delete modelConnection;
 }
 
@@ -41,9 +43,204 @@ void CourseSelectionController::initiateCoursesData(const vector<Course>& course
         userBlockTimes.clear();
         blockTimes.clear();
         updateBlockTimesModel();
+
+        validateCourses(courses);
     }
 }
 
+void CourseSelectionController::validateCourses(const vector<Course>& courses) {
+    // Prevent multiple validation threads
+    if (validatorThread && validatorThread->isRunning()) {
+        Logger::get().logWarning("Validation already in progress, skipping new request");
+        return;
+    }
+
+    // Clean up previous thread if it exists
+    cleanupValidatorThread();
+
+    // Reset completion flag
+    validationCompleted = false;
+
+    Logger::get().logInfo("Starting course validation for " + std::to_string(courses.size()) + " courses");
+
+    // Create a new worker thread
+    validatorThread = new QThread(this);
+    auto* worker = new CourseValidator(modelConnection, courses);
+    worker->moveToThread(validatorThread);
+
+    // Set thread priority for large datasets
+    if (courses.size() > 100) {
+        validatorThread->setPriority(QThread::LowPriority);
+    }
+
+    // Setup timeout timer BEFORE connecting signals
+    setupValidationTimeout();
+
+    // Connect signals with Qt::QueuedConnection to ensure proper order
+    connect(validatorThread, &QThread::started, worker, &CourseValidator::validateCourses, Qt::QueuedConnection);
+
+    // CRITICAL: Connect validation completion BEFORE cleanup to ensure proper order
+    connect(worker, &CourseValidator::coursesValidated, this, &CourseSelectionController::onCoursesValidated, Qt::QueuedConnection);
+
+    // Cleanup connections - these should happen AFTER the main handler
+    connect(worker, &CourseValidator::coursesValidated, worker, &QObject::deleteLater, Qt::QueuedConnection);
+    connect(worker, &CourseValidator::coursesValidated, validatorThread, &QThread::quit, Qt::QueuedConnection);
+    connect(worker, &CourseValidator::coursesValidated, this, &CourseSelectionController::cleanupValidation, Qt::QueuedConnection);
+    connect(validatorThread, &QThread::finished, validatorThread, &QObject::deleteLater, Qt::QueuedConnection);
+
+    // Handle thread cleanup
+    connect(validatorThread, &QThread::finished, [this]() {
+        Logger::get().logInfo("Validation thread finished and cleaned up");
+        validatorThread = nullptr;
+    });
+
+    validatorThread->start();
+}
+
+void CourseSelectionController::setupValidationTimeout() {
+    // Clean up existing timer
+    if (validationTimeoutTimer) {
+        validationTimeoutTimer->stop();
+        validationTimeoutTimer->deleteLater();
+    }
+
+    validationTimeoutTimer = new QTimer(this);
+    validationTimeoutTimer->setSingleShot(true);
+    validationTimeoutTimer->setInterval(30000); // 30 seconds timeout
+
+    connect(validationTimeoutTimer, &QTimer::timeout, this, &CourseSelectionController::onValidationTimeout);
+
+    validationTimeoutTimer->start();
+    Logger::get().logInfo("Validation timeout timer started (30 seconds)");
+}
+
+void CourseSelectionController::onValidationTimeout() {
+    // Double-check if validation actually completed
+    if (validationCompleted) {
+        Logger::get().logInfo("Timeout triggered but validation already completed - ignoring");
+        return;
+    }
+
+    Logger::get().logError("Validation timeout - terminating thread");
+
+    // Mark as completed to prevent race conditions
+    validationCompleted = true;
+
+    // Cancel the validation in the worker
+    if (validatorThread && validatorThread->isRunning()) {
+        // Find the worker and tell it to cancel
+        auto workers = validatorThread->findChildren<CourseValidator*>();
+        for (auto* worker : workers) {
+            worker->cancelValidation();
+        }
+
+        // Give it a moment to cancel gracefully
+        QTimer::singleShot(1000, this, [this]() {
+            if (validatorThread && validatorThread->isRunning()) {
+                Logger::get().logWarning("Forcing thread termination after cancel attempt");
+                validatorThread->quit();
+                if (!validatorThread->wait(2000)) {
+                    validatorThread->terminate();
+                    validatorThread->wait(1000);
+                }
+            }
+        });
+    }
+
+    emit errorMessage("Validation timed out - the course file may be too large or corrupted");
+
+    // Clean up
+    cleanupValidation();
+}
+
+void CourseSelectionController::onCoursesValidated(vector<string>* errors) {
+    // Prevent race condition with timeout - stop timer IMMEDIATELY
+    if (validationTimeoutTimer && validationTimeoutTimer->isActive()) {
+        validationTimeoutTimer->stop();
+        Logger::get().logInfo("Validation completed - timeout timer stopped");
+    }
+
+    // Prevent race condition with timeout
+    if (validationCompleted) {
+        Logger::get().logInfo("Validation completed but already handled - ignoring duplicate signal");
+        delete errors; // Clean up if this is a duplicate
+        return;
+    }
+
+    // Mark as completed AFTER stopping the timer
+    validationCompleted = true;
+
+    Logger::get().logInfo("Validation completed successfully");
+
+    if (!errors) {
+        Logger::get().logError("Received null errors pointer from validation");
+        emit errorMessage("Validation failed due to internal error");
+        return;
+    }
+
+    Logger::get().logInfo("Validation completed with " + std::to_string(errors->size()) + " errors found");
+
+    if (!errors->empty()) {
+        // Log first few errors for debugging
+        for (size_t i = 0; i < std::min(errors->size(), size_t(5)); ++i) {
+            Logger::get().logWarning("Validation error: " + (*errors)[i]);
+        }
+
+        QString errorMsg = "Found " + QString::number(errors->size()) + " scheduling conflicts in the course data";
+        if (errors->size() > 10) {
+            errorMsg += "\nFirst conflict: " + QString::fromStdString((*errors)[0]);
+        }
+        emit errorMessage(errorMsg);
+    } else {
+        Logger::get().logInfo("Course validation passed - no conflicts found");
+    }
+
+    // The vector will be deleted by the model, don't delete it here
+}
+
+void CourseSelectionController::cleanupValidation() {
+    Logger::get().logInfo("Cleaning up validation resources");
+
+    // Stop and cleanup timeout timer
+    if (validationTimeoutTimer && validationTimeoutTimer->isActive()) {
+        validationTimeoutTimer->stop();
+        Logger::get().logInfo("Validation timeout timer stopped");
+    }
+
+    if (validationTimeoutTimer) {
+        validationTimeoutTimer->deleteLater();
+        validationTimeoutTimer = nullptr;
+        Logger::get().logInfo("Validation timeout timer cleaned up");
+    }
+
+    // Reset completion flag for next validation
+    validationCompleted = false;
+}
+
+void CourseSelectionController::cleanupValidatorThread() {
+    if (validatorThread) {
+        Logger::get().logInfo("Cleaning up previous validator thread");
+
+        if (validatorThread->isRunning()) {
+            validatorThread->quit();
+            if (!validatorThread->wait(3000)) {
+                Logger::get().logWarning("Thread didn't quit gracefully, terminating");
+                validatorThread->terminate();
+                validatorThread->wait(1000);
+            }
+        }
+
+        validatorThread->deleteLater();
+        validatorThread = nullptr;
+    }
+
+    // Also clean up timeout timer
+    if (validationTimeoutTimer) {
+        validationTimeoutTimer->stop();
+        validationTimeoutTimer->deleteLater();
+        validationTimeoutTimer = nullptr;
+    }
+}
 
 void CourseSelectionController::addBlockTime(const QString& day, const QString& startTime, const QString& endTime) {
     // Validate time format and logic first
