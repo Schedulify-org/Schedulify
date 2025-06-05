@@ -60,10 +60,11 @@ public:
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
 
-    // Block time management methods
     Q_INVOKABLE void addBlockTime(const QString& day, const QString& startTime, const QString& endTime);
     Q_INVOKABLE void removeBlockTime(int index);
     Q_INVOKABLE void clearAllBlockTimes();
+
+    Q_INVOKABLE void setupValidationTimeout(int timeoutMs);
 
 private slots:
     void onSchedulesGenerated(vector<InformativeSchedule>* schedules);
@@ -99,13 +100,16 @@ private:
     void updateBlockTimesModel();
     Course createSingleBlockTimeCourse();
     static int getDayNumber(const QString& dayName);
-    void validateCourses(const vector<Course>& courses);
+    void validateCourses(const vector<Course>& courses, int timeoutMs);
     void onCoursesValidated(vector<string>* errors);
-    void setupValidationTimeout();
     void cleanupValidation();
     void cleanupValidatorThread();
     void setValidationInProgress(bool inProgress);
     void setValidationErrors(const QStringList& errors);
+
+    static const int VALIDATION_TIMEOUT_MS = 60000;
+    static const int THREAD_CLEANUP_TIMEOUT_MS = 10000;
+    static const int MAX_COURSES_LIMIT = 1000;
 };
 
 #endif //COURSE_SELECTION_H
