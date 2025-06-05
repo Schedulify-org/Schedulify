@@ -9,7 +9,11 @@
 #include "printSchedule.h"
 #include "parseToCsv.h"
 #include "logger.h"
+#include "excel_parser.h"
+#include "validate_courses.h"
 
+#include <algorithm>
+#include <cctype>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -31,11 +35,13 @@ public:
 private:
     Model() {}
     static vector<Course> generateCourses(const string& path);
+    static vector<string> validateCourses(const vector<Course>& courses);
     static vector<InformativeSchedule> generateSchedules(const vector<Course>& userInput);
     static void saveSchedule(const InformativeSchedule& infoSchedule, const string& path);
     static void printSchedule(const InformativeSchedule& infoSchedule);
 
     vector<Course> lastGeneratedCourses;
+    vector<string> courseFileErrors;
     vector<InformativeSchedule> lastGeneratedSchedules;
 };
 

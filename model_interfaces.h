@@ -68,6 +68,7 @@ struct InformativeSchedule {
 
 enum class ModelOperation {
     GENERATE_COURSES,
+    VALIDATE_COURSES,
     GENERATE_SCHEDULES,
     SAVE_SCHEDULE,
     PRINT_SCHEDULE

@@ -40,6 +40,15 @@ public:
 
     const vector<LogEntry>& getLogs() const;
 
+    // message collection (for course validator)
+    void startCollecting();
+    void stopCollecting();
+    void clearCollected();
+    vector<string> getCollectedWarnings() const;
+    vector<string> getCollectedErrors() const;
+    vector<string> getAllCollectedMessages() const;
+    bool isCollecting() const;
+
 signals:
     void logAdded();
 
@@ -56,6 +65,12 @@ private:
 
     vector<LogEntry> logList;
     mutable std::mutex logMutex;
+
+    // message collection (for course validator)
+    vector<string> collectedWarnings;
+    vector<string> collectedErrors;
+    bool collectingEnabled;
+    mutable std::mutex collectionMutex;
 };
 
 #endif // LOGGER_H

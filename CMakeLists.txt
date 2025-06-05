@@ -36,7 +36,8 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/course_selection.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/schedules_display.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/log_display.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/include/ScheduleGenerator.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ScheduleGenerator.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/CourseValidator.h
 
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.h
@@ -49,10 +50,11 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/course_selection.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/schedules_display.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/log_display.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/ScheduleGenerator.cpp
+        controller/adapters/thread_workers/ScheduleGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters/schedule_filter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.cpp
+        controller/adapters/thread_workers/CourseValidator.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/logger/logger.cpp
 
@@ -64,6 +66,7 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/parseToCsv.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/printSchedule.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/excel_parser.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/parsers/validate_courses.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/CourseLegalComb.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/ScheduleBuilder.cpp
@@ -87,6 +90,7 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers
         ${CMAKE_CURRENT_SOURCE_DIR}/logger
 )
 

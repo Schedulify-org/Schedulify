@@ -77,7 +77,6 @@ void FileInputController::handleFileSelected(const QString &filePath) {
         return;
     } else {
         selectedFilePath = filePath;
-        Logger::get().logError(selectedFilePath.toStdString());
 
         QFileInfo fileInfo(filePath);
         QString fileName = fileInfo.fileName();
