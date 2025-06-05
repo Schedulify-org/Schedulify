@@ -13,6 +13,20 @@ Page {
     property var validationErrors: courseSelectionController ? courseSelectionController.validationErrors : []
     property bool validationExpanded: false
 
+    // Add property to track our log window
+    property var logWindow: null
+
+    // Clean up log window when this page is destroyed
+    Component.onDestruction: {
+        if (logWindow) {
+            logWindow.close();
+            logWindow = null;
+            if (logDisplayController) {
+                logDisplayController.setLogWindowOpen(false);
+            }
+        }
+    }
+
     Connections {
         target: courseSelectionController
 
@@ -110,7 +124,17 @@ Page {
                         id: coursesBackMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: courseSelectionController.goBack()
+                        onClicked: {
+                            // Clean up log window before navigating back
+                            if (logWindow) {
+                                logWindow.close();
+                                logWindow = null;
+                                if (logDisplayController) {
+                                    logDisplayController.setLogWindowOpen(false);
+                                }
+                            }
+                            courseSelectionController.goBack();
+                        }
                         cursorShape: Qt.PointingHandCursor
                     }
                 }
@@ -183,16 +207,29 @@ Page {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (!logDisplayController.isLogWindowOpen) {
+                            // Check if we already have a log window open
+                            if (logWindow && logWindow.visible) {
+                                // Bring existing window to front
+                                logWindow.raise();
+                                logWindow.requestActivate();
+                                return;
+                            }
+
+                            // Create new log window if none exists or if controller says none is open
+                            if (!logDisplayController.isLogWindowOpen || !logWindow) {
                                 var component = Qt.createComponent("qrc:/log_display.qml");
                                 if (component.status === Component.Ready) {
                                     logDisplayController.setLogWindowOpen(true);
-                                    var logWindow = component.createObject(courseListScreen, {
+                                    logWindow = component.createObject(null, { // Create as independent window
                                         "onClosing": function(close) {
                                             logDisplayController.setLogWindowOpen(false);
+                                            logWindow = null; // Clear our reference
                                         }
                                     });
-                                    logWindow.show();
+
+                                    if (logWindow) {
+                                        logWindow.show();
+                                    }
                                 } else {
                                     console.error("Error creating log window:", component.errorString());
                                 }
