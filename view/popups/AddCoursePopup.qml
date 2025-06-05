@@ -5,8 +5,8 @@ import QtQuick.Controls.Basic
 
 Popup {
     id: addCoursePopup
-    width: Math.min(parent.width * 0.9, 900)
-    height: Math.min(parent.height * 0.95, 800)
+    width: Math.min(parent.width * 0.95, 1000)
+    height: Math.min(parent.height * 0.95, 850)
     anchors.centerIn: parent
     modal: true
     focus: true
@@ -22,17 +22,12 @@ Popup {
 
     signal courseCreated(string courseName, string courseId, string teacherName, var sessionGroups)
 
-    // Reset function to clear all data
+    // Clear all data
     function resetPopup() {
-        // Clear form fields
         courseNameField.text = ""
         courseIdField.text = ""
         teacherField.text = ""
-
-        // Clear error message
         errorMessage = ""
-
-        // Reset groups model to default state
         groupsModel.clear()
         groupsModel.append({
             "groupType": "Lecture",
@@ -40,16 +35,16 @@ Popup {
         })
     }
 
-    // Show error message function
+    // Show error message
     function showError(message) {
         errorMessage = message
         errorTimer.restart()
     }
 
-    // Timer to auto-hide error messages
+    // Timer for error messages
     Timer {
         id: errorTimer
-        interval: 4000 // 4 seconds
+        interval: 4000
         onTriggered: {
             errorMessage = ""
         }
@@ -71,71 +66,73 @@ Popup {
 
     background: Rectangle {
         color: "#ffffff"
-        border.color: "#d1d5db"
-        border.width: 1
-        radius: 8
+        border.color: "#e5e7eb"
+        border.width: 2
+        radius: 16
 
-        // Drop shadow effect (matching SlotBlockMenu)
         Rectangle {
             anchors.fill: parent
-            anchors.margins: -2
+            anchors.margins: -4
             color: "transparent"
-            border.color: "#00000020"
-            border.width: 1
-            radius: 10
+            border.color: "#00000015"
+            border.width: 2
+            radius: 20
             z: -1
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -8
+            color: "transparent"
+            border.color: "#00000010"
+            border.width: 2
+            radius: 24
+            z: -2
         }
     }
 
-    x: (parent.width - width) / 2
-    y: (parent.height - height) / 2
-
-    Item {
-        id: contentContainer
-        anchors {
-            fill: parent
-            margins: 20
-        }
+    // Main content section
+    Column {
+        anchors.fill: parent
+        anchors.margins: 24
+        anchors.bottomMargin: 90
+        spacing: 20
 
         // Header
-        Item {
-            id: headerSection
-            anchors {
-                top: parent.top
-                left: parent.left
-                right: parent.right
-            }
-            height: 40
+        Rectangle {
+            width: parent.width
+            height: 60
+            color: "transparent"
 
             Text {
-                id: headerTitle
                 anchors {
                     left: parent.left
                     verticalCenter: parent.verticalCenter
                 }
                 text: "Add New Course"
-                font.pixelSize: 20
+                font.pixelSize: 28
                 font.bold: true
                 color: "#1f2937"
             }
 
             Button {
-                id: closeButton
                 anchors {
                     right: parent.right
                     verticalCenter: parent.verticalCenter
                 }
-                width: 30
-                height: 30
+                width: 40
+                height: 40
 
                 background: Rectangle {
                     color: closeMouseArea.containsMouse ? "#f3f4f6" : "transparent"
-                    radius: 15
+                    radius: 20
+                    border.width: 1
+                    border.color: closeMouseArea.containsMouse ? "#d1d5db" : "transparent"
                 }
 
                 contentItem: Text {
                     text: "×"
-                    font.pixelSize: 20
+                    font.pixelSize: 24
                     color: "#6b7280"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -156,201 +153,157 @@ Popup {
 
         // Error message
         Rectangle {
-            id: errorMessageContainer
-            anchors {
-                top: headerSection.bottom
-                topMargin: 20
-                left: parent.left
-                right: parent.right
-            }
-            height: errorMessage === "" ? 0 : 40
+            width: parent.width
+            height: errorMessage === "" ? 0 : 50
             visible: errorMessage !== ""
             color: "#fef2f2"
-            radius: 4
+            radius: 8
             border.color: "#fecaca"
+            border.width: 1
 
-            Label {
+            Text {
                 anchors.centerIn: parent
                 text: errorMessage
                 color: "#dc2626"
                 font.pixelSize: 14
+                font.bold: true
             }
         }
 
-        // Form Fields Section
-        Item {
-            id: formFieldsSection
-            anchors {
-                top: errorMessageContainer.bottom
-                topMargin: errorMessage === "" ? 0 : 20
-                left: parent.left
-                right: parent.right
-            }
-            height: 220
+        // Course Information Section
+        Rectangle {
+            width: parent.width
+            height: 230
+            color: "#f8fafc"
+            radius: 12
+            border.width: 1
+            border.color: "#e2e8f0"
 
-            ColumnLayout {
+            Column {
                 anchors.fill: parent
-                spacing: 16
+                anchors.margins: 20
+                spacing: 20
 
-                // Course Name
-                Item {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
-
-                    Label {
-                        id: courseNameLabel
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            right: parent.right
-                        }
-                        height: 22
-                        text: "Course Name *"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: "#374151"
-                    }
-
-                    Rectangle {
-                        id: courseNameContainer
-                        anchors {
-                            top: courseNameLabel.bottom
-                            topMargin: 8
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                        }
-                        color: "#f9fafb"
-                        radius: 6
-                        border.width: 1
-                        border.color: courseNameField.focus ? "#3b82f6" : "#d1d5db"
-
-                        TextField {
-                            id: courseNameField
-                            anchors.fill: parent
-                            placeholderText: "e.g., Introduction to Computer Science"
-                            placeholderTextColor: "#9CA3AF"
-
-                            background: Rectangle {
-                                color: "transparent"
-                                radius: 6
-                            }
-
-                            color: "#1f2937"
-                            font.pixelSize: 14
-                            leftPadding: 12
-                            rightPadding: 12
-                            topPadding: 8
-                            bottomPadding: 8
-                        }
-                    }
+                Text {
+                    text: "Course Information"
+                    font.pixelSize: 18
+                    font.bold: true
+                    color: "#1e293b"
                 }
 
-                // Course ID
-                Item {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
+                GridLayout {
+                    width: parent.width
+                    columns: 2
+                    columnSpacing: 20
+                    rowSpacing: 16
 
-                    Label {
-                        id: courseIdLabel
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            right: parent.right
-                        }
-                        height: 22
-                        text: "Course ID *"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: "#374151"
-                    }
+                    // Course ID
+                    Column {
+                        Layout.preferredWidth: 150
+                        spacing: 8
 
-                    Rectangle {
-                        id: courseIdContainer
-                        anchors {
-                            top: courseIdLabel.bottom
-                            topMargin: 8
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                        }
-                        color: "#f9fafb"
-                        radius: 6
-                        border.width: 1
-                        border.color: courseIdField.focus ? "#3b82f6" : "#d1d5db"
-
-                        TextField {
-                            id: courseIdField
-                            anchors.fill: parent
-                            placeholderText: "e.g., 12345"
-                            placeholderTextColor: "#9CA3AF"
-                            validator: RegularExpressionValidator { regularExpression: /[0-9]{0,5}/ }
-
-                            background: Rectangle {
-                                color: "transparent"
-                                radius: 6
-                            }
-
-                            color: "#1f2937"
+                        Text {
+                            text: "Course ID *"
                             font.pixelSize: 14
-                            leftPadding: 12
-                            rightPadding: 12
-                            topPadding: 8
-                            bottomPadding: 8
+                            font.bold: true
+                            color: "#374151"
                         }
-                    }
-                }
 
-                // Teacher
-                Item {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 60
+                        Rectangle {
+                            width: parent.width
+                            height: 44
+                            color: "#ffffff"
+                            radius: 8
+                            border.width: 2
+                            border.color: courseIdField.focus ? "#3b82f6" : "#e5e7eb"
 
-                    Label {
-                        id: teacherLabel
-                        anchors {
-                            top: parent.top
-                            left: parent.left
-                            right: parent.right
-                        }
-                        height: 22
-                        text: "Teacher *"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: "#374151"
-                    }
-
-                    Rectangle {
-                        id: teacherContainer
-                        anchors {
-                            top: teacherLabel.bottom
-                            topMargin: 8
-                            left: parent.left
-                            right: parent.right
-                            bottom: parent.bottom
-                        }
-                        color: "#f9fafb"
-                        radius: 6
-                        border.width: 1
-                        border.color: teacherField.focus ? "#3b82f6" : "#d1d5db"
-
-                        TextField {
-                            id: teacherField
-                            anchors.fill: parent
-                            placeholderText: "e.g., Prof. Johnson"
-                            placeholderTextColor: "#9CA3AF"
-
-                            background: Rectangle {
-                                color: "transparent"
-                                radius: 6
+                            TextField {
+                                id: courseIdField
+                                anchors.fill: parent
+                                placeholderText: "e.g., 12345"
+                                placeholderTextColor: "#9CA3AF"
+                                validator: RegularExpressionValidator { regularExpression: /[0-9]{0,5}/ }
+                                background: Rectangle { color: "transparent" }
+                                color: "#1f2937"
+                                font.pixelSize: 14
+                                leftPadding: 16
+                                rightPadding: 16
+                                topPadding: 12
+                                bottomPadding: 12
                             }
+                        }
+                    }
 
-                            color: "#1f2937"
+                    // Course Name
+                    Column {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Text {
+                            text: "Course Name *"
                             font.pixelSize: 14
-                            leftPadding: 12
-                            rightPadding: 12
-                            topPadding: 8
-                            bottomPadding: 8
+                            font.bold: true
+                            color: "#374151"
+                        }
+
+                        Rectangle {
+                            width: parent.width
+                            height: 44
+                            color: "#ffffff"
+                            radius: 8
+                            border.width: 2
+                            border.color: courseNameField.focus ? "#3b82f6" : "#e5e7eb"
+
+                            TextField {
+                                id: courseNameField
+                                anchors.fill: parent
+                                placeholderText: "e.g., Introduction to Computer Science"
+                                placeholderTextColor: "#9CA3AF"
+                                background: Rectangle { color: "transparent" }
+                                color: "#1f2937"
+                                font.pixelSize: 14
+                                leftPadding: 16
+                                rightPadding: 16
+                                topPadding: 12
+                                bottomPadding: 12
+                            }
+                        }
+                    }
+
+                    // Teacher
+                    Column {
+                        Layout.fillWidth: true
+                        Layout.columnSpan: 2
+                        spacing: 8
+
+                        Text {
+                            text: "Teacher *"
+                            font.pixelSize: 14
+                            font.bold: true
+                            color: "#374151"
+                        }
+
+                        Rectangle {
+                            width: parent.width
+                            height: 44
+                            color: "#ffffff"
+                            radius: 8
+                            border.width: 2
+                            border.color: teacherField.focus ? "#3b82f6" : "#e5e7eb"
+
+                            TextField {
+                                id: teacherField
+                                anchors.fill: parent
+                                placeholderText: "e.g., Prof. prof"
+                                placeholderTextColor: "#9CA3AF"
+                                background: Rectangle { color: "transparent" }
+                                color: "#1f2937"
+                                font.pixelSize: 14
+                                leftPadding: 16
+                                rightPadding: 16
+                                topPadding: 12
+                                bottomPadding: 12
+                            }
                         }
                     }
                 }
@@ -358,58 +311,61 @@ Popup {
         }
 
         // Session Groups Section Header
-        Item {
-            id: sessionGroupsHeaderSection
-            anchors {
-                top: formFieldsSection.bottom
-                topMargin: 20
-                left: parent.left
-                right: parent.right
-            }
-            height: 40
+        Rectangle {
+            width: parent.width
+            height: 20
+            color: "transparent"
 
-            Label {
-                id: sessionGroupsTitle
+            Text {
                 anchors {
                     left: parent.left
                     verticalCenter: parent.verticalCenter
                 }
                 text: "Session Groups"
-                font.pixelSize: 16
+                font.pixelSize: 22
                 font.bold: true
-                color: "#1f2937"
+                color: "#1e293b"
             }
 
             Button {
-                id: addGroupButton
                 anchors {
                     right: parent.right
                     verticalCenter: parent.verticalCenter
                 }
-                width: 120
-                height: 32
+                width: 140
+                height: 40
 
                 background: Rectangle {
-                    color: addGroupMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                    radius: 6
-                    border.width: 1
-                    border.color: "#d1d5db"
+                    color: addGroupMouseArea.containsMouse ? "#3b82f6" : "#4f46e5"
+                    radius: 8
+                    border.width: 0
+
+                    // Subtle gradient effect
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        radius: 8
+                        border.width: 1
+                        border.color: "#ffffff20"
+                    }
                 }
 
                 contentItem: RowLayout {
-                    spacing: 6
+                    spacing: 8
                     anchors.centerIn: parent
 
                     Text {
                         text: "+"
-                        font.pixelSize: 14
-                        color: "#374151"
+                        font.pixelSize: 18
+                        font.bold: true
+                        color: "#ffffff"
                     }
 
                     Text {
                         text: "Add Group"
-                        font.pixelSize: 12
-                        color: "#374151"
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: "#ffffff"
                     }
                 }
 
@@ -428,23 +384,17 @@ Popup {
             }
         }
 
-        // Scrollable Groups List
+        // Scrollable Groups List Section
         ScrollView {
             id: groupsScrollView
-            anchors {
-                top: sessionGroupsHeaderSection.bottom
-                topMargin: 12
-                left: parent.left
-                right: parent.right
-                bottom: actionButtonsSection.top
-                bottomMargin: 20
-            }
+            width: parent.width
+            height: parent.height - 350
             clip: true
             contentWidth: availableWidth
 
             Column {
                 width: groupsScrollView.width
-                spacing: 16
+                spacing: 20
 
                 Repeater {
                     id: groupsRepeater
@@ -459,54 +409,76 @@ Popup {
                     delegate: Rectangle {
                         width: parent.width
                         color: "#ffffff"
-                        border.color: "#e5e7eb"
-                        border.width: 1
-                        radius: 8
-                        height: groupContent.implicitHeight + 24
+                        border.color: "#e2e8f0"
+                        border.width: 2
+                        radius: 16
+                        height: groupContent.implicitHeight + 32
+
+                        // Subtle shadow
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: -2
+                            color: "transparent"
+                            border.color: "#00000008"
+                            border.width: 1
+                            radius: 18
+                            z: -1
+                        }
 
                         property alias groupType: groupTypeCombo.currentText
                         property var sessionsList: []
 
-                        ColumnLayout {
+                        Column {
                             id: groupContent
                             anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
+                            anchors.margins: 16
+                            spacing: 16
 
                             // Group Header
-                            RowLayout {
-                                Layout.fillWidth: true
+                            Rectangle {
+                                width: parent.width
+                                height: 50
+                                color: "#f1f5f9"
+                                radius: 12
+                                border.width: 1
+                                border.color: "#e2e8f0"
 
                                 RowLayout {
-                                    spacing: 12
+                                    anchors.fill: parent
+                                    anchors.margins: 12
+                                    spacing: 16
 
                                     ComboBox {
                                         id: groupTypeCombo
+                                        Layout.preferredWidth: 120
                                         model: ["Lecture", "Tutorial", "Lab"]
                                         currentIndex: {
-                                            switch(groupType) {
-                                                case "Tutorial": return 1
-                                                case "Lab": return 2
-                                                default: return 0
+                                            switch (groupType) {
+                                                case "Tutorial":
+                                                    return 1
+                                                case "Lab":
+                                                    return 2
+                                                default:
+                                                    return 0
                                             }
                                         }
 
                                         background: Rectangle {
-                                            color: "#f9fafb"
+                                            color: "#ffffff"
                                             border.color: "#d1d5db"
-                                            border.width: 1
-                                            radius: 6
+                                            border.width: 2
+                                            radius: 8
                                         }
 
                                         contentItem: Text {
                                             text: parent.currentText
                                             font.pixelSize: 14
-                                            color: "#1f2937"
+                                            font.bold: true
+                                            color: "#1e293b"
                                             leftPadding: 12
                                             verticalAlignment: Text.AlignVCenter
                                         }
 
-                                        // Update the model when selection changes
                                         onCurrentTextChanged: {
                                             groupsModel.setProperty(index, "groupType", currentText)
                                         }
@@ -514,62 +486,66 @@ Popup {
 
                                     Text {
                                         text: "Group " + (groupIndex + 1)
-                                        font.pixelSize: 14
-                                        color: "#6b7280"
-                                    }
-                                }
-
-                                Item { Layout.fillWidth: true }
-
-                                Button {
-                                    Layout.preferredWidth: 28
-                                    Layout.preferredHeight: 28
-                                    enabled: groupsModel.count > 1
-
-                                    background: Rectangle {
-                                        color: parent.enabled ? (deleteGroupMouseArea.containsMouse ? "#fee2e2" : "transparent") : "#f3f4f6"
-                                        radius: 14
-                                    }
-
-                                    contentItem: Text {
-                                        text: "×"
                                         font.pixelSize: 16
-                                        color: parent.enabled ? "#6b7280" : "#d1d5db"
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
+                                        font.bold: true
+                                        color: "#64748b"
                                     }
 
-                                    MouseArea {
-                                        id: deleteGroupMouseArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            if (groupsModel.count > 1) {
-                                                groupsModel.remove(index)
-                                                // Update group indices
-                                                for (var i = 0; i < groupsModel.count; i++) {
-                                                    groupsModel.setProperty(i, "groupIndex", i)
-                                                }
-                                            } else {
-                                                showError("A course must have at least one group")
-                                            }
+                                    Item {
+                                        Layout.fillWidth: true
+                                    }
+
+                                    Button {
+                                        Layout.preferredWidth: 36
+                                        Layout.preferredHeight: 36
+                                        enabled: groupsModel.count > 1
+
+                                        background: Rectangle {
+                                            color: parent.enabled ? (deleteGroupMouseArea.containsMouse ? "#fee2e2" : "#f8fafc") : "#f3f4f6"
+                                            radius: 18
+                                            border.width: 1
+                                            border.color: parent.enabled ? "#e5e7eb" : "#d1d5db"
                                         }
-                                        cursorShape: Qt.PointingHandCursor
+
+                                        contentItem: Text {
+                                            text: "×"
+                                            font.pixelSize: 18
+                                            font.bold: true
+                                            color: parent.enabled ? "#ef4444" : "#d1d5db"
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+
+                                        MouseArea {
+                                            id: deleteGroupMouseArea
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: {
+                                                if (groupsModel && groupsModel.count > 1) {
+                                                    groupsModel.remove(index)
+                                                    for (var i = 0; i < groupsModel.count; i++) {
+                                                        groupsModel.setProperty(i, "groupIndex", i)
+                                                    }
+                                                } else {
+                                                    showError("A course must have at least one group")
+                                                }
+                                            }
+                                            cursorShape: Qt.PointingHandCursor
+                                        }
                                     }
                                 }
                             }
 
                             // Sessions for this group
                             Column {
-                                Layout.fillWidth: true
-                                spacing: 8
+                                width: parent.width
+                                spacing: 12
 
                                 Repeater {
                                     id: sessionsRepeater
                                     model: ListModel {
                                         id: sessionsModel
                                         Component.onCompleted: {
-                                            // Add one default session
                                             append({
                                                 "day": "Sunday",
                                                 "startHour": 9,
@@ -582,13 +558,12 @@ Popup {
 
                                     delegate: Rectangle {
                                         width: parent.width
-                                        color: "#f9fafb"
-                                        border.color: "#e5e7eb"
+                                        height: 60
+                                        color: "#fafbfc"
+                                        border.color: "#e2e8f0"
                                         border.width: 1
-                                        radius: 6
-                                        height: 40
+                                        radius: 12
 
-                                        // Time validation function for this session
                                         function validateTimes() {
                                             if (endHour <= startHour) {
                                                 endHour = startHour + 1;
@@ -597,20 +572,20 @@ Popup {
                                                     startHour = 22;
                                                 }
                                             }
-                                            // Update the model
                                             sessionsModel.setProperty(index, "startHour", startHour)
                                             sessionsModel.setProperty(index, "endHour", endHour)
                                         }
 
-                                        // Single row: Day, Times, Building, Room, Delete button
                                         RowLayout {
                                             anchors.fill: parent
-                                            anchors.margins: 8
-                                            spacing: 6
+                                            anchors.margins: 12
+                                            spacing: 12
 
+                                            // Day Selection
                                             ComboBox {
                                                 id: dayCombo
-                                                Layout.preferredWidth: 85
+                                                Layout.preferredWidth: 110
+                                                Layout.preferredHeight: 36
                                                 model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
                                                 currentIndex: {
                                                     var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
@@ -621,15 +596,17 @@ Popup {
                                                     color: "#ffffff"
                                                     border.color: "#d1d5db"
                                                     border.width: 1
-                                                    radius: 4
+                                                    radius: 8
                                                 }
 
                                                 contentItem: Text {
                                                     text: parent.currentText
-                                                    font.pixelSize: 14
+                                                    font.pixelSize: 13
                                                     color: "#374151"
-                                                    leftPadding: 6
+                                                    leftPadding: 8
+                                                    rightPadding: 20
                                                     verticalAlignment: Text.AlignVCenter
+                                                    elide: Text.ElideRight
                                                 }
 
                                                 onCurrentTextChanged: {
@@ -637,60 +614,45 @@ Popup {
                                                 }
                                             }
 
-                                            // Start Time Controls
+                                            // Start Time
                                             Rectangle {
-                                                Layout.preferredWidth: 65
-                                                Layout.preferredHeight: 28
+                                                Layout.preferredWidth: 80
+                                                Layout.preferredHeight: 36
                                                 color: "#ffffff"
-                                                radius: 4
+                                                radius: 8
                                                 border.width: 1
                                                 border.color: "#d1d5db"
 
-                                                Item {
-                                                    anchors.centerIn: parent
-                                                    width: 55
-                                                    height: parent.height
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.margins: 4
+                                                    spacing: 2
 
-                                                    // Hour display
                                                     Text {
-                                                        anchors {
-                                                            left: parent.left
-                                                            leftMargin: 3
-                                                            verticalCenter: parent.verticalCenter
-                                                        }
-                                                        width: 32
+                                                        Layout.fillWidth: true
                                                         text: String(startHour).padStart(2, '0') + ":00"
-                                                        font.pixelSize: 14
+                                                        font.pixelSize: 13
                                                         color: "#1f2937"
                                                         horizontalAlignment: Text.AlignHCenter
+                                                        verticalAlignment: Text.AlignVCenter
                                                     }
 
-                                                    // Hour controls
-                                                    Item {
-                                                        anchors {
-                                                            right: parent.right
-                                                            rightMargin: 2
-                                                            verticalCenter: parent.verticalCenter
-                                                        }
-                                                        width: 16
-                                                        height: 22
+                                                    Column {
+                                                        Layout.preferredWidth: 16
+                                                        spacing: 1
 
                                                         Rectangle {
-                                                            anchors {
-                                                                top: parent.top
-                                                                left: parent.left
-                                                                right: parent.right
-                                                            }
-                                                            height: 10
+                                                            width: 16
+                                                            height: 12
                                                             color: upStartHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                                            radius: 2
+                                                            radius: 4
                                                             border.width: 1
                                                             border.color: "#d1d5db"
 
                                                             Text {
                                                                 anchors.centerIn: parent
                                                                 text: "▲"
-                                                                font.pixelSize: 7
+                                                                font.pixelSize: 8
                                                                 color: "#374151"
                                                             }
 
@@ -709,21 +671,17 @@ Popup {
                                                         }
 
                                                         Rectangle {
-                                                            anchors {
-                                                                bottom: parent.bottom
-                                                                left: parent.left
-                                                                right: parent.right
-                                                            }
-                                                            height: 10
+                                                            width: 16
+                                                            height: 12
                                                             color: downStartHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                                            radius: 2
+                                                            radius: 4
                                                             border.width: 1
                                                             border.color: "#d1d5db"
 
                                                             Text {
                                                                 anchors.centerIn: parent
                                                                 text: "▼"
-                                                                font.pixelSize: 7
+                                                                font.pixelSize: 8
                                                                 color: "#374151"
                                                             }
 
@@ -745,65 +703,50 @@ Popup {
                                             }
 
                                             Text {
-                                                text: "-"
-                                                font.pixelSize: 14
+                                                text: "–"
+                                                font.pixelSize: 16
                                                 color: "#6b7280"
                                             }
 
-                                            // End Time Controls
+                                            // End Time
                                             Rectangle {
-                                                Layout.preferredWidth: 65
-                                                Layout.preferredHeight: 28
+                                                Layout.preferredWidth: 80
+                                                Layout.preferredHeight: 36
                                                 color: "#ffffff"
-                                                radius: 4
+                                                radius: 8
                                                 border.width: 1
                                                 border.color: "#d1d5db"
 
-                                                Item {
-                                                    anchors.centerIn: parent
-                                                    width: 55
-                                                    height: parent.height
+                                                RowLayout {
+                                                    anchors.fill: parent
+                                                    anchors.margins: 4
+                                                    spacing: 2
 
-                                                    // Hour display
                                                     Text {
-                                                        anchors {
-                                                            left: parent.left
-                                                            leftMargin: 3
-                                                            verticalCenter: parent.verticalCenter
-                                                        }
-                                                        width: 32
+                                                        Layout.fillWidth: true
                                                         text: String(endHour).padStart(2, '0') + ":00"
-                                                        font.pixelSize: 14
+                                                        font.pixelSize: 13
                                                         color: "#1f2937"
                                                         horizontalAlignment: Text.AlignHCenter
+                                                        verticalAlignment: Text.AlignVCenter
                                                     }
 
-                                                    // Hour controls
-                                                    Item {
-                                                        anchors {
-                                                            right: parent.right
-                                                            rightMargin: 2
-                                                            verticalCenter: parent.verticalCenter
-                                                        }
-                                                        width: 16
-                                                        height: 22
+                                                    Column {
+                                                        Layout.preferredWidth: 16
+                                                        spacing: 1
 
                                                         Rectangle {
-                                                            anchors {
-                                                                top: parent.top
-                                                                left: parent.left
-                                                                right: parent.right
-                                                            }
-                                                            height: 10
+                                                            width: 16
+                                                            height: 12
                                                             color: upEndHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                                            radius: 2
+                                                            radius: 4
                                                             border.width: 1
                                                             border.color: "#d1d5db"
 
                                                             Text {
                                                                 anchors.centerIn: parent
                                                                 text: "▲"
-                                                                font.pixelSize: 7
+                                                                font.pixelSize: 8
                                                                 color: "#374151"
                                                             }
 
@@ -821,21 +764,17 @@ Popup {
                                                         }
 
                                                         Rectangle {
-                                                            anchors {
-                                                                bottom: parent.bottom
-                                                                left: parent.left
-                                                                right: parent.right
-                                                            }
-                                                            height: 10
+                                                            width: 16
+                                                            height: 12
                                                             color: downEndHourMouseArea.containsMouse ? "#e5e7eb" : "#f3f4f6"
-                                                            radius: 2
+                                                            radius: 4
                                                             border.width: 1
                                                             border.color: "#d1d5db"
 
                                                             Text {
                                                                 anchors.centerIn: parent
                                                                 text: "▼"
-                                                                font.pixelSize: 7
+                                                                font.pixelSize: 8
                                                                 color: "#374151"
                                                             }
 
@@ -856,76 +795,90 @@ Popup {
                                                 }
                                             }
 
-                                            TextField {
-                                                id: buildingField
-                                                Layout.preferredWidth: 70
-                                                Layout.preferredHeight: 28
-                                                text: building
-                                                placeholderText: "Building"
-                                                placeholderTextColor: "#9CA3AF"
+                                            // Building Field
+                                            Rectangle {
+                                                Layout.preferredWidth: 100
+                                                Layout.preferredHeight: 36
+                                                color: "#ffffff"
+                                                radius: 8
+                                                border.width: 1
+                                                border.color: buildingField.focus ? "#3b82f6" : "#d1d5db"
 
-                                                background: Rectangle {
-                                                    color: "#ffffff"
-                                                    border.color: "#d1d5db"
-                                                    border.width: 1
-                                                    radius: 4
-                                                }
+                                                TextField {
+                                                    id: buildingField
+                                                    anchors.fill: parent
+                                                    text: building
+                                                    placeholderText: "Building"
+                                                    placeholderTextColor: "#9CA3AF"
+                                                    background: Rectangle {
+                                                        color: "transparent"
+                                                    }
+                                                    color: "#374151"
+                                                    font.pixelSize: 13
+                                                    leftPadding: 8
+                                                    rightPadding: 8
+                                                    topPadding: 8
+                                                    bottomPadding: 8
 
-                                                color: "#374151"
-                                                font.pixelSize: 14
-                                                leftPadding: 6
-                                                rightPadding: 6
-                                                topPadding: 4
-                                                bottomPadding: 4
-
-                                                onTextChanged: {
-                                                    sessionsModel.setProperty(index, "building", text)
-                                                }
-                                            }
-
-                                            TextField {
-                                                id: roomField
-                                                Layout.preferredWidth: 60
-                                                Layout.preferredHeight: 28
-                                                text: room
-                                                placeholderText: "Room"
-                                                placeholderTextColor: "#9CA3AF"
-
-                                                background: Rectangle {
-                                                    color: "#ffffff"
-                                                    border.color: "#d1d5db"
-                                                    border.width: 1
-                                                    radius: 4
-                                                }
-
-                                                color: "#374151"
-                                                font.pixelSize: 14
-                                                leftPadding: 6
-                                                rightPadding: 6
-                                                topPadding: 4
-                                                bottomPadding: 4
-
-                                                onTextChanged: {
-                                                    sessionsModel.setProperty(index, "room", text)
+                                                    onTextChanged: {
+                                                        sessionsModel.setProperty(index, "building", text)
+                                                    }
                                                 }
                                             }
 
-                                            Item { Layout.fillWidth: true }
+                                            // Room Field
+                                            Rectangle {
+                                                Layout.preferredWidth: 80
+                                                Layout.preferredHeight: 36
+                                                color: "#ffffff"
+                                                radius: 8
+                                                border.width: 1
+                                                border.color: roomField.focus ? "#3b82f6" : "#d1d5db"
 
+                                                TextField {
+                                                    id: roomField
+                                                    anchors.fill: parent
+                                                    text: room
+                                                    placeholderText: "Room"
+                                                    placeholderTextColor: "#9CA3AF"
+                                                    background: Rectangle {
+                                                        color: "transparent"
+                                                    }
+                                                    color: "#374151"
+                                                    font.pixelSize: 13
+                                                    leftPadding: 8
+                                                    rightPadding: 8
+                                                    topPadding: 8
+                                                    bottomPadding: 8
+
+                                                    onTextChanged: {
+                                                        sessionsModel.setProperty(index, "room", text)
+                                                    }
+                                                }
+                                            }
+
+                                            Item {
+                                                Layout.fillWidth: true
+                                            }
+
+                                            // Delete Session Button
                                             Button {
-                                                Layout.preferredWidth: 24
-                                                Layout.preferredHeight: 24
+                                                Layout.preferredWidth: 32
+                                                Layout.preferredHeight: 32
                                                 enabled: sessionsModel.count > 1
 
                                                 background: Rectangle {
-                                                    color: parent.enabled ? (deleteSessionMouseArea.containsMouse ? "#fee2e2" : "transparent") : "#f3f4f6"
-                                                    radius: 12
+                                                    color: parent.enabled ? (deleteSessionMouseArea.containsMouse ? "#fee2e2" : "#f8fafc") : "#f3f4f6"
+                                                    radius: 16
+                                                    border.width: 1
+                                                    border.color: parent.enabled ? "#e5e7eb" : "#d1d5db"
                                                 }
 
                                                 contentItem: Text {
                                                     text: "×"
-                                                    font.pixelSize: 14
-                                                    color: parent.enabled ? "#6b7280" : "#d1d5db"
+                                                    font.pixelSize: 16
+                                                    font.bold: true
+                                                    color: parent.enabled ? "#ef4444" : "#d1d5db"
                                                     horizontalAlignment: Text.AlignHCenter
                                                     verticalAlignment: Text.AlignVCenter
                                                 }
@@ -951,29 +904,31 @@ Popup {
                                 // Add Session Button
                                 Button {
                                     width: parent.width
-                                    height: 28
+                                    height: 44
 
                                     background: Rectangle {
-                                        color: addSessionMouseArea.containsMouse ? "#f3f4f6" : "transparent"
-                                        border.color: "#d1d5db"
-                                        border.width: 1
-                                        radius: 4
+                                        color: addSessionMouseArea.containsMouse ? "#f1f5f9" : "#f8fafc"
+                                        border.color: "#e2e8f0"
+                                        border.width: 2
+                                        radius: 12
                                     }
 
                                     contentItem: RowLayout {
-                                        spacing: 4
+                                        spacing: 8
                                         anchors.centerIn: parent
 
                                         Text {
                                             text: "+"
-                                            font.pixelSize: 12
-                                            color: "#6b7280"
+                                            font.pixelSize: 16
+                                            font.bold: true
+                                            color: "#64748b"
                                         }
 
                                         Text {
                                             text: "Add Session"
-                                            font.pixelSize: 11
-                                            color: "#6b7280"
+                                            font.pixelSize: 14
+                                            font.bold: true
+                                            color: "#64748b"
                                         }
                                     }
 
@@ -999,37 +954,38 @@ Popup {
                 }
             }
         }
+    }
 
-        // Action buttons
-        Item {
-            id: actionButtonsSection
-            anchors {
-                bottom: parent.bottom
-                left: parent.left
-                right: parent.right
-            }
-            height: 45
+    // Action Buttons
+    Rectangle {
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 24
+        anchors.rightMargin: 24
+        height: 60
+        color: "transparent"
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: 16
 
             Button {
-                id: cancelButton
-                anchors {
-                    left: parent.left
-                    top: parent.top
-                    bottom: parent.bottom
-                }
-                width: (parent.width - 12) / 2
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
 
                 background: Rectangle {
-                    color: cancelMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                    radius: 6
-                    border.width: 1
-                    border.color: "#d1d5db"
+                    color: cancelMouseArea.containsMouse ? "#f1f5f9" : "#ffffff"
+                    radius: 12
+                    border.width: 2
+                    border.color: "#e2e8f0"
                 }
 
                 contentItem: Text {
                     text: "Cancel"
-                    font.pixelSize: 14
-                    color: "#374151"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "#64748b"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -1047,22 +1003,27 @@ Popup {
             }
 
             Button {
-                id: saveButton
-                anchors {
-                    right: parent.right
-                    top: parent.top
-                    bottom: parent.bottom
-                }
-                width: (parent.width - 12) / 2
+                Layout.fillWidth: true
+                Layout.preferredHeight: 50
 
                 background: Rectangle {
-                    color: saveMouseArea.containsMouse ? "#1d4ed8" : "#2563eb"
-                    radius: 6
+                    color: saveMouseArea.containsMouse ? "#3b82f6" : "#4f46e5"
+                    radius: 12
+                    border.width: 0
+
+                    // Gradient effect
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        radius: 12
+                        border.width: 1
+                        border.color: "#ffffff30"
+                    }
                 }
 
                 contentItem: Text {
                     text: "Save Course"
-                    font.pixelSize: 14
+                    font.pixelSize: 16
                     font.bold: true
                     color: "#ffffff"
                     horizontalAlignment: Text.AlignHCenter
