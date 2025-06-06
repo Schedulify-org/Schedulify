@@ -8,10 +8,10 @@ import "."
 Page {
     id: courseListScreen
 
-    // Add properties for validation state
     property bool validationInProgress: courseSelectionController ? courseSelectionController.validationInProgress : false
     property var validationErrors: courseSelectionController ? courseSelectionController.validationErrors : []
     property bool validationExpanded: false
+    property bool validationRowVisible: true
 
     property var logWindow: null
 
@@ -45,6 +45,10 @@ Page {
                 // Auto-collapse when validation starts
                 if (validationInProgress) {
                     validationExpanded = false;
+                    validationRowVisible = true
+                } else {
+                    // Auto-hide when validation finishes
+                    validationRowVisible = false
                 }
             }
         }
@@ -307,7 +311,8 @@ Page {
                 leftMargin: 16
                 rightMargin: 16
             }
-            height: validationExpanded ? 208 : 60
+            height: validationRowVisible ? (validationExpanded ? 208 : 60) : 0
+            visible: validationRowVisible
             radius: 8
             color: {
                 if (validationInProgress) return "#ffffff"
@@ -359,6 +364,15 @@ Page {
                         }
                         sourceSize.width: 30
                         sourceSize.height: 30
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                validationRowVisible = false
+                                validationExpanded = false
+                            }
+                        }
                     }
 
                     Text {
@@ -367,7 +381,6 @@ Page {
                             if (validationInProgress) return "Scanning courses..."
                             if (!validationErrors || validationErrors.length === 0) return "All courses parsed correctly"
 
-                            // Count different types of messages
                             var parserWarnings = 0;
                             var parserErrors = 0;
                             var validationErrorCount = 0;
@@ -425,7 +438,6 @@ Page {
                         left: parent.left
                         right: parent.right
                     }
-                    // Fixed height to accommodate approximately 2 rows of messages
                     height: visible ? 150 : 0
                     color: "transparent"
                     radius: 6
@@ -479,7 +491,6 @@ Page {
                                             rightMargin: 8
                                         }
                                         text: {
-                                            // Clean up the message by removing prefixes for display
                                             var msg = modelData;
                                             if (msg.includes("[Parser Warning] ")) {
                                                 return "⚠️ " + msg.replace("[Parser Warning] ", "");
@@ -507,8 +518,12 @@ Page {
                 }
             }
 
+            // Expand/collapse to see errors
             MouseArea {
-                anchors.fill: parent
+                anchors {
+                    fill: parent
+                    leftMargin: 58 // Skip the status icon area (30px width + 28px spacing)
+                }
                 enabled: validationErrors && validationErrors.length > 0
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
@@ -583,6 +598,51 @@ Page {
                             right: parent.right
                         }
                         height: 30
+
+                        // Validation icon (visible when validation row is hidden)
+                        Image {
+                            id: compactValidationIcon
+                            visible: !validationRowVisible && !validationInProgress
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            source: {
+                                if (!validationErrors || validationErrors.length === 0) return "qrc:/icons/ic-valid.svg"
+                                return "qrc:/icons/ic-warning.svg"
+                            }
+                            sourceSize.width: 24
+                            sourceSize.height: 24
+
+                            MouseArea {
+                                id: compactValidationMouseArea
+                                anchors.fill: parent
+                                cursorShape: (validationErrors && validationErrors.length > 0) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                hoverEnabled: true
+                                onClicked: {
+                                    // Only show validation row if there are errors/warnings
+                                    if (validationErrors && validationErrors.length > 0) {
+                                        validationRowVisible = true
+                                    }
+                                }
+
+                                ToolTip {
+                                    visible: parent.containsMouse
+                                    delay: 500
+                                    timeout: 3000
+
+                                    background: Rectangle {
+                                        color: "#374151"
+                                        radius: 4
+                                        border.color: "#4b5563"
+                                    }
+
+                                    contentItem: Text {
+                                        text: (validationErrors && validationErrors.length === 0) ? "Parsed successfully" : "View " + validationErrors.length + " issues"
+                                        color: "white"
+                                        font.pixelSize: 12
+                                    }
+                                }
+                            }
+                        }
 
                         Label {
                             text: "Available Courses"
