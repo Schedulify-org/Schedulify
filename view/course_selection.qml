@@ -310,14 +310,14 @@ Page {
             height: validationExpanded ? 208 : 60
             radius: 8
             color: {
-                if (validationInProgress) return "#fff6dc"
+                if (validationInProgress) return "#ffffff"
                 if (validationErrors.length === 0) return "#e1fff1"
-                return "#ffecec"
+                return "#fff6e7"
             }
             border.color: {
-                if (validationInProgress) return "#f59e0b"
+                if (validationInProgress) return "#000000"
                 if (validationErrors.length === 0) return "#10b981"
-                return "#f56565"
+                return "#f59e0b"
             }
             border.width: 1
 
@@ -426,10 +426,10 @@ Page {
                         right: parent.right
                     }
                     // Fixed height to accommodate approximately 2 rows of messages
-                    height: visible ? 120 : 0
-                    color: "#fef2f2"
+                    height: visible ? 150 : 0
+                    color: "transparent"
                     radius: 6
-                    border.color: "#fca5a5"
+                    border.color: "transparent"
                     border.width: 1
 
                     ScrollView {
@@ -451,12 +451,12 @@ Page {
                                 model: validationErrors
                                 delegate: Rectangle {
                                     width: messagesColumn.width
-                                    height: Math.max(40, errorText.contentHeight + 16) // Minimum height for consistency
+                                    height: Math.max(40, errorText.contentHeight + 16)
                                     color: {
                                         var msg = modelData;
                                         if (msg.includes("[Parser Warning]")) return "#fffbeb"
                                         if (msg.includes("[Parser Error]")) return "#fef2f2"
-                                        if (msg.includes("[Validation]")) return "#fef2f2"
+                                        if (msg.includes("[Validation]")) return "#fffbeb"
                                         return "#ffffff"
                                     }
                                     radius: 4
@@ -464,7 +464,7 @@ Page {
                                         var msg = modelData;
                                         if (msg.includes("[Parser Warning]")) return "#fbbf24"
                                         if (msg.includes("[Parser Error]")) return "#f87171"
-                                        if (msg.includes("[Validation]")) return "#f87171"
+                                        if (msg.includes("[Validation]")) return "#fbbf24"
                                         return "#e5e7eb"
                                     }
                                     border.width: 1
@@ -486,7 +486,7 @@ Page {
                                             } else if (msg.includes("[Parser Error] ")) {
                                                 return "❌ " + msg.replace("[Parser Error] ", "");
                                             } else if (msg.includes("[Validation] ")) {
-                                                return "🔍 " + msg.replace("[Validation] ", "");
+                                                return "⚠️ " + msg.replace("[Validation] ", "");
                                             }
                                             return msg;
                                         }
@@ -497,7 +497,7 @@ Page {
                                             return "#991b1b"
                                         }
                                         wrapMode: Text.WordWrap
-                                        maximumLineCount: 2 // Limit to 2 lines per message for consistency
+                                        maximumLineCount: 2
                                         elide: Text.ElideRight
                                     }
                                 }
