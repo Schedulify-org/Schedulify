@@ -15,6 +15,10 @@ Page {
 
     property var logWindow: null
 
+    function isCourseSelectedSafe(index) {
+        return courseSelectionController ? courseSelectionController.isCourseSelected(index) : false;
+    }
+
     Component.onDestruction: {
         if (logWindow) {
             logWindow.destroy(); // Explicitly destroy
@@ -140,7 +144,9 @@ Page {
                                     logDisplayController.setLogWindowOpen(false);
                                 }
                             }
-                            courseSelectionController.goBack();
+                            if (courseSelectionController) {
+                                courseSelectionController.goBack();
+                            }
                         }
                         cursorShape: Qt.PointingHandCursor
                     }
@@ -159,6 +165,7 @@ Page {
                     }
                 }
 
+                // log button
                 Button {
                     id: logButtonB
                     anchors {
@@ -246,6 +253,7 @@ Page {
                     }
                 }
 
+                // generate button
                 Button {
                     id: generateButton
                     width: 180
@@ -277,7 +285,11 @@ Page {
                         id: generateMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: courseSelectionController.generateSchedules()
+                        onClicked: {
+                            if (courseSelectionController) {
+                                courseSelectionController.generateSchedules();
+                            }
+                        }
                         cursorShape: Qt.PointingHandCursor
                     }
                 }
@@ -657,7 +669,9 @@ Page {
 
                                 onTextChanged: {
                                     searchText = text
-                                    courseSelectionController.filterCourses(text)
+                                    if (courseSelectionController) {
+                                        courseSelectionController.filterCourses(text)
+                                    }
                                 }
                             }
 
@@ -691,7 +705,9 @@ Page {
                                     onClicked: {
                                         searchField.text = ""
                                         searchText = ""
-                                        courseSelectionController.resetFilter()
+                                        if (courseSelectionController) {
+                                            courseSelectionController.resetFilter()
+                                        }
                                     }
                                     cursorShape: Qt.PointingHandCursor
                                 }
@@ -731,7 +747,7 @@ Page {
                             width: courseListView.width
                             height: 80
                             color: {
-                                if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                if (isCourseSelectedSafe(originalIndex)) {
                                     return "#f0f9ff"
                                 } else if (selectedCoursesRepeater.count >= 7) {
                                     return "#e5e7eb"
@@ -741,7 +757,7 @@ Page {
                             }
                             radius: 8
                             border.color: {
-                                if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                if (isCourseSelectedSafe(originalIndex)) {
                                     return "#3b82f6"
                                 } else if (selectedCoursesRepeater.count >= 7) {
                                     return "#d1d5db"
@@ -754,7 +770,7 @@ Page {
                             Connections {
                                 target: courseSelectionController
                                 function onSelectionChanged() {
-                                    if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                    if (isCourseSelectedSafe(originalIndex)) {
                                         courseDelegate.color = "#f0f9ff"
                                         courseDelegate.border.color = "#3b82f6"
                                         courseDelegate.opacity = 1
@@ -792,7 +808,7 @@ Page {
                                     width: 80
                                     height: 56
                                     color: {
-                                        if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                        if (isCourseSelectedSafe(originalIndex)) {
                                             return "#dbeafe"
                                         } else if (selectedCoursesRepeater.count >= 7) {
                                             return "#e5e7eb"
@@ -808,7 +824,7 @@ Page {
                                         text: courseId
                                         font.bold: true
                                         color: {
-                                            if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                            if (isCourseSelectedSafe(originalIndex)) {
                                                 return "#2563eb"
                                             } else if (selectedCoursesRepeater.count >= 7) {
                                                 return "#9ca3af"
@@ -877,7 +893,11 @@ Page {
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: {
-                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
+                                    if (!courseSelectionController) {
+                                        return;
+                                    }
+
+                                    if (selectedCoursesRepeater.count >= 7 && !isCourseSelectedSafe(originalIndex)) {
                                         errorMessage = "You have selected the maximum of 7 courses"
                                         errorMessageTimer.restart()
                                     } else {
