@@ -17,38 +17,46 @@ Page {
     property int totalSchedules: scheduleModel ? scheduleModel.scheduleCount : 0
     property int numDays: 7
 
-    // Minimum constraints
-    property real minDayColumnWidth: 120
-    property real minTimeColumnWidth: 80
-    property real minRowHeight: 50
-    property int minTextSize: 11
-
-    // Table dimensions with dynamic calculations
-    property real timeColumnWidth: minTimeColumnWidth
-
-    property real dayColumnWidth: {
-        var availableWidth = mainContent.width - 30;
-        return Math.max(minDayColumnWidth, (availableWidth - timeColumnWidth) / numDays);
-    }
-
     property int numberOfTimeSlots: 13
     property real headerHeight: 40
 
-    property real uniformRowHeight: {
-        var availableHeight = mainContent.height - topButtonsRow.height - 40;
-        var availableTableHeight = availableHeight - headerHeight;
-        return Math.max(minRowHeight, availableTableHeight / numberOfTimeSlots);
-    }
+    property real availableTableWidth: mainContent.width - 28
+    property real availableTableHeight: mainContent.height - 41
 
-    // Dynamic text size based on cell dimensions
-    property real dynamicTextSize: Math.max(minTextSize,
-        Math.min(15, Math.min(dayColumnWidth / 11.5, uniformRowHeight / 4.5)))
+    property real timeColumnWidth: availableTableWidth * 0.12
+    property real dayColumnWidth: (availableTableWidth - timeColumnWidth) / numDays
+    property real uniformRowHeight: (availableTableHeight - headerHeight) / numberOfTimeSlots
+
+    property real baseTextSize: 12
 
     property var logWindow: null
 
+    MouseArea {
+        id: outsideClickArea
+        anchors.fill: parent
+        z: -1
+        propagateComposedEvents: true
+        onPressed: function(mouse) {
+            if (inputField.activeFocus) {
+                // Check if click is outside the input field area
+                var inputRect = inputField.parent
+                var globalInputPos = inputRect.mapToItem(schedulesDisplayPage, 0, 0)
+
+                if (mouse.x < globalInputPos.x ||
+                    mouse.x > globalInputPos.x + inputRect.width ||
+                    mouse.y < globalInputPos.y ||
+                    mouse.y > globalInputPos.y + inputRect.height) {
+                    inputField.focus = false
+                    inputField.text = ""
+                }
+            }
+            mouse.accepted = false
+        }
+    }
+
     Component.onDestruction: {
         if (logWindow) {
-            logWindow.destroy(); // Explicitly destroy
+            logWindow.destroy();
             logWindow = null;
             if (logDisplayController) {
                 logDisplayController.setLogWindowOpen(false);
@@ -56,7 +64,6 @@ Page {
         }
     }
 
-    // Listen to model changes
     Connections {
         target: scheduleModel
         function onCurrentScheduleIndexChanged() {
@@ -68,6 +75,18 @@ Page {
             if (tableModel) {
                 tableModel.updateRows()
             }
+        }
+    }
+
+    onDayColumnWidthChanged: {
+        if (tableModel) {
+            tableModel.updateRows()
+        }
+    }
+
+    onUniformRowHeightChanged: {
+        if (tableModel) {
+            tableModel.updateRows()
         }
     }
 
@@ -267,7 +286,6 @@ Page {
                                 }
                             }
 
-                            // Error tooltip for invalid input
                             ToolTip {
                                 id: errorTooltip
                                 text: `Please enter a number between 1 and ${totalSchedules}`
@@ -351,30 +369,6 @@ Page {
                         }
                     }
                 }
-
-                // Invisible MouseArea to detect clicks outside the input field
-                MouseArea {
-                    id: outsideClickArea
-                    anchors.fill: parent
-                    z: -1
-                    propagateComposedEvents: true
-                    onPressed: {
-                        // Check if the input field has focus and if the click is outside the input area
-                        if (inputField.activeFocus) {
-                            var inputRect = inputField.parent
-                            var globalInputPos = inputRect.mapToItem(outsideClickArea, 0, 0)
-
-                            if (mouse.x < globalInputPos.x ||
-                                mouse.x > globalInputPos.x + inputRect.width ||
-                                mouse.y < globalInputPos.y ||
-                                mouse.y > globalInputPos.y + inputRect.height) {
-                                inputField.focus = false
-                                inputField.text = ""
-                            }
-                        }
-                        mouse.accepted = false
-                    }
-                }
             }
 
             Button {
@@ -432,15 +426,12 @@ Page {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        // Check if we already have a log window open
                         if (logWindow && logWindow.visible) {
-                            // Bring existing window to front
                             logWindow.raise();
                             logWindow.requestActivate();
                             return;
                         }
 
-                        // Create new log window if none exists or if controller says none is open
                         if (!logDisplayController.isLogWindowOpen || !logWindow) {
                             var component = Qt.createComponent("qrc:/log_display.qml");
                             if (component.status === Component.Ready) {
@@ -448,10 +439,9 @@ Page {
                                 logWindow = component.createObject(schedulesDisplayPage);
 
                                 if (logWindow) {
-                                    // Connect closing signal properly
                                     logWindow.closing.connect(function(close) {
                                         logDisplayController.setLogWindowOpen(false);
-                                        logWindow = null; // Clear our reference
+                                        logWindow = null;
                                     });
 
                                     logWindow.show();
@@ -624,7 +614,7 @@ Page {
         }
     }
 
-    // main content
+    // Main content
     Rectangle{
         id: mainContent
         anchors {
@@ -634,279 +624,331 @@ Page {
             bottom: footer.top
         }
 
-        ColumnLayout {
+        // Trim text based on stages (full, mid, min)
+        function getFormattedText(courseName, courseId, building, room, type, cellWidth, cellHeight) {
+            if (type === "Block") {
+                return "<b style='font-size:" + baseTextSize + "px'>" + courseName + "</b>";
+            }
+
+            var charWidth = baseTextSize * 0.6;
+            var maxCharsPerLine = Math.floor((cellWidth - 12) / charWidth); // Account for padding
+
+            var line1, line2;
+
+            // Full stage
+            var fullLine1 = courseName + " (" + courseId + ")";
+            var fullLine2 = "Building: " + building + ", Room: " + room;
+
+            if (fullLine1.length <= maxCharsPerLine && fullLine2.length <= maxCharsPerLine) {
+                line1 = fullLine1;
+                line2 = fullLine2;
+            } else {
+                // Mid stage
+                var courseNameLimit = Math.max(3, maxCharsPerLine - courseId.length - 6); // Minimum 3 chars for "..."
+                var trimmedName = courseName.length > courseNameLimit ?
+                    courseName.substring(0, courseNameLimit - 3) + "..." :
+                    courseName;
+                var midLine1 = trimmedName + " (" + courseId + ")";
+                var midLine2 = "B: " + building + ", R: " + room;
+
+                if (midLine1.length <= maxCharsPerLine && midLine2.length <= maxCharsPerLine) {
+                    line1 = midLine1;
+                    line2 = midLine2;
+                } else {
+                    // Min stage
+                    line1 = courseId;
+
+                    // original min building & room
+                    var minLine2 = building + ", " + room;
+
+                    if (minLine2.length <= maxCharsPerLine) {
+                        line2 = minLine2;
+                    } else {
+                        // Trim building if needed
+                        var roomSpace = room.length + 2;
+                        var buildingLimit = maxCharsPerLine - roomSpace;
+
+                        if (buildingLimit > 3) {
+                            var trimmedBuilding = building.length > buildingLimit ?
+                                building.substring(0, buildingLimit - 3) + "..." :
+                                building;
+                            line2 = trimmedBuilding + ", " + room;
+                        } else {
+                            if (building.length <= maxCharsPerLine) {
+                                line2 = building;
+                            } else {
+                                line2 = building.substring(0, maxCharsPerLine - 3) + "...";
+                            }
+                        }
+                    }
+                }
+            }
+
+            return "<b style='font-size:" + baseTextSize + "px'>" + line1 + "</b><br>" +
+                "<span style='font-size:" + baseTextSize + "px'>" + line2 + "</span>";
+        }
+
+        Item {
             anchors.fill: parent
             anchors.margins: 10
 
-            // table's navigation and info
+            Rectangle {
+                id: noSchedulesMessage
+                anchors.fill: parent
+                visible: totalSchedules <= 0
+                color: "#f9fafb"
+                border.color: "#e5e7eb"
+                border.width: 2
+                radius: 8
 
+                Text {
+                    anchors.centerIn: parent
+                    text: "No schedules match your filters.\nTry adjusting your filter criteria."
+                    font.pixelSize: 24
+                    font.bold: true
+                    color: "#6b7280"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
 
-            Item {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+            Column {
+                id: tableContent
+                anchors.fill: parent
+                visible: totalSchedules > 0
+                spacing: 1
 
-                Rectangle {
-                    id: noSchedulesMessage
-                    anchors.fill: parent
-                    visible: totalSchedules <= 0
-                    color: "#f9fafb"
-                    border.color: "#e5e7eb"
-                    border.width: 2
-                    radius: 8
+                // Header row
+                Row {
+                    id: dayHeaderRow
+                    height: headerHeight
+                    spacing: 1
+                    width: parent.width
 
-                    Text {
-                        anchors.centerIn: parent
-                        text: "No schedules match your filters.\nTry adjusting your filter criteria."
-                        font.pixelSize: 24
-                        font.bold: true
-                        color: "#6b7280"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    Rectangle {
+                        width: timeColumnWidth
+                        height: headerHeight
+                        color: "#e5e7eb"
+                        border.color: "#d1d5db"
+                        radius: 4
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Hour/Day"
+                            font.pixelSize: baseTextSize
+                            font.bold: true
+                            color: "#4b5563"
+                        }
+                    }
+
+                    Repeater {
+                        model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+                        Rectangle {
+                            width: dayColumnWidth
+                            height: headerHeight
+                            color: "#e5e7eb"
+                            border.color: "#d1d5db"
+                            radius: 4
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                font.pixelSize: baseTextSize
+                                font.bold: true
+                                color: "#4b5563"
+                                wrapMode: Text.WordWrap
+                                elide: Text.ElideRight
+                            }
+                        }
                     }
                 }
 
-                Flickable {
-                    id: scrollArea
-                    anchors.fill: parent
-                    visible: totalSchedules > 0
+                // Schedule table
+                TableView {
+                    id: scheduleTable
+                    width: parent.width
+                    height: parent.height - headerHeight - 1
                     clip: true
+                    rowSpacing: 1
+                    columnSpacing: 1
+                    interactive: false
 
-                    contentWidth: timeColumnWidth + (numDays * dayColumnWidth) + 30
-                    contentHeight: headerHeight + (numberOfTimeSlots * uniformRowHeight) + (numberOfTimeSlots - 1) + 2
-                    boundsBehavior: Flickable.StopAtBounds
-                    flickableDirection: Flickable.VerticalFlick
+                    property var timeSlots: [
+                        "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
+                        "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
+                        "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00",
+                        "20:00-21:00"
+                    ]
 
-                    Column  {
-                        id: tableContent
-                        width: scrollArea.contentWidth
-                        spacing: 1
+                    columnWidthProvider: function(col) {
+                        return col === 0 ? timeColumnWidth : dayColumnWidth;
+                    }
 
-                        // days row
-                        Row {
-                            id: dayHeaderRow
-                            height: headerHeight
-                            spacing: 1
-                            width: scrollArea.contentWidth
+                    rowHeightProvider: function(row) {
+                        return uniformRowHeight;
+                    }
 
-                            Rectangle {
-                                width: timeColumnWidth
-                                height: headerHeight
-                                color: "#e5e7eb"
-                                border.color: "#d1d5db"
-                                radius: 4
+                    model: TableModel {
+                        id: tableModel
+                        TableModelColumn { display: "timeSlot" }
+                        TableModelColumn { display: "sunday" }
+                        TableModelColumn { display: "monday" }
+                        TableModelColumn { display: "tuesday" }
+                        TableModelColumn { display: "wednesday" }
+                        TableModelColumn { display: "thursday" }
+                        TableModelColumn { display: "friday" }
+                        TableModelColumn { display: "saturday" }
 
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "Hour/Day"
-                                    font.pixelSize: Math.max(minTextSize, dynamicTextSize)
-                                    font.bold: true
-                                    color: "#4b5563"
+                        function updateRows() {
+                            let rows = [];
+                            const timeSlots = scheduleTable.timeSlots;
+                            const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+                            for (let i = 0; i < timeSlots.length; i++) {
+                                let row = { timeSlot: timeSlots[i] };
+                                for (let day of days) {
+                                    row[day] = "";
+                                    row[day + "_type"] = "";
+                                    row[day + "_courseName"] = "";
+                                    row[day + "_courseId"] = "";
+                                    row[day + "_building"] = "";
+                                    row[day + "_room"] = "";
                                 }
+                                rows.push(row);
                             }
 
-                            Repeater {
-                                model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                            if (totalSchedules > 0 && scheduleModel) {
+                                for (let day = 0; day < 7; day++) {
+                                    let dayName = days[day];
+                                    let items = scheduleModel.getCurrentDayItems(day);
 
-                                Rectangle {
-                                    width: dayColumnWidth
-                                    height: headerHeight
-                                    color: "#e5e7eb"
-                                    border.color: "#d1d5db"
-                                    radius: 4
+                                    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+                                        let item = items[itemIndex];
+                                        let start = parseInt(item.start.split(":")[0]);
+                                        let end = parseInt(item.end.split(":")[0]);
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: modelData
-                                        font.pixelSize: Math.max(minTextSize, dynamicTextSize)
-                                        font.bold: true
-                                        color: "#4b5563"
-                                        wrapMode: Text.WordWrap
-                                        elide: Text.ElideRight
-                                    }
-                                }
-                            }
-                        }
+                                        for (let hour = start; hour < end; hour++) {
+                                            for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
+                                                let slot = timeSlots[rowIndex];
+                                                let slotStart = parseInt(slot.split("-")[0].split(":")[0]);
+                                                let slotEnd = parseInt(slot.split("-")[1].split(":")[0]);
 
-                        // schedule table
-                        TableView {
-                            id: scheduleTable
-                            width: scrollArea.contentWidth - 10
-                            height: numberOfTimeSlots * uniformRowHeight + (numberOfTimeSlots - 1) + 20
-                            clip: true
-                            rowSpacing: 1
-                            columnSpacing: 1
-                            interactive: false
+                                                if (hour >= slotStart && hour < slotEnd) {
+                                                    if (!rows[rowIndex][dayName + "_type"]) {
+                                                        rows[rowIndex][dayName + "_type"] = item.type;
+                                                        rows[rowIndex][dayName + "_courseName"] = item.courseName;
+                                                        rows[rowIndex][dayName + "_courseId"] = item.raw_id;
+                                                        rows[rowIndex][dayName + "_building"] = item.building;
+                                                        rows[rowIndex][dayName + "_room"] = item.room;
 
-                            property var timeSlots: [
-                                "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
-                                "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
-                                "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00",
-                                "20:00-21:00"
-                            ]
-
-                            columnWidthProvider: function(col) {
-                                return col === 0 ? timeColumnWidth : dayColumnWidth;
-                            }
-
-                            rowHeightProvider: function(row) {
-                                return uniformRowHeight;
-                            }
-
-                            model: TableModel {
-                                id: tableModel
-                                TableModelColumn { display: "timeSlot" }
-                                TableModelColumn { display: "sunday" }
-                                TableModelColumn { display: "monday" }
-                                TableModelColumn { display: "tuesday" }
-                                TableModelColumn { display: "wednesday" }
-                                TableModelColumn { display: "thursday" }
-                                TableModelColumn { display: "friday" }
-                                TableModelColumn { display: "saturday" }
-
-                                function updateRows() {
-                                    let rows = [];
-                                    const timeSlots = scheduleTable.timeSlots;
-                                    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-
-                                    for (let i = 0; i < timeSlots.length; i++) {
-                                        let row = { timeSlot: timeSlots[i] };
-                                        for (let day of days) {
-                                            row[day] = "";
-                                            row[day + "_type"] = "";
-                                        }
-                                        rows.push(row);
-                                    }
-
-                                    if (totalSchedules > 0 && scheduleModel) {
-                                        for (let day = 0; day < 7; day++) {
-                                            let dayName = days[day];
-                                            let items = scheduleModel.getCurrentDayItems(day);
-
-                                            for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-                                                let item = items[itemIndex];
-                                                let start = parseInt(item.start.split(":")[0]);
-                                                let end = parseInt(item.end.split(":")[0]);
-
-                                                for (let hour = start; hour < end; hour++) {
-                                                    for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-                                                        let slot = timeSlots[rowIndex];
-                                                        let slotStart = parseInt(slot.split("-")[0].split(":")[0]);
-                                                        let slotEnd = parseInt(slot.split("-")[1].split(":")[0]);
-
-                                                        if (hour >= slotStart && hour < slotEnd) {
-                                                            if (item.type === "Block") {
-                                                                rows[rowIndex][dayName] +=
-                                                                    (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                                    "<b style='font-size:" + Math.max(minTextSize, dynamicTextSize + 2) + "px'>" + item.courseName + "</b>";
-                                                            } else {
-                                                                rows[rowIndex][dayName] +=
-                                                                    (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                                    "<b style='font-size:" + Math.max(minTextSize, dynamicTextSize - 1) + "px'>" + item.courseName + "</b> ("
-                                                                    + item.raw_id + ")" + "<br>" +
-                                                                    "Building: " + item.building + ", Room: " + item.room;
-                                                            }
-                                                            if (!rows[rowIndex][dayName + "_type"]) {
-                                                                rows[rowIndex][dayName + "_type"] = item.type;
-                                                            }
-                                                        }
+                                                        rows[rowIndex][dayName] = mainContent.getFormattedText(
+                                                            item.courseName,
+                                                            item.raw_id,
+                                                            item.building,
+                                                            item.room,
+                                                            item.type,
+                                                            dayColumnWidth,
+                                                            uniformRowHeight
+                                                        );
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                    tableModel.rows = rows;
                                 }
+                            }
+                            tableModel.rows = rows;
+                        }
 
-                                Component.onCompleted: updateRows()
+                        Component.onCompleted: updateRows()
+                    }
+
+                    delegate: Rectangle {
+                        implicitHeight: uniformRowHeight
+                        implicitWidth: model.column === 0 ? timeColumnWidth : dayColumnWidth
+                        border.width: 1
+                        border.color: "#e0e0e0"
+                        radius: 4
+
+                        property string columnName: {
+                            switch(model.column) {
+                                case 1: return "sunday_type";
+                                case 2: return "monday_type";
+                                case 3: return "tuesday_type";
+                                case 4: return "wednesday_type";
+                                case 5: return "thursday_type";
+                                case 6: return "friday_type";
+                                case 7: return "saturday_type";
+                                default: return "";
+                            }
+                        }
+
+                        property string itemType: {
+                            if (columnName && model.row !== undefined) {
+                                let rowData = parent.parent.model.rows[model.row];
+                                if (rowData && rowData[columnName]) {
+                                    return rowData[columnName];
+                                }
+                            }
+                            return "";
+                        }
+
+                        color: {
+                            if (model.column === 0) {
+                                return "#d1d5db";
                             }
 
-                            delegate: Rectangle {
-                                implicitHeight: uniformRowHeight
-                                border.width: 1
-                                border.color: "#e0e0e0"
+                            if (!model.display || String(model.display).trim().length === 0) {
+                                return "#ffffff";
+                            }
+
+                            switch(itemType) {
+                                case "Lecture": return "#b0e8ff";
+                                case "Lab": return "#abffc6";
+                                case "Tutorial": return "#edc8ff";
+                                case "Block": return "#7a7a7a";
+                                default: return "#64748BFF";
+                            }
+                        }
+
+                        ToolTip {
+                            id: sessionTooltip
+                            text: itemType || "No session type"
+                            visible: sessionMouseArea.containsMouse && itemType !== ""
+                            delay: 500
+                            timeout: 3000
+
+                            background: Rectangle {
+                                color: "#374151"
                                 radius: 4
-
-                                property string columnName: {
-                                    switch(model.column) {
-                                        case 1: return "sunday_type";
-                                        case 2: return "monday_type";
-                                        case 3: return "tuesday_type";
-                                        case 4: return "wednesday_type";
-                                        case 5: return "thursday_type";
-                                        case 6: return "friday_type";
-                                        case 7: return "saturday_type";
-                                        default: return "";
-                                    }
-                                }
-
-                                property string itemType: {
-                                    if (columnName && model.row !== undefined) {
-                                        let rowData = parent.parent.model.rows[model.row];
-                                        if (rowData && rowData[columnName]) {
-                                            return rowData[columnName];
-                                        }
-                                    }
-                                    return "";
-                                }
-
-                                color: {
-                                    if (model.column === 0) {
-                                        return "#d1d5db";
-                                    }
-
-                                    if (!model.display || String(model.display).trim().length === 0) {
-                                        return "#ffffff";
-                                    }
-
-                                    switch(itemType) {
-                                        case "Lecture": return "#b0e8ff";
-                                        case "Lab": return "#abffc6";
-                                        case "Tutorial": return "#edc8ff";
-                                        case "Block": return "#7a7a7a";
-                                        default: return "#64748BFF";
-                                    }
-                                }
-
-                                ToolTip {
-                                    id: sessionTooltip
-                                    text: itemType || "No session type"
-                                    visible: sessionMouseArea.containsMouse && itemType !== ""
-                                    delay: 500
-                                    timeout: 3000
-
-                                    background: Rectangle {
-                                        color: "#374151"
-                                        radius: 4
-                                        border.color: "#4b5563"
-                                    }
-
-                                    contentItem: Text {
-                                        text: sessionTooltip.text
-                                        color: "white"
-                                        font.pixelSize: 12
-                                    }
-                                }
-
-                                Text {
-                                    anchors.fill: parent
-                                    wrapMode: Text.WordWrap
-                                    verticalAlignment: Text.AlignVCenter
-                                    horizontalAlignment: Text.AlignHCenter
-                                    padding: 4
-                                    font.pixelSize: Math.max(minTextSize, dynamicTextSize)
-                                    textFormat: Text.RichText
-                                    text: model.display ? String(model.display) : ""
-                                    color: itemType === "Block" ? "#ffffff": "#000000"
-                                    clip: true
-                                    elide: Text.ElideRight
-                                }
-
-                                MouseArea {
-                                    id: sessionMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                }
+                                border.color: "#4b5563"
                             }
+
+                            contentItem: Text {
+                                text: sessionTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
+                        }
+
+                        Text {
+                            anchors.fill: parent
+                            wrapMode: Text.WordWrap
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            padding: 4
+                            font.pixelSize: baseTextSize
+                            textFormat: Text.RichText
+                            text: model.display ? String(model.display) : ""
+                            color: itemType === "Block" ? "#ffffff": "#000000"
+                            clip: true
+                        }
+
+                        MouseArea {
+                            id: sessionMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
                         }
                     }
                 }

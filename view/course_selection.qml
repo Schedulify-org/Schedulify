@@ -8,12 +8,16 @@ import "."
 Page {
     id: courseListScreen
 
-    // Add properties for validation state
     property bool validationInProgress: courseSelectionController ? courseSelectionController.validationInProgress : false
     property var validationErrors: courseSelectionController ? courseSelectionController.validationErrors : []
     property bool validationExpanded: false
+    property bool validationRowVisible: true
 
     property var logWindow: null
+
+    function isCourseSelectedSafe(index) {
+        return courseSelectionController ? courseSelectionController.isCourseSelected(index) : false;
+    }
 
     Component.onDestruction: {
         if (logWindow) {
@@ -41,6 +45,10 @@ Page {
                 // Auto-collapse when validation starts
                 if (validationInProgress) {
                     validationExpanded = false;
+                    validationRowVisible = true
+                } else {
+                    // Auto-hide when validation finishes
+                    validationRowVisible = false
                 }
             }
         }
@@ -140,7 +148,9 @@ Page {
                                     logDisplayController.setLogWindowOpen(false);
                                 }
                             }
-                            courseSelectionController.goBack();
+                            if (courseSelectionController) {
+                                courseSelectionController.goBack();
+                            }
                         }
                         cursorShape: Qt.PointingHandCursor
                     }
@@ -159,6 +169,7 @@ Page {
                     }
                 }
 
+                // log button
                 Button {
                     id: logButtonB
                     anchors {
@@ -246,6 +257,7 @@ Page {
                     }
                 }
 
+                // generate button
                 Button {
                     id: generateButton
                     width: 180
@@ -277,7 +289,11 @@ Page {
                         id: generateMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: courseSelectionController.generateSchedules()
+                        onClicked: {
+                            if (courseSelectionController) {
+                                courseSelectionController.generateSchedules();
+                            }
+                        }
                         cursorShape: Qt.PointingHandCursor
                     }
                 }
@@ -295,17 +311,18 @@ Page {
                 leftMargin: 16
                 rightMargin: 16
             }
-            height: validationExpanded ? 208 : 60
+            height: validationRowVisible ? (validationExpanded ? 208 : 60) : 0
+            visible: validationRowVisible
             radius: 8
             color: {
-                if (validationInProgress) return "#fff6dc"
+                if (validationInProgress) return "#ffffff"
                 if (validationErrors.length === 0) return "#e1fff1"
-                return "#ffecec"
+                return "#fff6e7"
             }
             border.color: {
-                if (validationInProgress) return "#f59e0b"
+                if (validationInProgress) return "#000000"
                 if (validationErrors.length === 0) return "#10b981"
-                return "#f56565"
+                return "#f59e0b"
             }
             border.width: 1
 
@@ -347,6 +364,14 @@ Page {
                         }
                         sourceSize.width: 30
                         sourceSize.height: 30
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                validationRowVisible = false
+                            }
+                        }
                     }
 
                     Text {
@@ -413,90 +438,89 @@ Page {
                         left: parent.left
                         right: parent.right
                     }
-                    // Fixed height to accommodate approximately 2 rows of messages
-                    height: visible ? 120 : 0
-                    color: "#fef2f2"
+                    height: visible ? 150 : 0
+                    color: "transparent"
                     radius: 6
-                    border.color: "#fca5a5"
+                    border.color: "transparent"
                     border.width: 1
 
-                    ScrollView {
+                    ListView {
                         id: errorsList
                         anchors {
                             fill: parent
                             margins: 8
                         }
                         clip: true
-                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                        model: validationErrors
+                        spacing: 8
+                        cacheBuffer: 400 // Cache some items outside visible area
 
-                        Column {
-                            id: messagesColumn
+                        ScrollBar.vertical: ScrollBar {
+                            active: true
+                            policy: ScrollBar.AsNeeded
+                        }
+
+                        delegate: Rectangle {
                             width: errorsList.width
-                            spacing: 8
+                            height: Math.max(40, errorText.implicitHeight + 16)
+                            color: {
+                                var msg = modelData;
+                                if (msg.includes("[Parser Warning]")) return "#fffbeb"
+                                if (msg.includes("[Parser Error]")) return "#fef2f2"
+                                if (msg.includes("[Validation]")) return "#fffbeb"
+                                return "#ffffff"
+                            }
+                            radius: 4
+                            border.color: {
+                                var msg = modelData;
+                                if (msg.includes("[Parser Warning]")) return "#fbbf24"
+                                if (msg.includes("[Parser Error]")) return "#f87171"
+                                if (msg.includes("[Validation]")) return "#fbbf24"
+                                return "#e5e7eb"
+                            }
+                            border.width: 1
 
-                            Repeater {
-                                model: validationErrors
-                                delegate: Rectangle {
-                                    width: messagesColumn.width
-                                    height: Math.max(40, errorText.contentHeight + 16) // Minimum height for consistency
-                                    color: {
-                                        var msg = modelData;
-                                        if (msg.includes("[Parser Warning]")) return "#fffbeb"
-                                        if (msg.includes("[Parser Error]")) return "#fef2f2"
-                                        if (msg.includes("[Validation]")) return "#fef2f2"
-                                        return "#ffffff"
-                                    }
-                                    radius: 4
-                                    border.color: {
-                                        var msg = modelData;
-                                        if (msg.includes("[Parser Warning]")) return "#fbbf24"
-                                        if (msg.includes("[Parser Error]")) return "#f87171"
-                                        if (msg.includes("[Validation]")) return "#f87171"
-                                        return "#e5e7eb"
-                                    }
-                                    border.width: 1
-
-                                    Text {
-                                        id: errorText
-                                        anchors {
-                                            left: parent.left
-                                            right: parent.right
-                                            verticalCenter: parent.verticalCenter
-                                            leftMargin: 8
-                                            rightMargin: 8
-                                        }
-                                        text: {
-                                            // Clean up the message by removing prefixes for display
-                                            var msg = modelData;
-                                            if (msg.includes("[Parser Warning] ")) {
-                                                return "⚠️ " + msg.replace("[Parser Warning] ", "");
-                                            } else if (msg.includes("[Parser Error] ")) {
-                                                return "❌ " + msg.replace("[Parser Error] ", "");
-                                            } else if (msg.includes("[Validation] ")) {
-                                                return "🔍 " + msg.replace("[Validation] ", "");
-                                            }
-                                            return msg;
-                                        }
-                                        font.pixelSize: 12
-                                        color: {
-                                            var msg = modelData;
-                                            if (msg.includes("[Parser Warning]")) return "#92400e"
-                                            return "#991b1b"
-                                        }
-                                        wrapMode: Text.WordWrap
-                                        maximumLineCount: 2 // Limit to 2 lines per message for consistency
-                                        elide: Text.ElideRight
-                                    }
+                            Text {
+                                id: errorText
+                                anchors {
+                                    left: parent.left
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: 8
+                                    rightMargin: 8
                                 }
+                                text: {
+                                    var msg = modelData;
+                                    if (msg.includes("[Parser Warning] ")) {
+                                        return "⚠️ " + msg.replace("[Parser Warning] ", "");
+                                    } else if (msg.includes("[Parser Error] ")) {
+                                        return "❌ " + msg.replace("[Parser Error] ", "");
+                                    } else if (msg.includes("[Validation] ")) {
+                                        return "⚠️ " + msg.replace("[Validation] ", "");
+                                    }
+                                    return msg;
+                                }
+                                font.pixelSize: 12
+                                color: {
+                                    var msg = modelData;
+                                    if (msg.includes("[Parser Warning]")) return "#92400e"
+                                    return "#991b1b"
+                                }
+                                wrapMode: Text.WordWrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
                             }
                         }
                     }
                 }
             }
 
+            // Expand/collapse errors list
             MouseArea {
-                anchors.fill: parent
+                anchors {
+                    fill: parent
+                    leftMargin: 58
+                }
                 enabled: validationErrors && validationErrors.length > 0
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                 onClicked: {
@@ -571,6 +595,51 @@ Page {
                             right: parent.right
                         }
                         height: 30
+
+                        // Validation icon (visible when validation row is hidden)
+                        Image {
+                            id: compactValidationIcon
+                            visible: !validationRowVisible && !validationInProgress
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            source: {
+                                if (!validationErrors || validationErrors.length === 0) return "qrc:/icons/ic-valid.svg"
+                                return "qrc:/icons/ic-warning.svg"
+                            }
+                            sourceSize.width: 24
+                            sourceSize.height: 24
+
+                            MouseArea {
+                                id: compactValidationMouseArea
+                                anchors.fill: parent
+                                cursorShape: (validationErrors && validationErrors.length > 0) ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                hoverEnabled: true
+                                onClicked: {
+                                    // Only show validation row if there are errors/warnings
+                                    if (validationErrors && validationErrors.length > 0) {
+                                        validationRowVisible = true
+                                    }
+                                }
+
+                                ToolTip {
+                                    visible: parent.containsMouse
+                                    delay: 500
+                                    timeout: 3000
+
+                                    background: Rectangle {
+                                        color: "#374151"
+                                        radius: 4
+                                        border.color: "#4b5563"
+                                    }
+
+                                    contentItem: Text {
+                                        text: (validationErrors && validationErrors.length === 0) ? "Parsed successfully" : "View " + validationErrors.length + " issues"
+                                        color: "white"
+                                        font.pixelSize: 12
+                                    }
+                                }
+                            }
+                        }
 
                         Label {
                             text: "Available Courses"
@@ -657,7 +726,9 @@ Page {
 
                                 onTextChanged: {
                                     searchText = text
-                                    courseSelectionController.filterCourses(text)
+                                    if (courseSelectionController) {
+                                        courseSelectionController.filterCourses(text)
+                                    }
                                 }
                             }
 
@@ -691,7 +762,9 @@ Page {
                                     onClicked: {
                                         searchField.text = ""
                                         searchText = ""
-                                        courseSelectionController.resetFilter()
+                                        if (courseSelectionController) {
+                                            courseSelectionController.resetFilter()
+                                        }
                                     }
                                     cursorShape: Qt.PointingHandCursor
                                 }
@@ -731,7 +804,7 @@ Page {
                             width: courseListView.width
                             height: 80
                             color: {
-                                if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                if (isCourseSelectedSafe(originalIndex)) {
                                     return "#f0f9ff"
                                 } else if (selectedCoursesRepeater.count >= 7) {
                                     return "#e5e7eb"
@@ -741,7 +814,7 @@ Page {
                             }
                             radius: 8
                             border.color: {
-                                if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                if (isCourseSelectedSafe(originalIndex)) {
                                     return "#3b82f6"
                                 } else if (selectedCoursesRepeater.count >= 7) {
                                     return "#d1d5db"
@@ -754,7 +827,7 @@ Page {
                             Connections {
                                 target: courseSelectionController
                                 function onSelectionChanged() {
-                                    if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                    if (isCourseSelectedSafe(originalIndex)) {
                                         courseDelegate.color = "#f0f9ff"
                                         courseDelegate.border.color = "#3b82f6"
                                         courseDelegate.opacity = 1
@@ -792,7 +865,7 @@ Page {
                                     width: 80
                                     height: 56
                                     color: {
-                                        if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                        if (isCourseSelectedSafe(originalIndex)) {
                                             return "#dbeafe"
                                         } else if (selectedCoursesRepeater.count >= 7) {
                                             return "#e5e7eb"
@@ -808,7 +881,7 @@ Page {
                                         text: courseId
                                         font.bold: true
                                         color: {
-                                            if (courseSelectionController.isCourseSelected(originalIndex)) {
+                                            if (isCourseSelectedSafe(originalIndex)) {
                                                 return "#2563eb"
                                             } else if (selectedCoursesRepeater.count >= 7) {
                                                 return "#9ca3af"
@@ -877,7 +950,11 @@ Page {
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: {
-                                    if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
+                                    if (!courseSelectionController) {
+                                        return;
+                                    }
+
+                                    if (selectedCoursesRepeater.count >= 7 && !isCourseSelectedSafe(originalIndex)) {
                                         errorMessage = "You have selected the maximum of 7 courses"
                                         errorMessageTimer.restart()
                                     } else {
