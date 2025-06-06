@@ -370,7 +370,6 @@ Page {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 validationRowVisible = false
-                                validationExpanded = false
                             }
                         }
                     }
@@ -381,6 +380,7 @@ Page {
                             if (validationInProgress) return "Scanning courses..."
                             if (!validationErrors || validationErrors.length === 0) return "All courses parsed correctly"
 
+                            // Count different types of messages
                             var parserWarnings = 0;
                             var parserErrors = 0;
                             var validationErrorCount = 0;
@@ -444,85 +444,82 @@ Page {
                     border.color: "transparent"
                     border.width: 1
 
-                    ScrollView {
+                    ListView {
                         id: errorsList
                         anchors {
                             fill: parent
                             margins: 8
                         }
                         clip: true
-                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-                        ScrollBar.vertical.policy: ScrollBar.AsNeeded
+                        model: validationErrors
+                        spacing: 8
+                        cacheBuffer: 400 // Cache some items outside visible area
 
-                        Column {
-                            id: messagesColumn
+                        ScrollBar.vertical: ScrollBar {
+                            active: true
+                            policy: ScrollBar.AsNeeded
+                        }
+
+                        delegate: Rectangle {
                             width: errorsList.width
-                            spacing: 8
+                            height: Math.max(40, errorText.implicitHeight + 16)
+                            color: {
+                                var msg = modelData;
+                                if (msg.includes("[Parser Warning]")) return "#fffbeb"
+                                if (msg.includes("[Parser Error]")) return "#fef2f2"
+                                if (msg.includes("[Validation]")) return "#fffbeb"
+                                return "#ffffff"
+                            }
+                            radius: 4
+                            border.color: {
+                                var msg = modelData;
+                                if (msg.includes("[Parser Warning]")) return "#fbbf24"
+                                if (msg.includes("[Parser Error]")) return "#f87171"
+                                if (msg.includes("[Validation]")) return "#fbbf24"
+                                return "#e5e7eb"
+                            }
+                            border.width: 1
 
-                            Repeater {
-                                model: validationErrors
-                                delegate: Rectangle {
-                                    width: messagesColumn.width
-                                    height: Math.max(40, errorText.contentHeight + 16)
-                                    color: {
-                                        var msg = modelData;
-                                        if (msg.includes("[Parser Warning]")) return "#fffbeb"
-                                        if (msg.includes("[Parser Error]")) return "#fef2f2"
-                                        if (msg.includes("[Validation]")) return "#fffbeb"
-                                        return "#ffffff"
-                                    }
-                                    radius: 4
-                                    border.color: {
-                                        var msg = modelData;
-                                        if (msg.includes("[Parser Warning]")) return "#fbbf24"
-                                        if (msg.includes("[Parser Error]")) return "#f87171"
-                                        if (msg.includes("[Validation]")) return "#fbbf24"
-                                        return "#e5e7eb"
-                                    }
-                                    border.width: 1
-
-                                    Text {
-                                        id: errorText
-                                        anchors {
-                                            left: parent.left
-                                            right: parent.right
-                                            verticalCenter: parent.verticalCenter
-                                            leftMargin: 8
-                                            rightMargin: 8
-                                        }
-                                        text: {
-                                            var msg = modelData;
-                                            if (msg.includes("[Parser Warning] ")) {
-                                                return "⚠️ " + msg.replace("[Parser Warning] ", "");
-                                            } else if (msg.includes("[Parser Error] ")) {
-                                                return "❌ " + msg.replace("[Parser Error] ", "");
-                                            } else if (msg.includes("[Validation] ")) {
-                                                return "⚠️ " + msg.replace("[Validation] ", "");
-                                            }
-                                            return msg;
-                                        }
-                                        font.pixelSize: 12
-                                        color: {
-                                            var msg = modelData;
-                                            if (msg.includes("[Parser Warning]")) return "#92400e"
-                                            return "#991b1b"
-                                        }
-                                        wrapMode: Text.WordWrap
-                                        maximumLineCount: 2
-                                        elide: Text.ElideRight
-                                    }
+                            Text {
+                                id: errorText
+                                anchors {
+                                    left: parent.left
+                                    right: parent.right
+                                    verticalCenter: parent.verticalCenter
+                                    leftMargin: 8
+                                    rightMargin: 8
                                 }
+                                text: {
+                                    var msg = modelData;
+                                    if (msg.includes("[Parser Warning] ")) {
+                                        return "⚠️ " + msg.replace("[Parser Warning] ", "");
+                                    } else if (msg.includes("[Parser Error] ")) {
+                                        return "❌ " + msg.replace("[Parser Error] ", "");
+                                    } else if (msg.includes("[Validation] ")) {
+                                        return "⚠️ " + msg.replace("[Validation] ", "");
+                                    }
+                                    return msg;
+                                }
+                                font.pixelSize: 12
+                                color: {
+                                    var msg = modelData;
+                                    if (msg.includes("[Parser Warning]")) return "#92400e"
+                                    return "#991b1b"
+                                }
+                                wrapMode: Text.WordWrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
                             }
                         }
                     }
                 }
             }
 
-            // Expand/collapse to see errors
+            // Expand/collapse errors list
             MouseArea {
                 anchors {
                     fill: parent
-                    leftMargin: 58 // Skip the status icon area (30px width + 28px spacing)
+                    leftMargin: 58
                 }
                 enabled: validationErrors && validationErrors.length > 0
                 cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
