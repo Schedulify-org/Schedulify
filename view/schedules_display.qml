@@ -624,41 +624,64 @@ Page {
             bottom: footer.top
         }
 
+        // Trim text based on stages (full, mid, min)
         function getFormattedText(courseName, courseId, building, room, type, cellWidth, cellHeight) {
             if (type === "Block") {
                 return "<b style='font-size:" + baseTextSize + "px'>" + courseName + "</b>";
             }
 
-            var charWidth = baseTextSize * 0.5;
-            var maxCharsPerLine = Math.floor((cellWidth - 8) / charWidth);
+            var charWidth = baseTextSize * 0.6;
+            var maxCharsPerLine = Math.floor((cellWidth - 12) / charWidth); // Account for padding
 
             var line1, line2;
 
-            if (maxCharsPerLine >= 25) {
-                // Full stage - plenty of space
-                line1 = courseName + " (" + courseId + ")";
-                line2 = "Building: " + building + ", Room: " + room;
-            } else if (maxCharsPerLine >= 15) {
-                // Mid stage - limited space
-                var courseNameLimit = maxCharsPerLine - courseId.length - 6; // Account for " (" + courseId + ")"
-                if (courseName.length > courseNameLimit) {
-                    var trimmedName = courseName.substring(0, courseNameLimit - 3) + "...";
-                    line1 = trimmedName + " (" + courseId + ")";
-                } else {
-                    line1 = courseName + " (" + courseId + ")";
-                }
-                line2 = "B: " + building + ", R: " + room;
-            } else {
-                // Min stage - very limited space
-                line1 = courseId;
-                line2 = building + ", " + room;
-            }
+            // Full stage
+            var fullLine1 = courseName + " (" + courseId + ")";
+            var fullLine2 = "Building: " + building + ", Room: " + room;
 
-            if (line1.length > maxCharsPerLine && maxCharsPerLine > 3) {
-                line1 = line1.substring(0, maxCharsPerLine - 3) + "...";
-            }
-            if (line2.length > maxCharsPerLine && maxCharsPerLine > 3) {
-                line2 = line2.substring(0, maxCharsPerLine - 3) + "...";
+            if (fullLine1.length <= maxCharsPerLine && fullLine2.length <= maxCharsPerLine) {
+                line1 = fullLine1;
+                line2 = fullLine2;
+            } else {
+                // Mid stage
+                var courseNameLimit = Math.max(3, maxCharsPerLine - courseId.length - 6); // Minimum 3 chars for "..."
+                var trimmedName = courseName.length > courseNameLimit ?
+                    courseName.substring(0, courseNameLimit - 3) + "..." :
+                    courseName;
+                var midLine1 = trimmedName + " (" + courseId + ")";
+                var midLine2 = "B: " + building + ", R: " + room;
+
+                if (midLine1.length <= maxCharsPerLine && midLine2.length <= maxCharsPerLine) {
+                    line1 = midLine1;
+                    line2 = midLine2;
+                } else {
+                    // Min stage
+                    line1 = courseId;
+
+                    // original min building & room
+                    var minLine2 = building + ", " + room;
+
+                    if (minLine2.length <= maxCharsPerLine) {
+                        line2 = minLine2;
+                    } else {
+                        // Trim building if needed
+                        var roomSpace = room.length + 2;
+                        var buildingLimit = maxCharsPerLine - roomSpace;
+
+                        if (buildingLimit > 3) {
+                            var trimmedBuilding = building.length > buildingLimit ?
+                                building.substring(0, buildingLimit - 3) + "..." :
+                                building;
+                            line2 = trimmedBuilding + ", " + room;
+                        } else {
+                            if (building.length <= maxCharsPerLine) {
+                                line2 = building;
+                            } else {
+                                line2 = building.substring(0, maxCharsPerLine - 3) + "...";
+                            }
+                        }
+                    }
+                }
             }
 
             return "<b style='font-size:" + baseTextSize + "px'>" + line1 + "</b><br>" +
