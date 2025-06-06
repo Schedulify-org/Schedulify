@@ -112,7 +112,7 @@ private:
     void setValidationInProgress(bool inProgress);
     void setValidationErrors(const QStringList& errors);
 
-    static const int VALIDATION_TIMEOUT_MS = 60000;
+    inline static const int VALIDATION_TIMEOUT_MS = 60000;
     static const int THREAD_CLEANUP_TIMEOUT_MS = 10000;
     static const int MAX_COURSES_LIMIT = 1000;
 };
