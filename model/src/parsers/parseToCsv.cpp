@@ -44,6 +44,46 @@ string getHebrewTranslation(const string& englishTerm) {
     return (it != translations.end()) ? it->second : englishTerm;
 }
 
+// Function to get Hebrew day names
+string getHebrewDayName(const string& englishDay) {
+    static map<string, string> dayTranslations = {
+        {"Sunday", "ראשון"},
+        {"Monday", "שני"},
+        {"Tuesday", "שלישי"},
+        {"Wednesday", "רביעי"},
+        {"Thursday", "חמישי"},
+        {"Friday", "שישי"},
+        {"Saturday", "שבת"},
+        // Also handle abbreviated forms
+        {"Sun", "ראשון"},
+        {"Mon", "שני"},
+        {"Tue", "שלישי"},
+        {"Wed", "רביעי"},
+        {"Thu", "חמישי"},
+        {"Fri", "שישי"},
+        {"Sat", "שבת"}
+    };
+
+    auto it = dayTranslations.find(englishDay);
+    return (it != dayTranslations.end()) ? it->second : englishDay;
+}
+
+// Function to check if schedule contains Hebrew content
+bool scheduleContainsHebrew(const InformativeSchedule& schedule) {
+    for (const auto& day : schedule.week) {
+        for (const auto& item : day.day_items) {
+            if (containsHebrew(item.courseName) ||
+                containsHebrew(item.type) ||
+                containsHebrew(item.building) ||
+                containsHebrew(item.room) ||
+                containsHebrew(item.raw_id)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 int getHourFromTimeString(const string& timeStr) {
     try {
         return stoi(timeStr.substr(0, 2));
@@ -64,9 +104,22 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
     // Write UTF-8 BOM for proper Hebrew display in Excel
     csvFile.write("\xEF\xBB\xBF", 3);
 
+    // Check if schedule contains Hebrew content
+    bool isHebrewSchedule = scheduleContainsHebrew(schedule);
+
     vector<string> days;
     for (const auto& day : schedule.week) {
-        days.push_back(day.day);
+        // Use Hebrew day names if schedule contains Hebrew content
+        if (isHebrewSchedule) {
+            days.push_back(getHebrewDayName(day.day));
+        } else {
+            days.push_back(day.day);
+        }
+    }
+
+    // For RTL support, reverse the order of days
+    if (isHebrewSchedule) {
+        reverse(days.begin(), days.end());
     }
 
     const int minHour = 8;
@@ -100,31 +153,46 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
                 // Create cell content with formatting
                 stringstream cellContent;
                 if (item.type == "Block") {
-                    cellContent << "Blocked";
+                    cellContent << (isHebrewSchedule ? "חסום" : "Blocked");
                 } else {
-                    cellContent << item.courseName << " "
-                                << item.raw_id << " - ";
+                    if (isHebrewSchedule) {
+                        // For Hebrew, use RTL formatting
+                        cellContent << item.courseName << " "
+                                    << item.raw_id << " - ";
 
-                    string type = isHebrew ? getHebrewTranslation(item.type) : item.type;
-                    cellContent << type << ", ";
+                        string type = isHebrew ? getHebrewTranslation(item.type) : item.type;
+                        cellContent << type << ", ";
 
-                    // Use Hebrew or English terms based on content language
-                    if (isHebrew) {
                         cellContent << getHebrewTranslation("Building") << ": " << item.building << ", "
                                     << getHebrewTranslation("Room") << ": " << item.room;
                     } else {
+                        // For English, use LTR formatting
+                        cellContent << item.courseName << " "
+                                    << item.raw_id << " - ";
+
+                        string type = isHebrew ? getHebrewTranslation(item.type) : item.type;
+                        cellContent << type << ", ";
+
                         cellContent << "Building: " << item.building << ", Room: " << item.room;
                     }
                 }
 
+                // Use the appropriate day name (Hebrew or English)
+                string dayName = isHebrewSchedule ? getHebrewDayName(day.day) : day.day;
+
                 // Store in map with (hour, day) as key
-                scheduleData[{hour, day.day}] = cellContent.str();
+                scheduleData[{hour, dayName}] = cellContent.str();
             }
         }
     }
 
     // Write header row
-    csvFile << "Hour/Day";
+    if (isHebrewSchedule) {
+        csvFile << "יום/שעה"; // "Day/Hour" in Hebrew
+    } else {
+        csvFile << "Hour/Day";
+    }
+
     for (const auto& day : days) {
         csvFile << "," << day;
     }
@@ -144,6 +212,11 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
             if (scheduleData.find(key) != scheduleData.end()) {
                 string content = scheduleData[key];
 
+                // For Hebrew content, add RTL mark to ensure proper display
+                if (isHebrewSchedule && containsHebrew(content)) {
+                    content = "\u202E" + content + "\u202C"; // RTL override + content + pop directional formatting
+                }
+
                 // Escape quotes by doubling them for CSV format
                 size_t pos = 0;
                 while ((pos = content.find('\"', pos)) != string::npos) {
@@ -160,6 +233,12 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
     }
 
     csvFile.close();
-    Logger::get().logInfo("Schedule successfully saved to " + filePath);
+
+    if (isHebrewSchedule) {
+        Logger::get().logInfo("Hebrew schedule with RTL support successfully saved to " + filePath);
+    } else {
+        Logger::get().logInfo("Schedule successfully saved to " + filePath);
+    }
+
     return true;
 }
