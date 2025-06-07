@@ -99,26 +99,32 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
 
                 // Create cell content with formatting
                 stringstream cellContent;
-                cellContent << item.courseName << " "
-                            << item.raw_id << " - ";
-
-                // Translate type if Hebrew
-                if (isHebrew && item.type == "Lecture") {
-                    cellContent << getHebrewTranslation("Lecture");
-                } else if (isHebrew && item.type == "Tutorial") {
-                    cellContent << getHebrewTranslation("Tutorial");
+                if (item.type == "Block") {
+                    cellContent << "Blocked";
                 } else {
-                    cellContent << item.type;
-                }
+                    cellContent << item.courseName << " "
+                                << item.raw_id << " - ";
 
-                cellContent << ", " << item.start << " - " << item.end << ", ";
+                    // Translate type if Hebrew
+                    if (isHebrew && item.type == "Lecture") {
+                        cellContent << getHebrewTranslation("Lecture");
+                    } else if (isHebrew && item.type == "Tutorial") {
+                        cellContent << getHebrewTranslation("Tutorial");
+                    }  else if (isHebrew && item.type == "Lab") {
+                        cellContent << getHebrewTranslation("Lab");
+                    } else {
+                        cellContent << item.type;
+                    }
 
-                // Use Hebrew or English terms based on content language
-                if (isHebrew) {
-                    cellContent << getHebrewTranslation("Building") << ": " << item.building << ", "
-                                << getHebrewTranslation("Room") << ": " << item.room;
-                } else {
-                    cellContent << "Building: " << item.building << ", Room: " << item.room;
+                    cellContent << ", ";
+
+                    // Use Hebrew or English terms based on content language
+                    if (isHebrew) {
+                        cellContent << getHebrewTranslation("Building") << ": " << item.building << ", "
+                                    << getHebrewTranslation("Room") << ": " << item.room;
+                    } else {
+                        cellContent << "Building: " << item.building << ", Room: " << item.room;
+                    }
                 }
 
                 // Store in map with (hour, day) as key
