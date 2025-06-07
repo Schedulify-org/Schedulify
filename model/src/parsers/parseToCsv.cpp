@@ -105,18 +105,8 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
                     cellContent << item.courseName << " "
                                 << item.raw_id << " - ";
 
-                    // Translate type if Hebrew
-                    if (isHebrew && item.type == "Lecture") {
-                        cellContent << getHebrewTranslation("Lecture");
-                    } else if (isHebrew && item.type == "Tutorial") {
-                        cellContent << getHebrewTranslation("Tutorial");
-                    }  else if (isHebrew && item.type == "Lab") {
-                        cellContent << getHebrewTranslation("Lab");
-                    } else {
-                        cellContent << item.type;
-                    }
-
-                    cellContent << ", ";
+                    string type = isHebrew ? getHebrewTranslation(item.type) : item.type;
+                    cellContent << type << ", ";
 
                     // Use Hebrew or English terms based on content language
                     if (isHebrew) {
