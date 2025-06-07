@@ -1,6 +1,5 @@
 #include "main_controller.h"
 #include "course_selection.h"
-
 CourseSelectionController::CourseSelectionController(QObject *parent)
         : ControllerManager(parent)
         , m_courseModel(new CourseModel(this))
