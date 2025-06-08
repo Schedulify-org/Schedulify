@@ -30,7 +30,7 @@ TEST(PreParserTest, ValidId) {
 
 // Test: valid user input
 TEST(PreParserTest, ValidUserInput) {
-    string testCourseDBPath = "../testData/validUserInput.txt";
+    string testCourseDBPath = "../testData/txt/validUserInput.txt";
     unordered_set<string> input = readSelectedCourseIDs(testCourseDBPath);
 
     unordered_set<string> expected = {"83112", "83533", "00001"};
@@ -44,7 +44,7 @@ TEST(PreParserTest, ValidUserInput) {
 
 // Test: valid POST command in user's input
 TEST(PreParserTest, ParsesValidCourseDB) {
-    string testCourseDBPath = "../testData/validDB.txt";
+    string testCourseDBPath = "../testData/txt/validDB.txt";
     auto courses = parseCourseDB(testCourseDBPath);
     ASSERT_EQ(courses.size(), 3);
     EXPECT_EQ(courses[0].id, 83112);
@@ -78,7 +78,7 @@ int countTotalSessions(const Course& course) {
 
 // Test invalid course id
 TEST(PreParserTest, FailsOnInvalidCourseID) {
-    string testCourseDBPath = "../testData/invalidDB_id.txt";
+    string testCourseDBPath = "../testData/txt/invalidDB_id.txt";
     auto courses = parseCourseDB(testCourseDBPath);
 
     // Depending on behavior: expect 0 valid courses parsed
@@ -87,7 +87,7 @@ TEST(PreParserTest, FailsOnInvalidCourseID) {
 
 // Test invalid course id: string
 TEST(PreParserTest, FailsOnNonNumericFields) {
-    string testCourseDBPath = "../testData/invalidDB_string.txt";
+    string testCourseDBPath = "../testData/txt/invalidDB_string.txt";
     auto courses = parseCourseDB(testCourseDBPath);
 
     // Expect parser to reject the malformed course entries
@@ -96,7 +96,7 @@ TEST(PreParserTest, FailsOnNonNumericFields) {
 
 // Test: invalid user inputId
 TEST(PreParserTest, InvalidUserInput_InvalidID) {
-    string testPath = "../testData/invalidUserInput_id.txt";
+    string testPath = "../testData/txt/invalidUserInput_id.txt";
     unordered_set<string> input = readSelectedCourseIDs(testPath);
     // Assuming invalid IDs should be skipped or result in an empty set
     ASSERT_EQ(input.size(), 4) << "Expected no valid course IDs, but got some.";
@@ -104,7 +104,7 @@ TEST(PreParserTest, InvalidUserInput_InvalidID) {
 
 // Test: invalid user input too many courses
 TEST(PreParserTest, RejectsMoreThanSevenTotalCourses) {
-    string testPath = "../testData/userInput_TooManyTotal.txt";
+    string testPath = "../testData/txt/userInput_TooManyTotal.txt";
     unordered_set<string> input = readSelectedCourseIDs(testPath);
 
     EXPECT_TRUE(input.empty()) << "Expected input to be rejected due to more than 7 valid course IDs.";
@@ -112,14 +112,14 @@ TEST(PreParserTest, RejectsMoreThanSevenTotalCourses) {
 
 // Test: invalid user input: no input
 TEST(PreParserTest, InvalidUserInput_EmptyFile) {
-    string testPath = "../testData/invalidUserInput_none.txt";
+    string testPath = "../testData/txt/invalidUserInput_none.txt";
     unordered_set<string> input = readSelectedCourseIDs(testPath);
     EXPECT_TRUE(input.empty()) << "Expected empty set from empty file.";
 }
 
 // Test: invalid user input: Garbage text
 TEST(PreParserTest, InvalidUserInput_NonNumericStrings) {
-    string testPath = "../testData/invalidUserInput_string.txt";
+    string testPath = "../testData/txt/invalidUserInput_string.txt";
     unordered_set<string> input = readSelectedCourseIDs(testPath);
 
     for (const auto& id : input) {
@@ -130,7 +130,7 @@ TEST(PreParserTest, InvalidUserInput_NonNumericStrings) {
 
 // Test user input test duplicate user input
 TEST(PreParserTest, DuplicateUserInputIDs) {
-    string testPath = "../testData/duplicateUserInput.txt";
+    string testPath = "../testData/txt/duplicateUserInput.txt";
 
     // Optional: capture stderr to verify warning
     testing::internal::CaptureStderr();
@@ -149,7 +149,7 @@ TEST(PreParserTest, DuplicateUserInputIDs) {
 
 // Additional test to verify the new structure works correctly
 TEST(PreParserTest, VerifyNewCourseStructure) {
-    string testCourseDBPath = "../testData/validDB.txt";
+    string testCourseDBPath = "../testData/txt/validDB.txt";
     auto courses = parseCourseDB(testCourseDBPath);
 
     if (!courses.empty()) {
