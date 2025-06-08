@@ -47,12 +47,14 @@ add_executable(schedModelTest
         ${CMAKE_CURRENT_SOURCE_DIR}/../../model/src/main/model_access.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../../model/main_model.cpp
 
+        ${CMAKE_CURRENT_SOURCE_DIR}/CourseLegalComb_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/main_tests.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/CourseLegalComb_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/TimeUtils_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/preParser_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ScheduleBuilder_test.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/scheduleEnrichment_test.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/excel_parser_test.cpp
 )
 
 # Use target_include_directories instead of include_directories
