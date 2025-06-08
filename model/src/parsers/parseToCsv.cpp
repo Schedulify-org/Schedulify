@@ -188,32 +188,35 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
 
     // Write header row
     if (isHebrewSchedule) {
-        csvFile << "יום/שעה"; // "Day/Hour" in Hebrew
-    } else {
-        csvFile << "Hour/Day";
+    // For Hebrew RTL: days first, then time column on the right
+    for (const auto& day : days) {
+        csvFile << day << ",";
     }
-
+    csvFile << "יום/שעה"; // "Day/Hour" in Hebrew
+} else {
+    // For English LTR: time column first, then days
+    csvFile << "Hour/Day";
     for (const auto& day : days) {
         csvFile << "," << day;
     }
-    csvFile << "\n";
+}
+csvFile << "\n";
 
-    // Write data rows
-    for (int hour = minHour; hour < maxHour; hour++) {
-        stringstream timeStr;
-        timeStr << setw(2) << setfill('0') << hour << ":00-"
-                << setw(2) << setfill('0') << (hour + 1) << ":00";
-        csvFile << timeStr.str();
+// Write data rows
+for (int hour = minHour; hour < maxHour; hour++) {
+    stringstream timeStr;
+    timeStr << setw(2) << setfill('0') << hour << ":00-"
+            << setw(2) << setfill('0') << (hour + 1) << ":00";
 
+    if (isHebrewSchedule) {
+        // For Hebrew RTL: day data first, then time column on the right
         for (const auto& day : days) {
-            csvFile << ",";
-
             auto key = make_pair(hour, day);
             if (scheduleData.find(key) != scheduleData.end()) {
                 string content = scheduleData[key];
 
                 // For Hebrew content, add RTL mark to ensure proper display
-                if (isHebrewSchedule && containsHebrew(content)) {
+                if (containsHebrew(content)) {
                     content = "\u202E" + content + "\u202C"; // RTL override + content + pop directional formatting
                 }
 
@@ -227,12 +230,33 @@ bool saveScheduleToCsv(const string& filePath, const InformativeSchedule& schedu
                 // Quote content to handle Hebrew text and special characters
                 csvFile << "\"" << content << "\"";
             }
+            csvFile << ",";
         }
+        csvFile << timeStr.str(); // Time column at the end for RTL
+    } else {
+        // For English LTR: time column first, then day data
+        csvFile << timeStr.str();
+        for (const auto& day : days) {
+            csvFile << ",";
+            auto key = make_pair(hour, day);
+            if (scheduleData.find(key) != scheduleData.end()) {
+                string content = scheduleData[key];
 
-        csvFile << "\n";
+                // Escape quotes by doubling them for CSV format
+                size_t pos = 0;
+                while ((pos = content.find('\"', pos)) != string::npos) {
+                    content.replace(pos, 1, "\"\"");
+                    pos += 2;
+                }
+
+                // Quote content to handle Hebrew text and special characters
+                csvFile << "\"" << content << "\"";
+            }
+        }
     }
 
-    csvFile.close();
+    csvFile << "\n";
+}
 
     if (isHebrewSchedule) {
         Logger::get().logInfo("Hebrew schedule with RTL support successfully saved to " + filePath);
