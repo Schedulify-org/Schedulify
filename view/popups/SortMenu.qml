@@ -8,16 +8,20 @@ Popup {
 
     signal sortingApplied(var sortData)
 
-    // Primary sort properties
-    property string primarySortType: ""
-    property bool primarySortAscending: true
+    // Sort properties
+    property bool daysToStudyEnabled: false
+    property bool daysToStudyAscending: true
+    property bool totalGapsEnabled: false
+    property bool totalGapsAscending: true
+    property bool maxGapsTimeEnabled: false
+    property bool maxGapsTimeAscending: true
+    property bool avgDayStartEnabled: false
+    property bool avgDayStartAscending: true
+    property bool avgDayEndEnabled: false
+    property bool avgDayEndAscending: true
 
-    // Secondary sort properties
-    property string secondarySortType: ""
-    property bool secondarySortAscending: true
-
-    width: 450
-    height: 700
+    width: 400
+    height: 600
     modal: true
     focus: true
     clip: true
@@ -33,420 +37,737 @@ Popup {
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
+    // make the selection unique
+    function disableAllSortsExcept(keepEnabled) {
+        if (keepEnabled !== "daysToStudy") daysToStudyEnabled = false
+        if (keepEnabled !== "totalGaps") totalGapsEnabled = false
+        if (keepEnabled !== "maxGapsTime") maxGapsTimeEnabled = false
+        if (keepEnabled !== "avgDayStart") avgDayStartEnabled = false
+        if (keepEnabled !== "avgDayEnd") avgDayEndEnabled = false
+    }
+
     function getCurrentSortData() {
         return {
-            primary: {
-                type: root.primarySortType,
-                ascending: root.primarySortAscending
+            amount_days: {
+                enabled: root.daysToStudyEnabled,
+                ascending: root.daysToStudyAscending
             },
-            secondary: {
-                type: root.secondarySortType,
-                ascending: root.secondarySortAscending
+            amount_gaps: {
+                enabled: root.totalGapsEnabled,
+                ascending: root.totalGapsAscending
+            },
+            gaps_time: {
+                enabled: root.maxGapsTimeEnabled,
+                ascending: root.maxGapsTimeAscending
+            },
+            avg_start: {
+                enabled: root.avgDayStartEnabled,
+                ascending: root.avgDayStartAscending
+            },
+            avg_end: {
+                enabled: root.avgDayEndEnabled,
+                ascending: root.avgDayEndAscending
             }
         }
     }
 
-    function getSortDisplayName(sortType) {
-        switch(sortType) {
-            case "amount_days": return "Days to Study"
-            case "amount_gaps": return "Total Gaps"
-            case "gaps_time": return "Max Gaps Time"
-            case "avg_start": return "Avg Day Start"
-            case "avg_end": return "Avg Day End"
-            default: return "None"
-        }
-    }
 
-    ScrollView {
-        anchors.fill: parent
-        anchors.margins: 20
-        contentHeight: contentColumn.height
+    Column {
+        width: parent.width
+        height: parent.height
+        spacing: 30
 
-        Column {
-            id: contentColumn
+        // Header
+        Rectangle {
             width: parent.width
-            spacing: 25
+            height: 60
+            color: "transparent"
 
-            // Header
+            Item {
+                anchors.fill: parent
+                anchors.margins: 10
+
+                Text {
+                    text: "Sort Schedules"
+                    font.pixelSize: 20
+                    font.bold: true
+                    color: "#ffffff"
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.left: parent.left
+                }
+            }
+        }
+
+        // Days to Study sort
+        Item {
+            width: parent.width
+            height: 50
+
+            // Toggle Button
+            Rectangle {
+                id: daysToggle
+                width: 60
+                height: 30
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: daysToStudyEnabled ? "#10b981" : "#374151"
+                radius: 15
+                border.width: 2
+                border.color: daysToStudyEnabled ? "#059669" : "#4b5563"
+
+                Rectangle {
+                    width: 22
+                    height: 22
+                    radius: 11
+                    color: "#ffffff"
+                    x: daysToStudyEnabled ? parent.width - width - 4 : 4
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!daysToStudyEnabled) {
+                            disableAllSortsExcept("daysToStudy")
+                            daysToStudyEnabled = true
+                        } else {
+                            daysToStudyEnabled = false
+                        }
+                    }
+                }
+            }
+
             Text {
-                text: "Sort Schedules"
-                font.pixelSize: 22
-                font.bold: true
+                text: "Days to Study"
+                font.pixelSize: 16
                 color: "#ffffff"
+                anchors.left: daysToggle.right
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
             }
 
-            // Primary Sort Section
+            // Ascending/Descending Toggle
             Rectangle {
-                width: parent.width
-                height: primarySortColumn.height + 40
+                width: 120
+                height: 40
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
                 color: "#374151"
-                radius: 8
-                border.color: "#4b5563"
+                radius: 4
                 border.width: 1
+                border.color: "#4b5563"
 
-                Column {
-                    id: primarySortColumn
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 15
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 0
 
-                    Text {
-                        text: "Primary Sort"
-                        font.pixelSize: 18
-                        font.bold: true
-                        color: "#10b981"
-                    }
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: daysToStudyEnabled && daysToStudyAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
 
-                    // Primary Sort Type Selection
-                    ComboBox {
-                        id: primaryCombo
-                        width: parent.width
-                        height: 40
-                        model: ["None", "Days to Study", "Total Gaps", "Max Gaps Time", "Avg Day Start", "Avg Day End"]
-
-                        background: Rectangle {
-                            color: "#4b5563"
-                            border.color: "#6b7280"
-                            border.width: 1
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: primaryCombo.displayText
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
-                            font.pixelSize: 14
-                            verticalAlignment: Text.AlignVCenter
-                            leftPadding: 10
+                            anchors.centerIn: parent
                         }
 
-                        onCurrentTextChanged: {
-                            switch(currentText) {
-                                case "Days to Study": root.primarySortType = "amount_days"; break
-                                case "Total Gaps": root.primarySortType = "amount_gaps"; break
-                                case "Max Gaps Time": root.primarySortType = "gaps_time"; break
-                                case "Avg Day Start": root.primarySortType = "avg_start"; break
-                                case "Avg Day End": root.primarySortType = "avg_end"; break
-                                default: root.primarySortType = ""; break
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: daysToStudyEnabled
+                            onClicked: {
+                                daysToStudyAscending = true
                             }
                         }
                     }
 
-                    // Primary Sort Direction
-                    Row {
-                        width: parent.width
-                        spacing: 10
-                        visible: root.primarySortType !== ""
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: daysToStudyEnabled && !daysToStudyAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
 
                         Text {
-                            text: "Direction:"
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
                             color: "#ffffff"
-                            font.pixelSize: 14
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.centerIn: parent
                         }
 
-                        Rectangle {
-                            width: 120
-                            height: 35
-                            color: "#4b5563"
-                            radius: 4
-                            border.width: 1
-                            border.color: "#6b7280"
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 0
-
-                                Rectangle {
-                                    width: 60
-                                    height: 33
-                                    color: root.primarySortAscending ? "#10b981" : "#6b7280"
-                                    radius: 4
-
-                                    Text {
-                                        text: "↑"
-                                        font.pixelSize: 16
-                                        font.bold: true
-                                        color: "#ffffff"
-                                        anchors.centerIn: parent
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.primarySortAscending = true
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 60
-                                    height: 33
-                                    color: !root.primarySortAscending ? "#10b981" : "#6b7280"
-                                    radius: 4
-
-                                    Text {
-                                        text: "↓"
-                                        font.pixelSize: 16
-                                        font.bold: true
-                                        color: "#ffffff"
-                                        anchors.centerIn: parent
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.primarySortAscending = false
-                                    }
-                                }
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: daysToStudyEnabled
+                            onClicked: {
+                                daysToStudyAscending = false
                             }
                         }
                     }
                 }
             }
+        }
 
-            // Secondary Sort Section
+        // Total Gaps sort
+        Item {
+            width: parent.width
+            height: 50
+
+            // Toggle Button
             Rectangle {
-                width: parent.width
-                height: secondarySortColumn.height + 40
-                color: "#374151"
-                radius: 8
-                border.color: "#4b5563"
-                border.width: 1
-                opacity: root.primarySortType !== "" ? 1.0 : 0.5
+                id: gapsToggle
+                width: 60
+                height: 30
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: totalGapsEnabled ? "#10b981" : "#374151"
+                radius: 15
+                border.width: 2
+                border.color: totalGapsEnabled ? "#059669" : "#4b5563"
 
-                Column {
-                    id: secondarySortColumn
+                Rectangle {
+                    width: 22
+                    height: 22
+                    radius: 11
+                    color: "#ffffff"
+                    x: totalGapsEnabled ? parent.width - width - 4 : 4
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+
+                MouseArea {
                     anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 15
-
-                    Text {
-                        text: "Secondary Sort (Tie-breaker)"
-                        font.pixelSize: 18
-                        font.bold: true
-                        color: "#f59e0b"
-                    }
-
-                    // Secondary Sort Type Selection
-                    ComboBox {
-                        id: secondaryCombo
-                        width: parent.width
-                        height: 40
-                        enabled: root.primarySortType !== ""
-
-                        model: {
-                            var allOptions = ["None", "Days to Study", "Total Gaps", "Max Gaps Time", "Avg Day Start", "Avg Day End"]
-                            var primaryText = getSortDisplayName(root.primarySortType)
-                            return allOptions.filter(function(option) {
-                                return option === "None" || option !== primaryText
-                            })
-                        }
-
-                        background: Rectangle {
-                            color: parent.enabled ? "#4b5563" : "#374151"
-                            border.color: "#6b7280"
-                            border.width: 1
-                            radius: 4
-                        }
-
-                        contentItem: Text {
-                            text: secondaryCombo.displayText
-                            color: parent.enabled ? "#ffffff" : "#9ca3af"
-                            font.pixelSize: 14
-                            verticalAlignment: Text.AlignVCenter
-                            leftPadding: 10
-                        }
-
-                        onCurrentTextChanged: {
-                            if (!enabled) return
-                            switch(currentText) {
-                                case "Days to Study": root.secondarySortType = "amount_days"; break
-                                case "Total Gaps": root.secondarySortType = "amount_gaps"; break
-                                case "Max Gaps Time": root.secondarySortType = "gaps_time"; break
-                                case "Avg Day Start": root.secondarySortType = "avg_start"; break
-                                case "Avg Day End": root.secondarySortType = "avg_end"; break
-                                default: root.secondarySortType = ""; break
-                            }
-                        }
-
-                        // Reset secondary sort when primary changes
-                        Connections {
-                            target: root
-                            function onPrimarySortTypeChanged() {
-                                secondaryCombo.currentIndex = 0
-                                root.secondarySortType = ""
-                            }
-                        }
-                    }
-
-                    // Secondary Sort Direction
-                    Row {
-                        width: parent.width
-                        spacing: 10
-                        visible: root.secondarySortType !== ""
-
-                        Text {
-                            text: "Direction:"
-                            color: "#ffffff"
-                            font.pixelSize: 14
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        Rectangle {
-                            width: 120
-                            height: 35
-                            color: "#4b5563"
-                            radius: 4
-                            border.width: 1
-                            border.color: "#6b7280"
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 0
-
-                                Rectangle {
-                                    width: 60
-                                    height: 33
-                                    color: root.secondarySortAscending ? "#10b981" : "#6b7280"
-                                    radius: 4
-
-                                    Text {
-                                        text: "↑"
-                                        font.pixelSize: 16
-                                        font.bold: true
-                                        color: "#ffffff"
-                                        anchors.centerIn: parent
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.secondarySortAscending = true
-                                    }
-                                }
-
-                                Rectangle {
-                                    width: 60
-                                    height: 33
-                                    color: !root.secondarySortAscending ? "#10b981" : "#6b7280"
-                                    radius: 4
-
-                                    Text {
-                                        text: "↓"
-                                        font.pixelSize: 16
-                                        font.bold: true
-                                        color: "#ffffff"
-                                        anchors.centerIn: parent
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: root.secondarySortAscending = false
-                                    }
-                                }
-                            }
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!totalGapsEnabled) {
+                            disableAllSortsExcept("totalGaps")
+                            totalGapsEnabled = true
+                        } else {
+                            totalGapsEnabled = false
                         }
                     }
                 }
             }
 
-            // Sort Preview
+            Text {
+                text: "Total Gaps"
+                font.pixelSize: 16
+                color: "#ffffff"
+                anchors.left: gapsToggle.right
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            // Ascending/Descending Toggle
             Rectangle {
+                width: 120
+                height: 40
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#374151"
+                radius: 4
+                border.width: 1
+                border.color: "#4b5563"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 0
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: totalGapsEnabled && totalGapsAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: totalGapsEnabled
+                            onClicked: {
+                                totalGapsAscending = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: totalGapsEnabled && !totalGapsAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: totalGapsEnabled
+                            onClicked: {
+                                totalGapsAscending = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Max Gaps Time sort
+        Item {
+            width: parent.width
+            height: 50
+
+            // Toggle Button
+            Rectangle {
+                id: maxGapsToggle
+                width: 60
+                height: 30
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: root.maxGapsTimeEnabled ? "#10b981" : "#374151"
+                radius: 15
+                border.width: 2
+                border.color: root.maxGapsTimeEnabled ? "#059669" : "#4b5563"
+
+                Rectangle {
+                    width: 22
+                    height: 22
+                    radius: 11
+                    color: "#ffffff"
+                    x: root.maxGapsTimeEnabled ? parent.width - width - 4 : 4
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!root.maxGapsTimeEnabled) {
+                            disableAllSortsExcept("maxGapsTime")
+                            root.maxGapsTimeEnabled = true
+                        } else {
+                            root.maxGapsTimeEnabled = false
+                        }
+                    }
+                }
+            }
+
+            Text {
+                id: gapsTimeTxt
+                text: "Max Gaps Time"
+                font.pixelSize: 16
+                color: "#ffffff"
+                anchors.left: maxGapsToggle.right
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Text {
+                text: "(min)"
+                font.pixelSize: 10
+                color: "#ffffff"
+                anchors.left: gapsTimeTxt.right
+                anchors.leftMargin: 5
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            // Ascending/Descending Toggle
+            Rectangle {
+                width: 120
+                height: 40
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#374151"
+                radius: 4
+                border.width: 1
+                border.color: "#4b5563"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 0
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.maxGapsTimeEnabled && root.maxGapsTimeAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.maxGapsTimeEnabled
+                            onClicked: {
+                                root.maxGapsTimeAscending = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.maxGapsTimeEnabled && !root.maxGapsTimeAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.maxGapsTimeEnabled
+                            onClicked: {
+                                root.maxGapsTimeAscending = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Avg Day Start sort
+        Item {
+            width: parent.width
+            height: 50
+
+            // Toggle Button
+            Rectangle {
+                id: startToggle
+                width: 60
+                height: 30
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: root.avgDayStartEnabled ? "#10b981" : "#374151"
+                radius: 15
+                border.width: 2
+                border.color: root.avgDayStartEnabled ? "#059669" : "#4b5563"
+
+                Rectangle {
+                    width: 22
+                    height: 22
+                    radius: 11
+                    color: "#ffffff"
+                    x: root.avgDayStartEnabled ? parent.width - width - 4 : 4
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!root.avgDayStartEnabled) {
+                            disableAllSortsExcept("avgDayStart")
+                            root.avgDayStartEnabled = true
+                        } else {
+                            root.avgDayStartEnabled = false
+                        }
+                    }
+                }
+            }
+
+            Text {
+                text: "Avg Day Start"
+                font.pixelSize: 16
+                color: "#ffffff"
+                anchors.left: startToggle.right
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            // Ascending/Descending Toggle
+            Rectangle {
+                width: 120
+                height: 40
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#374151"
+                radius: 4
+                border.width: 1
+                border.color: "#4b5563"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 0
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayStartEnabled && root.avgDayStartAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayStartEnabled
+                            onClicked: {
+                                root.avgDayStartAscending = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayStartEnabled && !root.avgDayStartAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayStartEnabled
+                            onClicked: {
+                                root.avgDayStartAscending = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Avg Day End sort
+        Item {
+            width: parent.width
+            height: 50
+
+            // Toggle Button
+            Rectangle {
+                id: endToggle
+                width: 60
+                height: 30
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                color: root.avgDayEndEnabled ? "#10b981" : "#374151"
+                radius: 15
+                border.width: 2
+                border.color: root.avgDayEndEnabled ? "#059669" : "#4b5563"
+
+                Rectangle {
+                    width: 22
+                    height: 22
+                    radius: 11
+                    color: "#ffffff"
+                    x: root.avgDayEndEnabled ? parent.width - width - 4 : 4
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on x {
+                        NumberAnimation {
+                            duration: 200
+                        }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (!root.avgDayEndEnabled) {
+                            disableAllSortsExcept("avgDayEnd")
+                            root.avgDayEndEnabled = true
+                        } else {
+                            root.avgDayEndEnabled = false
+                        }
+                    }
+                }
+            }
+
+            Text {
+                text: "Avg Day End"
+                font.pixelSize: 16
+                color: "#ffffff"
+                anchors.left: endToggle.right
+                anchors.leftMargin: 15
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            // Ascending/Descending Toggle
+            Rectangle {
+                width: 120
+                height: 40
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                color: "#374151"
+                radius: 4
+                border.width: 1
+                border.color: "#4b5563"
+
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 0
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayEndEnabled && root.avgDayEndAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↑"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayEndEnabled
+                            onClicked: {
+                                root.avgDayEndAscending = true
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        width: 60
+                        height: 38
+                        color: root.avgDayEndEnabled && !root.avgDayEndAscending ? "#10b981" : "#4b5563"
+                        radius: 4
+                        border.width: 1
+                        border.color: "#374151"
+
+                        Text {
+                            text: "↓"
+                            font.pixelSize: 18
+                            font.bold: true
+                            color: "#ffffff"
+                            anchors.centerIn: parent
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            enabled: root.avgDayEndEnabled
+                            onClicked: {
+                                root.avgDayEndAscending = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply sorting button
+        Item {
+            width: parent.width
+            height: 60
+
+            Rectangle {
+                id: applySortingButton
                 width: parent.width
-                height: previewColumn.height + 30
-                color: "#111827"
+                height: 50
+                anchors.centerIn: parent
+                anchors.bottom: parent.bottom
+                color: applyMouseArea.containsMouse ? "#656363" : "#918a8a"
                 radius: 6
-                border.color: "#374151"
+                border.color: "#656363"
                 border.width: 1
-                visible: root.primarySortType !== ""
 
-                Column {
-                    id: previewColumn
+                Text {
+                    text: "Apply sorting"
+                    font.pixelSize: 16
+                    font.bold: true
+                    color: "#ffffff"
+                    anchors.centerIn: parent
+                }
+
+                MouseArea {
+                    id: applyMouseArea
                     anchors.fill: parent
-                    anchors.margins: 15
-                    spacing: 8
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        var sortData = getCurrentSortData()
 
-                    Text {
-                        text: "Sort Preview:"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: "#d1d5db"
-                    }
-
-                    Text {
-                        text: "1. " + getSortDisplayName(root.primarySortType) + " (" + (root.primarySortAscending ? "Ascending" : "Descending") + ")"
-                        font.pixelSize: 12
-                        color: "#10b981"
-                        visible: root.primarySortType !== ""
-                    }
-
-                    Text {
-                        text: "2. " + getSortDisplayName(root.secondarySortType) + " (" + (root.secondarySortAscending ? "Ascending" : "Descending") + ")"
-                        font.pixelSize: 12
-                        color: "#f59e0b"
-                        visible: root.secondarySortType !== ""
-                    }
-                }
-            }
-
-            // Apply and Cancel buttons
-            Row {
-                width: parent.width
-                spacing: 15
-
-                Rectangle {
-                    width: (parent.width - 15) / 2
-                    height: 50
-                    color: cancelMouseArea.containsMouse ? "#dc2626" : "#ef4444"
-                    radius: 6
-                    border.color: "#dc2626"
-                    border.width: 1
-
-                    Text {
-                        text: "Cancel"
-                        font.pixelSize: 16
-                        font.bold: true
-                        color: "#ffffff"
-                        anchors.centerIn: parent
-                    }
-
-                    MouseArea {
-                        id: cancelMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.close()
-                    }
-                }
-
-                Rectangle {
-                    width: (parent.width - 15) / 2
-                    height: 50
-                    color: applyMouseArea.containsMouse ? "#059669" : "#10b981"
-                    radius: 6
-                    border.color: "#059669"
-                    border.width: 1
-                    opacity: root.primarySortType !== "" ? 1.0 : 0.5
-
-                    Text {
-                        text: "Apply Sort"
-                        font.pixelSize: 16
-                        font.bold: true
-                        color: "#ffffff"
-                        anchors.centerIn: parent
-                    }
-
-                    MouseArea {
-                        id: applyMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        enabled: root.primarySortType !== ""
-                        onClicked: {
-                            var sortData = getCurrentSortData()
-                            root.sortingApplied(sortData)
-                            root.close()
-                        }
+                        root.sortingApplied(sortData)
+                        root.close()
                     }
                 }
             }
