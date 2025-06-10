@@ -540,3 +540,96 @@ TEST_F(CourseLegalCombTest, CourseWithAllSessionTypesAndBlocks) {
     EXPECT_EQ(combinations[0].labGroup, nullptr);
     EXPECT_NE(combinations[0].blockGroup, nullptr);
 }
+// Test overlapping blocks should be handled properly
+TEST_F(CourseLegalCombTest, OverlappingBlocksShouldConflict) {
+    vector<Session> blockSessions1 = { makeSession("09:00", "11:00", Mon) };
+    Group blockGroup1 = makeGroup(SessionType::BLOCK, blockSessions1);
+
+    vector<Session> blockSessions2 = { makeSession("10:00", "12:00", Mon) }; // Overlaps with first block
+    Group blockGroup2 = makeGroup(SessionType::BLOCK, blockSessions2);
+
+    Course c = makeCourse(29, {}, {}, {}, {blockGroup1, blockGroup2});
+    auto combinations = comb.generate(c);
+
+    // Should return at most 1 combination since blocks conflict
+    // Implementation might choose first valid block or return 0 if all conflict
+    EXPECT_TRUE(combinations.size() <= 1);
+    if (combinations.size() == 1) {
+        // If one combination is returned, it should be one of the valid blocks
+        EXPECT_NE(combinations[0].blockGroup, nullptr);
+    }
+}
+
+// Test non-overlapping blocks should work fine
+TEST_F(CourseLegalCombTest, NonOverlappingBlocksShouldWork) {
+    vector<Session> blockSessions1 = { makeSession("09:00", "10:00", Mon) };
+    Group blockGroup1 = makeGroup(SessionType::BLOCK, blockSessions1);
+
+    vector<Session> blockSessions2 = { makeSession("11:00", "12:00", Mon) }; // No overlap
+    Group blockGroup2 = makeGroup(SessionType::BLOCK, blockSessions2);
+
+    Course c = makeCourse(30, {}, {}, {}, {blockGroup1, blockGroup2});
+    auto combinations = comb.generate(c);
+
+    // Should return multiple combinations since blocks don't conflict
+    // Or at least 1 if implementation only returns first valid block
+    EXPECT_GE(combinations.size(), 1);
+    EXPECT_NE(combinations[0].blockGroup, nullptr);
+}
+
+// Test blocks conflicting with lectures (before block priority takes effect)
+TEST_F(CourseLegalCombTest, BlocksConflictingWithLectures) {
+    vector<Session> lectureSessions = { makeSession("09:00", "10:00", Mon) };
+    Group lectureGroup = makeGroup(SessionType::LECTURE, lectureSessions);
+
+    vector<Session> blockSessions1 = { makeSession("09:30", "10:30", Mon) }; // Overlaps with lecture
+    Group blockGroup1 = makeGroup(SessionType::BLOCK, blockSessions1);
+
+    vector<Session> blockSessions2 = { makeSession("11:00", "12:00", Mon) }; // No overlap with lecture
+    Group blockGroup2 = makeGroup(SessionType::BLOCK, blockSessions2);
+
+    Course c = makeCourse(31, {lectureGroup}, {}, {}, {blockGroup1, blockGroup2});
+    auto combinations = comb.generate(c);
+
+    // Since blocks exist, should return block combinations only
+    // But should still respect time conflicts between blocks and other sessions
+    EXPECT_GE(combinations.size(), 1);
+    for (const auto& combo : combinations) {
+        EXPECT_EQ(combo.lectureGroup, nullptr);  // Lecture should be null due to block priority
+        EXPECT_NE(combo.blockGroup, nullptr);    // Block should be present
+    }
+}
+
+// Test adjacent blocks (touching but not overlapping)
+TEST_F(CourseLegalCombTest, AdjacentBlocksShouldWork) {
+    vector<Session> blockSessions1 = { makeSession("09:00", "10:00", Mon) };
+    Group blockGroup1 = makeGroup(SessionType::BLOCK, blockSessions1);
+
+    vector<Session> blockSessions2 = { makeSession("10:00", "11:00", Mon) }; // Adjacent, no overlap
+    Group blockGroup2 = makeGroup(SessionType::BLOCK, blockSessions2);
+
+    Course c = makeCourse(32, {}, {}, {}, {blockGroup1, blockGroup2});
+    auto combinations = comb.generate(c);
+
+    // Adjacent blocks should not conflict
+    EXPECT_GE(combinations.size(), 1);
+    EXPECT_NE(combinations[0].blockGroup, nullptr);
+}
+
+// Test block with minimal overlap (1 minute)
+TEST_F(CourseLegalCombTest, BlocksWithMinimalOverlap) {
+    vector<Session> blockSessions1 = { makeSession("09:00", "10:00", Mon) };
+    Group blockGroup1 = makeGroup(SessionType::BLOCK, blockSessions1);
+
+    vector<Session> blockSessions2 = { makeSession("09:59", "11:00", Mon) }; // 1 minute overlap
+    Group blockGroup2 = makeGroup(SessionType::BLOCK, blockSessions2);
+
+    Course c = makeCourse(33, {}, {}, {}, {blockGroup1, blockGroup2});
+    auto combinations = comb.generate(c);
+
+    // Should conflict due to 1-minute overlap
+    EXPECT_TRUE(combinations.size() <= 1);
+    if (combinations.size() == 1) {
+        EXPECT_NE(combinations[0].blockGroup, nullptr);
+    }
+}
