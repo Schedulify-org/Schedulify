@@ -100,14 +100,7 @@ void Model::printSchedule(const InformativeSchedule& infoSchedule) {
 }
 
 vector<string> Model::messageBot(const vector<string>& userInput, const string& data) {
-    const string& sType = userInput[1];
-    if (sType == "Find") {
-        return askModel(userInput[0], data, QuestionType::FIND_ME);
-    } else if (sType == "Tell") {
-        return askModel(userInput[0], data, QuestionType::TELL_ME);
-    } else {
-        return {};
-    }
+    return askModel(userInput[0], data);
 }
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {

@@ -9,16 +9,12 @@
 #include <sstream>
 #include <cstdlib>
 #include <json/json.h>
+#include <cctype>
 
 using namespace std;
 
-enum class QuestionType {
-    FIND_ME,
-    TELL_ME
-};
+vector<string> askModel(const string& question, const string& data);
 
-vector<string> askModel(const string& question, const string& data, QuestionType type);
-
-vector<string> getFormatedResponse(const string& raw_response);
+int extractScheduleIndex(const string& text);
 
 #endif //SCHED_BOT_H

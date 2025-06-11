@@ -30,7 +30,6 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
     // Create vector with user message and operation type
     std::vector<std::string> messageData;
     messageData.push_back(userMessage.toStdString());
-    messageData.emplace_back("Find");
 
     // Send to model using BOT_MESSAGE operation
     try {
@@ -43,6 +42,8 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
             // Check if vector has any responses
             if (!responseVector->empty()) {
                 // Get the first cell of the vector (response message)
+                cout << "message: " << (*responseVector)[0] << endl;
+                cout << "index: " << (*responseVector)[1] << endl;
                 QString responseText = QString::fromStdString((*responseVector)[0]);
 
                 // Handle optional index in second cell
@@ -67,7 +68,7 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
                 }
 
                 // Use the index if available and valid
-                if (hasValidIndex) {
+                if (hasValidIndex && scheduleIndex != -1) {
                     m_scheduleModel->jumpToSchedule(scheduleIndex);
                 } else {
                     qDebug() << "No valid schedule index provided in response";
