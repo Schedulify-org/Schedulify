@@ -11,6 +11,7 @@
 #include "logger.h"
 #include "excel_parser.h"
 #include "validate_courses.h"
+#include "jsonParser.h"
 
 #include <algorithm>
 #include <cctype>

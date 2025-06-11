@@ -71,6 +71,7 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/CourseLegalComb.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/ScheduleBuilder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/TimeUtils.cpp
+        model/src/parsers/jsonParser.cpp
 
 )
 

@@ -85,6 +85,8 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
         Logger::get().logError("unable to generate schedules, aborting process");
     }
 
+    JsonParser::ConvertToJson(schedules, R"(C:\Users\Rotem Braun\OneDrive\Desktop\myjson.json)");
+    cout << JsonParser::ConvertToJsonString(schedules);
     return schedules;
 }
 
