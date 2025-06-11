@@ -1,4 +1,4 @@
-#include "apiManager.h"
+#include "openAI.h"
 
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     ((string*)userp)->append((char*)contents, size * nmemb);
@@ -6,12 +6,12 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* use
 }
 
 string sendToModel(const string& prompt) {
-//    loadEnvFile();
-//    string apiKey = getApiKey();
-//    if (apiKey.empty()) {
-//        cerr << "API_KEY not set in environment.\n";
-//        return "";
-//    }
+    loadEnvFile();
+    string apiKey = getApiKey();
+    if (apiKey.empty()) {
+        cerr << "API_KEY not set in environment.\n";
+        return "";
+    }
 
     CURL* curl = curl_easy_init();
     if (!curl) return "Failed to initialize curl";
