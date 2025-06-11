@@ -3,6 +3,7 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import Qt.labs.qmlmodels 1.0
 import QtQuick.Controls.Basic
+import "popups"
 import "."
 
 Page {
@@ -11,11 +12,83 @@ Page {
     background: Rectangle { color: "#ffffff" }
 
     property var controller: schedulesDisplayController
-    property int currentIndex: controller.currentScheduleIndex
-    property int totalSchedules: controller.getScheduleCount()
+    property var scheduleModel: controller ? controller.scheduleModel : null
+    property int currentIndex: scheduleModel ? scheduleModel.currentScheduleIndex : 0
+    property int totalSchedules: scheduleModel ? scheduleModel.scheduleCount : 0
     property int numDays: 7
-    property real dayColumnWidth: Math.max(135, (width - timeColumnWidth) / numDays)
-    property real timeColumnWidth: 70
+
+    property int numberOfTimeSlots: 13
+    property real headerHeight: 40
+
+    property real availableTableWidth: mainContent.width - 28
+    property real availableTableHeight: mainContent.height - 41
+
+    property real timeColumnWidth: availableTableWidth * 0.12
+    property real dayColumnWidth: (availableTableWidth - timeColumnWidth) / numDays
+    property real uniformRowHeight: (availableTableHeight - headerHeight) / numberOfTimeSlots
+
+    property real baseTextSize: 12
+
+    property var logWindow: null
+
+    MouseArea {
+        id: outsideClickArea
+        anchors.fill: parent
+        z: -1
+        propagateComposedEvents: true
+        onPressed: function(mouse) {
+            if (inputField.activeFocus) {
+                // Check if click is outside the input field area
+                var inputRect = inputField.parent
+                var globalInputPos = inputRect.mapToItem(schedulesDisplayPage, 0, 0)
+
+                if (mouse.x < globalInputPos.x ||
+                    mouse.x > globalInputPos.x + inputRect.width ||
+                    mouse.y < globalInputPos.y ||
+                    mouse.y > globalInputPos.y + inputRect.height) {
+                    inputField.focus = false
+                    inputField.text = ""
+                }
+            }
+            mouse.accepted = false
+        }
+    }
+
+    Component.onDestruction: {
+        if (logWindow) {
+            logWindow.destroy();
+            logWindow = null;
+            if (logDisplayController) {
+                logDisplayController.setLogWindowOpen(false);
+            }
+        }
+    }
+
+    Connections {
+        target: scheduleModel
+        function onCurrentScheduleIndexChanged() {
+            if (tableModel) {
+                tableModel.updateRows()
+            }
+        }
+        function onScheduleDataChanged() {
+            if (tableModel) {
+                tableModel.updateRows()
+            }
+        }
+    }
+
+    onDayColumnWidthChanged: {
+        if (tableModel) {
+            tableModel.updateRows()
+        }
+    }
+
+    onUniformRowHeightChanged: {
+        if (tableModel) {
+            tableModel.updateRows()
+        }
+    }
 
     // Header
     Rectangle {
@@ -33,14 +106,13 @@ Page {
             }
             height: coursesBackButton.height
 
-            // Back Button
             Button {
                 id: coursesBackButton
                 width: 40
                 height: 40
                 anchors {
                     left: parent.left
-                    leftMargin: 16
+                    leftMargin: 15
                     verticalCenter: parent.verticalCenter
                 }
                 background: Rectangle {
@@ -61,9 +133,12 @@ Page {
                     onClicked: controller.goBack()
                     cursorShape: Qt.PointingHandCursor
                 }
+
+                Component.onCompleted: {
+                    forceActiveFocus();
+                }
             }
 
-            // Screen Title
             Label {
                 id: titleLabel
                 text: "Generated schedules"
@@ -73,6 +148,226 @@ Page {
                     left: coursesBackButton.right
                     leftMargin: 16
                     verticalCenter: parent.verticalCenter
+                }
+            }
+
+            RowLayout {
+                id: topButtonsRow
+                width: parent.width
+                Layout.fillWidth: true
+                spacing: 10
+                Layout.alignment: Qt.AlignHCenter
+
+                Rectangle {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.preferredWidth: Math.max(navigationRow.implicitWidth + 32, 280)
+                    Layout.preferredHeight: 56
+
+                    color: "#f8fafc"
+                    radius: 12
+                    border.color: "#e2e8f0"
+                    border.width: 1
+
+                    RowLayout {
+                        id: navigationRow
+                        anchors.centerIn: parent
+                        spacing: 12
+
+                        Rectangle {
+                            id: prevButton
+                            radius: 6
+                            width: 36
+                            height: 36
+
+                            property bool isPrevEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoPrevious : false
+
+                            color: {
+                                if (!isPrevEnabled) return "#e5e7eb";
+                                return prevMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                            }
+
+                            opacity: isPrevEnabled ? 1.0 : 0.5
+
+                            Text {
+                                text: "←"
+                                anchors.centerIn: parent
+                                color: parent.isPrevEnabled ? "white" : "#9ca3af"
+                                font.pixelSize: 16
+                                font.bold: true
+                            }
+
+                            MouseArea {
+                                id: prevMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: parent.isPrevEnabled
+                                cursorShape: parent.isPrevEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isPrevEnabled
+                                onClicked: {
+                                    if (scheduleModel) {
+                                        scheduleModel.previousSchedule()
+                                    }
+                                }
+                            }
+                        }
+
+                        Label {
+                            text: "Schedule"
+                            font.pixelSize: 15
+                            font.weight: Font.Medium
+                            color: "#475569"
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: Math.max(inputField.contentWidth + 24, 60)
+                            Layout.preferredHeight: 40
+
+                            color: "#ffffff"
+                            radius: 8
+                            border.color: {
+                                if (inputField.activeFocus) return "#3b82f6";
+                                if (!inputField.isValidInput && inputField.text !== "") return "#ef4444";
+                                return "#cbd5e1";
+                            }
+                            border.width: inputField.activeFocus ? 2 : 1
+
+                            TextField {
+                                id: inputField
+                                anchors.fill: parent
+                                anchors.margins: inputField.activeFocus ? 2 : 1
+
+                                placeholderText: currentIndex + 1
+                                placeholderTextColor: "#94a3b8"
+
+                                background: Rectangle {
+                                    color: "transparent"
+                                    radius: 6
+                                }
+
+                                color: "#1f2937"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                horizontalAlignment: TextInput.AlignHCenter
+
+                                leftPadding: 12
+                                rightPadding: 12
+                                topPadding: 8
+                                bottomPadding: 8
+
+                                selectByMouse: true
+
+                                property bool isValidInput: true
+
+                                onTextChanged: {
+                                    var userInput = parseInt(text)
+                                    isValidInput = text === "" || (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules)
+                                }
+
+                                onEditingFinished: {
+                                    var userInput = parseInt(inputField.text)
+                                    if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
+                                        scheduleModel.jumpToSchedule(userInput)
+                                    }
+                                    inputField.text = ""
+                                    inputField.focus = false
+                                }
+
+                                Keys.onReturnPressed: {
+                                    var userInput = parseInt(inputField.text)
+                                    if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
+                                        scheduleModel.jumpToSchedule(userInput)
+                                    }
+                                    inputField.text = ""
+                                    inputField.focus = false
+                                }
+
+                                Keys.onEscapePressed: {
+                                    text = ""
+                                    focus = false
+                                }
+                            }
+
+                            ToolTip {
+                                id: errorTooltip
+                                text: `Please enter a number between 1 and ${totalSchedules}`
+                                visible: !inputField.isValidInput && inputField.text !== "" && inputField.activeFocus
+                                delay: 0
+                                timeout: 0
+
+                                background: Rectangle {
+                                    color: "#ef4444"
+                                    radius: 4
+                                    border.color: "#dc2626"
+                                }
+
+                                contentItem: Text {
+                                    text: errorTooltip.text
+                                    color: "white"
+                                    font.pixelSize: 11
+                                }
+                            }
+                        }
+
+                        Label {
+                            text: "of"
+                            font.pixelSize: 15
+                            font.weight: Font.Medium
+                            color: "#475569"
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: totalLabel.implicitWidth + 16
+                            Layout.preferredHeight: 32
+
+                            color: totalSchedules > 0 ? "#dbeafe" : "#f1f5f9"
+                            radius: 6
+
+                            Label {
+                                id: totalLabel
+                                anchors.centerIn: parent
+                                text: totalSchedules > 0 ? totalSchedules : "No available schedules"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                            }
+                        }
+
+                        Rectangle {
+                            id: nextButton
+                            radius: 6
+                            width: 36
+                            height: 36
+
+                            property bool isNextEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoNext : false
+
+                            color: {
+                                if (!isNextEnabled) return "#e5e7eb";
+                                return nextMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                            }
+
+                            opacity: isNextEnabled ? 1.0 : 0.5
+
+                            Text {
+                                text: "→"
+                                anchors.centerIn: parent
+                                color: parent.isNextEnabled ? "white" : "#9ca3af"
+                                font.pixelSize: 16
+                                font.bold: true
+                            }
+
+                            MouseArea {
+                                id: nextMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: parent.isNextEnabled
+                                cursorShape: parent.isNextEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isNextEnabled
+                                onClicked: {
+                                    if (scheduleModel) {
+                                        scheduleModel.nextSchedule()
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -87,328 +382,239 @@ Page {
                 height: 40
 
                 background: Rectangle {
-                    color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                    radius: 20
+                    color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
+                }
 
-                    Text {
-                        text: "📋"
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    Image {
+                        id: logIcon
                         anchors.centerIn: parent
-                        font.pixelSize: 20
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-logs.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
+                    }
+
+                    ToolTip {
+                        id: logsTooltip
+                        text: "Open Application Logs"
+                        visible: logMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: logsTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
                     }
                 }
 
-                MouseArea {
+                MouseArea  {
                     id: logMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (!logDisplayController.isLogWindowOpen) {
+                        if (logWindow && logWindow.visible) {
+                            logWindow.raise();
+                            logWindow.requestActivate();
+                            return;
+                        }
+
+                        if (!logDisplayController.isLogWindowOpen || !logWindow) {
                             var component = Qt.createComponent("qrc:/log_display.qml");
                             if (component.status === Component.Ready) {
                                 logDisplayController.setLogWindowOpen(true);
-                                var logWindow = component.createObject(schedulesDisplayPage, {
-                                    "onClosing": function(close) {
+                                logWindow = component.createObject(schedulesDisplayPage);
+
+                                if (logWindow) {
+                                    logWindow.closing.connect(function(close) {
                                         logDisplayController.setLogWindowOpen(false);
-                                    }
-                                });
-                                logWindow.show();
+                                        logWindow = null;
+                                    });
+
+                                    logWindow.show();
+                                }
                             } else {
                                 console.error("Error creating log window:", component.errorString());
                             }
                         }
                     }
                 }
-
-                ToolTip {
-                    visible: logMouseArea.containsMouse
-                    text: "Open Application Logs"
-                    font.pixelSize: 12
-                    delay: 500
-                }
             }
 
             Button {
                 id: exportButton
-                width: 180
+                width: 40
                 height: 40
                 anchors {
-                    right: parent.right
-                    rightMargin: 25 + logButtonC.width
+                    right: logButtonC.left
                     verticalCenter: parent.verticalCenter
+                    rightMargin: 10
                 }
 
+                property bool isExportEnabled: scheduleModel && totalSchedules > 0
+
                 background: Rectangle {
-                    color: exportMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    radius: 4
-                    implicitWidth: 180
-                    implicitHeight: 40
+                    color: exportMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
                 }
-                font.bold: true
-                contentItem: Text {
-                    text: "Export Schedule"
-                    color: "white"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.pixelSize: 14
+
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    Image {
+                        id: exportIcon
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-export.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
+                    }
+
+                    ToolTip {
+                        id: exportTooltip
+                        text: parent.parent.isExportEnabled ? "Export Schedule" : "No schedule to export"
+                        visible: exportMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: exportTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
+                    }
                 }
 
                 MouseArea {
                     id: exportMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: exportMenu.open()
-
+                    cursorShape: parent.isExportEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                    onClicked: {
+                        if (parent.isExportEnabled) {
+                            exportMenu.currentIndex = currentIndex
+                            exportMenu.open()
+                        }
+                    }
                 }
             }
 
-        }
-    }
-
-    // Popup export menu
-    Popup {
-        id: exportMenu
-        width: 220
-        height: menuColumn.height
-        visible: false
-        modal: true
-        focus: true
-        clip: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-
-        // Style the popup
-        background: Rectangle {
-            color: "#1f2937"
-            border.color: "#d1d5db"
-            border.width: 1
-            radius: 6
-        }
-
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
-
-        // Menu options column
-        Column {
-            id: menuColumn
-            width: parent.width
-            spacing: 0
-
-            Rectangle {
-                width: parent.width
+            Button {
+                id: preferenceButton
+                width: 40
                 height: 40
-                color: "transparent"
-
-                Text {
-                    text: "Export Schedule " + (currentIndex + 1)
-                    font.pixelSize: 16
-                    font.bold: true
-                    anchors.centerIn: parent
-                    color: "#ffffff"
-                }
-            }
-
-            // Separator
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: "#ffffff"
-            }
-
-            // Print option
-            Rectangle {
-                width: parent.width
-                height: 50
-                color: printOptionArea.containsMouse ? "#415263" : "transparent"
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 12
-
-                    Text {
-                        text: "🖨️"
-                        font.pixelSize: 18
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: "Print schedule"
-                        font.pixelSize: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#ffffff"
-                    }
-                }
-
-                MouseArea {
-                    id: printOptionArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        controller.printScheduleDirectly()
-                        exportMenu.close()
-                    }
-                }
-            }
-
-            // Separator
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: "#ffffff"
-            }
-
-            // Save as PNG option
-            Rectangle {
-                width: parent.width
-                height: 50
-                color: pngOptionArea.containsMouse ? "#415263" : "transparent"
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 12
-
-                    Text {
-                        text: "🖼️"
-                        font.pixelSize: 18
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Text {
-                        text: "Save as PNG"
-                        font.pixelSize: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#ffffff"
-                    }
-                }
-
-                MouseArea {
-                    id: pngOptionArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        schedulesDisplayController.captureAndSave(tableContent)
-                        exportMenu.close()
-                    }
-                }
-            }
-
-            // Separator
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: "#ffffff"
-            }
-
-            // Save as PDF option
-            Rectangle {
-                width: parent.width
-                height: 50
-                color: pdfOptionArea.containsMouse ? "#415263" : "transparent"
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 12
-
-                    Text {
-                        text: "📄"
-                        font.pixelSize: 18
-                        color: "#4b5563"
-                    }
-
-                    Text {
-                        text: "Save as CSV"
-                        font.pixelSize: 14
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#ffffff"
-                    }
-                }
-
-                MouseArea {
-                    id: pdfOptionArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        controller.saveScheduleAsCSV()
-                        exportMenu.close()
-                    }
-                }
-            }
-
-            // Separator
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: "#ffffff"
-            }
-
-            // Cancel button
-            Rectangle {
-                width: parent.width
-                height: 40
-                color: abortOptionArea.containsMouse ? "#f18888" : "transparent"
-
                 anchors {
-                    left: parent.left
-                    right: parent.right
+                    right: exportButton.left
+                    verticalCenter: parent.verticalCenter
+                    rightMargin: 10
                 }
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 12
+                background: Rectangle {
+                    color: preferenceMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
+                }
 
-                    Text {
-                        text: "❌"
-                        font.pixelSize: 16
-                        anchors.verticalCenter: parent.verticalCenter
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    Image {
+                        id: preferenceIcon
+                        anchors.centerIn: parent
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-preference.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
                     }
 
-                    Text {
-                        text: "Cancel"
-                        font.pixelSize: 14
-                        font.bold: true
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: "#df4646"
+                    ToolTip {
+                        id: preferenceTooltip
+                        text: "Set Schedule Preference"
+                        visible: preferenceMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: preferenceTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
                     }
                 }
 
                 MouseArea {
-                    id: abortOptionArea
+                    id: preferenceMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        exportMenu.close()
-                    }
+                    onClicked: sortMenu.open()
                 }
             }
+        }
+    }
 
-            // Separator
-            Rectangle {
-                width: parent.width
-                height: 10
-                color: "transparent"
+    // export menu link
+    ExportMenu {
+        id: exportMenu
+        parent: Overlay.overlay
+
+        onPrintRequested: {
+            if (controller) {
+                controller.printScheduleDirectly()
+            }
+        }
+
+        onSaveAsPngRequested: {
+            if (schedulesDisplayController && tableContent) {
+                schedulesDisplayController.captureAndSave(tableContent)
+            }
+        }
+
+        onSaveAsCsvRequested: {
+            if (controller) {
+                controller.saveScheduleAsCSV()
             }
         }
     }
 
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        propagateComposedEvents: true
-        onClicked: {
-            if (exportMenu.visible &&
-                !exportButton.contains(exportButton.mapFromItem(mouseArea, mouse.x, mouse.y)) &&
-                !exportMenu.contains(exportMenu.mapFromItem(mouseArea, mouse.x, mouse.y))) {
-                exportMenu.visible = false
+    // Sorting menu link
+    SortMenu {
+        id: sortMenu
+        parent: Overlay.overlay
+        onSortingApplied: function(sortingData) {
+            if (controller) {
+                controller.applySorting(sortingData)
             }
-            mouse.accepted = false
         }
     }
 
-    // main content zone
+    // Main content
     Rectangle{
         id: mainContent
         anchors {
@@ -418,275 +624,333 @@ Page {
             bottom: footer.top
         }
 
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 10
+        // Trim text based on stages (full, mid, min)
+        function getFormattedText(courseName, courseId, building, room, type, cellWidth, cellHeight) {
+            if (type === "Block") {
+                return "<b style='font-size:" + baseTextSize + "px'>" + courseName + "</b>";
+            }
 
-            RowLayout {
-                id: topButtonsRow
-                width: parent.width
-                Layout.fillWidth: true
-                spacing: 10
+            var charWidth = baseTextSize * 0.6;
+            var maxCharsPerLine = Math.floor((cellWidth - 12) / charWidth); // Account for padding
 
-                // ← הקודם
-                Rectangle {
-                    id: prevButton
-                    radius: 4
-                    color: prevMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 50
-                    implicitHeight: 40
-                    visible: currentIndex > 0
-                    Layout.alignment: Qt.AlignLeft
+            var line1, line2;
 
-                    Text {
-                        text: "←"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.pixelSize: 20
-                        font.bold: true
-                    }
+            // Full stage
+            var fullLine1 = courseName + " (" + courseId + ")";
+            var fullLine2 = "Building: " + building + ", Room: " + room;
 
-                    MouseArea {
-                        id: prevMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex - 1)
-                    }
-                }
+            if (fullLine1.length <= maxCharsPerLine && fullLine2.length <= maxCharsPerLine) {
+                line1 = fullLine1;
+                line2 = fullLine2;
+            } else {
+                // Mid stage
+                var courseNameLimit = Math.max(3, maxCharsPerLine - courseId.length - 6); // Minimum 3 chars for "..."
+                var trimmedName = courseName.length > courseNameLimit ?
+                    courseName.substring(0, courseNameLimit - 3) + "..." :
+                    courseName;
+                var midLine1 = trimmedName + " (" + courseId + ")";
+                var midLine2 = "B: " + building + ", R: " + room;
 
-                Item {
-                    Layout.fillWidth: true
-                }
+                if (midLine1.length <= maxCharsPerLine && midLine2.length <= maxCharsPerLine) {
+                    line1 = midLine1;
+                    line2 = midLine2;
+                } else {
+                    // Min stage
+                    line1 = courseId;
 
-                ColumnLayout{
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    // original min building & room
+                    var minLine2 = building + ", " + room;
 
-                    Label {
-                        text: "Schedule Options"
-                        font.pixelSize: 20
-                        color: "#3a3e45"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
+                    if (minLine2.length <= maxCharsPerLine) {
+                        line2 = minLine2;
+                    } else {
+                        // Trim building if needed
+                        var roomSpace = room.length + 2;
+                        var buildingLimit = maxCharsPerLine - roomSpace;
 
-                    Label {
-                        text: "Schedule " + (currentIndex + 1) + " of " + totalSchedules
-                        font.pixelSize: 15
-                        color: "#3a3e45"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                // הבא →
-                Rectangle {
-                    id: nextButton
-                    radius: 4
-                    color: nextMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                    implicitWidth: 50
-                    implicitHeight: 40
-                    visible: currentIndex < totalSchedules - 1
-                    Layout.alignment: Qt.AlignRight
-
-                    Text {
-                        text: "→"
-                        anchors.centerIn: parent
-                        color: "white"
-                        font.pixelSize: 20
-                        font.bold: true
-                    }
-
-                    MouseArea {
-                        id: nextMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: controller.setCurrentScheduleIndex(currentIndex + 1)
+                        if (buildingLimit > 3) {
+                            var trimmedBuilding = building.length > buildingLimit ?
+                                building.substring(0, buildingLimit - 3) + "..." :
+                                building;
+                            line2 = trimmedBuilding + ", " + room;
+                        } else {
+                            if (building.length <= maxCharsPerLine) {
+                                line2 = building;
+                            } else {
+                                line2 = building.substring(0, maxCharsPerLine - 3) + "...";
+                            }
+                        }
                     }
                 }
             }
 
-            Flickable {
-                id: scrollArea
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                clip: true
+            return "<b style='font-size:" + baseTextSize + "px'>" + line1 + "</b><br>" +
+                "<span style='font-size:" + baseTextSize + "px'>" + line2 + "</span>";
+        }
 
-                contentWidth: timeColumnWidth + (numDays * dayColumnWidth) + 30
-                contentHeight: dayHeaderRow.height + scheduleTable.height + 10
-                boundsBehavior: Flickable.StopAtBounds
-                flickableDirection: Flickable.HorizontalAndVerticalFlick
+        Item {
+            anchors.fill: parent
+            anchors.margins: 10
 
-                Column  {
-                    id: tableContent
-                    width: scrollArea.contentWidth
-                    spacing: 0
+            Rectangle {
+                id: noSchedulesMessage
+                anchors.fill: parent
+                visible: totalSchedules <= 0
+                color: "#f9fafb"
+                border.color: "#e5e7eb"
+                border.width: 2
+                radius: 8
 
-                    Row {
-                        id: dayHeaderRow
-                        height: 40
-                        spacing: 1
-                        width: parent.width
+                Text {
+                    anchors.centerIn: parent
+                    text: "No schedules match your filters.\nTry adjusting your filter criteria."
+                    font.pixelSize: 24
+                    font.bold: true
+                    color: "#6b7280"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
 
-                        Rectangle {
-                            width: timeColumnWidth
-                            height: 40
-                            color: "#e5e7eb"
-                            border.color: "#d1d5db"
+            Column {
+                id: tableContent
+                anchors.fill: parent
+                visible: totalSchedules > 0
+                spacing: 1
 
-                            Text {
-                                anchors.centerIn: parent
-                                text: "Hour/Day"
-                                font.pixelSize: 14
-                                font.bold: true
-                                color: "#4b5563"
-                            }
-                        }
+                // Header row
+                Row {
+                    id: dayHeaderRow
+                    height: headerHeight
+                    spacing: 1
+                    width: parent.width
 
-                        Repeater {
-                            model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                    Rectangle {
+                        width: timeColumnWidth
+                        height: headerHeight
+                        color: "#e5e7eb"
+                        border.color: "#d1d5db"
+                        radius: 4
 
-                            Rectangle {
-                                width: dayColumnWidth
-                                height: 40
-                                color: "#e5e7eb"
-                                border.color: "#d1d5db"
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: modelData
-                                    font.pixelSize: 14
-                                    font.bold: true
-                                    color: "#4b5563"
-                                }
-                            }
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Hour/Day"
+                            font.pixelSize: baseTextSize
+                            font.bold: true
+                            color: "#4b5563"
                         }
                     }
 
-                    TableView {
-                        id: scheduleTable
-                        width: scrollArea.contentWidth - 10
-                        height: timeSlots.length * 80 + 20
-                        clip: true
-                        rowSpacing: 1
-                        columnSpacing: 1
-                        interactive: false
+                    Repeater {
+                        model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-                        property var timeSlots: [
-                            "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
-                            "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
-                            "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00"
-                        ]
+                        Rectangle {
+                            width: dayColumnWidth
+                            height: headerHeight
+                            color: "#e5e7eb"
+                            border.color: "#d1d5db"
+                            radius: 4
 
-                        columnWidthProvider: function(col) {
-                            return col === 0 ? timeColumnWidth : dayColumnWidth;
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData
+                                font.pixelSize: baseTextSize
+                                font.bold: true
+                                color: "#4b5563"
+                                wrapMode: Text.WordWrap
+                                elide: Text.ElideRight
+                            }
                         }
+                    }
+                }
 
-                        model: TableModel {
-                            TableModelColumn { display: "timeSlot" }
-                            TableModelColumn { display: "sunday" }
-                            TableModelColumn { display: "monday" }
-                            TableModelColumn { display: "tuesday" }
-                            TableModelColumn { display: "wednesday" }
-                            TableModelColumn { display: "thursday" }
-                            TableModelColumn { display: "friday" }
-                            TableModelColumn { display: "saturday" }
+                // Schedule table
+                TableView {
+                    id: scheduleTable
+                    width: parent.width
+                    height: parent.height - headerHeight - 1
+                    clip: true
+                    rowSpacing: 1
+                    columnSpacing: 1
+                    interactive: false
 
-                            rows: {
-                                let rows = [];
-                                const timeSlots = scheduleTable.timeSlots;
-                                const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+                    property var timeSlots: [
+                        "8:00-9:00", "9:00-10:00", "10:00-11:00", "11:00-12:00",
+                        "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00",
+                        "16:00-17:00", "17:00-18:00", "18:00-19:00", "19:00-20:00",
+                        "20:00-21:00"
+                    ]
 
-                                for (let i = 0; i < timeSlots.length; i++) {
-                                    let row = { timeSlot: timeSlots[i] };
-                                    for (let day of days) row[day] = "";
-                                    rows.push(row);
+                    columnWidthProvider: function(col) {
+                        return col === 0 ? timeColumnWidth : dayColumnWidth;
+                    }
+
+                    rowHeightProvider: function(row) {
+                        return uniformRowHeight;
+                    }
+
+                    model: TableModel {
+                        id: tableModel
+                        TableModelColumn { display: "timeSlot" }
+                        TableModelColumn { display: "sunday" }
+                        TableModelColumn { display: "monday" }
+                        TableModelColumn { display: "tuesday" }
+                        TableModelColumn { display: "wednesday" }
+                        TableModelColumn { display: "thursday" }
+                        TableModelColumn { display: "friday" }
+                        TableModelColumn { display: "saturday" }
+
+                        function updateRows() {
+                            let rows = [];
+                            const timeSlots = scheduleTable.timeSlots;
+                            const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+                            for (let i = 0; i < timeSlots.length; i++) {
+                                let row = { timeSlot: timeSlots[i] };
+                                for (let day of days) {
+                                    row[day] = "";
+                                    row[day + "_type"] = "";
+                                    row[day + "_courseName"] = "";
+                                    row[day + "_courseId"] = "";
+                                    row[day + "_building"] = "";
+                                    row[day + "_room"] = "";
                                 }
+                                rows.push(row);
+                            }
 
-                                if (totalSchedules > 0) {
-                                    for (let day = 0; day < 7; day++) {
-                                        let dayName = days[day];
-                                        let items = controller.getDayItems(currentIndex, day);
+                            if (totalSchedules > 0 && scheduleModel) {
+                                for (let day = 0; day < 7; day++) {
+                                    let dayName = days[day];
+                                    let items = scheduleModel.getCurrentDayItems(day);
 
-                                        for (let item of items) {
-                                            let start = parseInt(item.start.split(":")[0]);
-                                            let end = parseInt(item.end.split(":")[0]);
+                                    for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+                                        let item = items[itemIndex];
+                                        let start = parseInt(item.start.split(":")[0]);
+                                        let end = parseInt(item.end.split(":")[0]);
 
-                                            for (let hour = start; hour < end; hour++) {
-                                                for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
-                                                    let slot = timeSlots[rowIndex];
-                                                    let slotStart = parseInt(slot.split("-")[0].split(":")[0]);
-                                                    let slotEnd = parseInt(slot.split("-")[1].split(":")[0]);
+                                        for (let hour = start; hour < end; hour++) {
+                                            for (let rowIndex = 0; rowIndex < timeSlots.length; rowIndex++) {
+                                                let slot = timeSlots[rowIndex];
+                                                let slotStart = parseInt(slot.split("-")[0].split(":")[0]);
+                                                let slotEnd = parseInt(slot.split("-")[1].split(":")[0]);
 
-                                                    if (hour >= slotStart && hour < slotEnd) {
-                                                        rows[rowIndex][dayName] +=
-                                                            (rows[rowIndex][dayName] ? "\n\n" : "") +
-                                                            "<b style='font-size:13px'>" + item.courseName + "</b><br>" +
-                                                            item.raw_id + " - " + item.type + "<br>" +
-                                                            item.start + " - " + item.end + "<br>" +
-                                                            "Building: " + item.building + ", Room: " + item.room;
+                                                if (hour >= slotStart && hour < slotEnd) {
+                                                    if (!rows[rowIndex][dayName + "_type"]) {
+                                                        rows[rowIndex][dayName + "_type"] = item.type;
+                                                        rows[rowIndex][dayName + "_courseName"] = item.courseName;
+                                                        rows[rowIndex][dayName + "_courseId"] = item.raw_id;
+                                                        rows[rowIndex][dayName + "_building"] = item.building;
+                                                        rows[rowIndex][dayName + "_room"] = item.room;
+
+                                                        rows[rowIndex][dayName] = mainContent.getFormattedText(
+                                                            item.courseName,
+                                                            item.raw_id,
+                                                            item.building,
+                                                            item.room,
+                                                            item.type,
+                                                            dayColumnWidth,
+                                                            uniformRowHeight
+                                                        );
                                                     }
                                                 }
                                             }
                                         }
                                     }
                                 }
-
-                                return rows;
                             }
+                            tableModel.rows = rows;
                         }
 
-                        delegate: Rectangle {
-                            implicitHeight: 80
-                            border.width: 1
-                            border.color: "#e0e0e0"
-                            radius: 4
-
-                            color: model.column === 0
-                                ? "#d1d5db"
-                                : (model.display && String(model.display).trim().length > 0
-                                    ? "#64748BFF"
-                                    : "#ffffff")
-
-                            Text {
-                                anchors.fill: parent
-                                wrapMode: Text.WordWrap
-                                verticalAlignment: Text.AlignVCenter
-                                horizontalAlignment: Text.AlignHCenter
-                                padding: 6
-                                font.pixelSize: 11
-                                textFormat: Text.RichText
-                                text: model.display ? String(model.display) : ""
-                                color: "#000000"
-                            }
-                        }
-
+                        Component.onCompleted: updateRows()
                     }
-                }
 
-                ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AlwaysOn
-                    active: true
-                    visible: true
-                }
+                    delegate: Rectangle {
+                        implicitHeight: uniformRowHeight
+                        implicitWidth: model.column === 0 ? timeColumnWidth : dayColumnWidth
+                        border.width: 1
+                        border.color: "#e0e0e0"
+                        radius: 4
 
-                ScrollBar.horizontal: ScrollBar {
-                    policy: ScrollBar.AlwaysOn
-                    active: true
-                    visible: true
-                }
-
-                Component.onCompleted: {
-                    Qt.callLater(function() {
-                        var maxScroll = contentHeight - height;
-                        if (contentY > maxScroll) {
-                            contentY = maxScroll;
+                        property string columnName: {
+                            switch(model.column) {
+                                case 1: return "sunday_type";
+                                case 2: return "monday_type";
+                                case 3: return "tuesday_type";
+                                case 4: return "wednesday_type";
+                                case 5: return "thursday_type";
+                                case 6: return "friday_type";
+                                case 7: return "saturday_type";
+                                default: return "";
+                            }
                         }
-                        forceActiveFocus();
-                    });
+
+                        property string itemType: {
+                            if (columnName && model.row !== undefined) {
+                                let rowData = parent.parent.model.rows[model.row];
+                                if (rowData && rowData[columnName]) {
+                                    return rowData[columnName];
+                                }
+                            }
+                            return "";
+                        }
+
+                        color: {
+                            if (model.column === 0) {
+                                return "#d1d5db";
+                            }
+
+                            if (!model.display || String(model.display).trim().length === 0) {
+                                return "#ffffff";
+                            }
+
+                            switch(itemType) {
+                                case "Lecture": return "#b0e8ff";
+                                case "Lab": return "#abffc6";
+                                case "Tutorial": return "#edc8ff";
+                                case "Block": return "#7a7a7a";
+                                default: return "#64748BFF";
+                            }
+                        }
+
+                        ToolTip {
+                            id: sessionTooltip
+                            text: itemType || "No session type"
+                            visible: sessionMouseArea.containsMouse && itemType !== ""
+                            delay: 500
+                            timeout: 3000
+
+                            background: Rectangle {
+                                color: "#374151"
+                                radius: 4
+                                border.color: "#4b5563"
+                            }
+
+                            contentItem: Text {
+                                text: sessionTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
+                        }
+
+                        Text {
+                            anchors.fill: parent
+                            wrapMode: Text.WordWrap
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
+                            padding: 4
+                            font.pixelSize: baseTextSize
+                            textFormat: Text.RichText
+                            text: model.display ? String(model.display) : ""
+                            color: itemType === "Block" ? "#ffffff": "#000000"
+                            clip: true
+                        }
+
+                        MouseArea {
+                            id: sessionMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                        }
+                    }
                 }
             }
         }
@@ -696,7 +960,7 @@ Page {
     Rectangle {
         id: footer
         width: parent.width
-        height: 60
+        height: 30
         anchors.bottom: parent.bottom
         color: "#ffffff"
         border.color: "#e5e7eb"
@@ -709,4 +973,3 @@ Page {
         }
     }
 }
-

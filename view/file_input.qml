@@ -31,6 +31,18 @@ Page {
         }
     }
 
+    property var logWindow: null
+
+    Component.onDestruction: {
+        if (logWindow) {
+            logWindow.destroy(); // Explicitly destroy
+            logWindow = null;
+            if (logDisplayController) {
+                logDisplayController.setLogWindowOpen(false);
+            }
+        }
+    }
+
     function showErrorMessage(msg) {
         errorDialogText = msg;
         errorDialog.open();
@@ -70,13 +82,44 @@ Page {
                 height: 40
 
                 background: Rectangle {
-                    color: logMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                    radius: 20
+                    color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
+                }
 
-                    Text {
-                        text: "📋"
+                // Custom content with SVG icon
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    // SVG Icon
+                    Image {
+                        id: logIcon
                         anchors.centerIn: parent
-                        font.pixelSize: 20
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-logs.svg"
+                        sourceSize.width: 22
+                        sourceSize.height: 22
+                    }
+
+                    // Hover tooltip
+                    ToolTip {
+                        id: logsTooltip
+                        text: "Open Application Logs"
+                        visible: logMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: logsTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
                     }
                 }
 
@@ -86,31 +129,37 @@ Page {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (!logDisplayController.isLogWindowOpen) {
+                        // Check if we already have a log window open
+                        if (logWindow && logWindow.visible) {
+                            // Bring existing window to front
+                            logWindow.raise();
+                            logWindow.requestActivate();
+                            return;
+                        }
+
+                        // Create new log window if none exists or if controller says none is open
+                        if (!logDisplayController.isLogWindowOpen || !logWindow) {
                             var component = Qt.createComponent("qrc:/log_display.qml");
                             if (component.status === Component.Ready) {
                                 logDisplayController.setLogWindowOpen(true);
-                                var logWindow = component.createObject(inputScreen, {
-                                    "onClosing": function(close) {
+                                logWindow = component.createObject(inputScreen);
+
+                                if (logWindow) {
+                                    // Connect closing signal properly
+                                    logWindow.closing.connect(function(close) {
                                         logDisplayController.setLogWindowOpen(false);
-                                    }
-                                });
-                                logWindow.show();
+                                        logWindow = null; // Clear our reference
+                                    });
+
+                                    logWindow.show();
+                                }
                             } else {
                                 console.error("Error creating log window:", component.errorString());
                             }
                         }
                     }
                 }
-
-                ToolTip {
-                    visible: logMouseArea.containsMouse
-                    text: "Open Application Logs"
-                    font.pixelSize: 12
-                    delay: 500
-                }
             }
-
         }
 
         // Upload Container
@@ -248,7 +297,7 @@ Page {
                         horizontalCenter: browseButton.horizontalCenter
                         topMargin: 16
                     }
-                    text: "Supported formats: TXT"
+                    text: "Supported formats: TXT & XLSX"
                     font.pixelSize: 12
                     color: "#9ca3af"
                 }
@@ -325,7 +374,7 @@ Page {
                 left: parent.left
                 right: parent.right
             }
-            height: 60
+            height: 30
             color: "#ffffff"
             border.color: "#e5e7eb"
 

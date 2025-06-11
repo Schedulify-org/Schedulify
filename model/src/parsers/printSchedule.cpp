@@ -1,4 +1,4 @@
-#include "parsers/printSchedule.h"
+#include "printSchedule.h"
 
 bool printSelectedSchedule(const InformativeSchedule& schedule) {
     QPrinter printer;

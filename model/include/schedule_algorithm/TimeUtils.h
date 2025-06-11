@@ -1,8 +1,9 @@
 #ifndef TIMEUTILS_H
 #define TIMEUTILS_H
 
+#include "parseCoursesToVector.h"
 #include "model_interfaces.h"
-#include "parsers/parseCoursesToVector.h"
+#include "logger.h"
 
 #include <string>
 

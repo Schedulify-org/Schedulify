@@ -2,11 +2,14 @@
 #define SCHEDULES_DISPLAY_H
 
 #include "controller_manager.h"
-#include "main/model_access.h"
+#include "model_access.h"
 #include "model_interfaces.h"
+#include "schedule_model.h"
 
 #include <QObject>
 #include <QVariant>
+#include <QVariantMap>
+#include <QVariantList>
 #include <QFileDialog>
 #include <QDir>
 #include <QQuickItem>
@@ -21,37 +24,44 @@ enum class fileType {
 
 class SchedulesDisplayController : public ControllerManager {
     Q_OBJECT
-    Q_PROPERTY(int currentScheduleIndex READ currentScheduleIndex
-                            WRITE setCurrentScheduleIndex NOTIFY currentScheduleIndexChanged)
+        Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
 
-public:
+    public:
     explicit SchedulesDisplayController(QObject *parent = nullptr);
     ~SchedulesDisplayController() override;
 
-    void loadScheduleData(const vector<InformativeSchedule>& schedules);
-    [[nodiscard]] int currentScheduleIndex() const;
-    Q_INVOKABLE void setCurrentScheduleIndex(int index);
+    void loadScheduleData(const std::vector<InformativeSchedule>& schedules);
 
-    Q_INVOKABLE [[nodiscard]] QVariantList getDayItems(int scheduleIndex, int dayIndex) const;
-    Q_INVOKABLE [[nodiscard]] static QString getDayName(int dayIndex) ;
-    Q_INVOKABLE [[nodiscard]] int getScheduleCount() const;
+    // Properties
+    ScheduleModel* scheduleModel() const { return m_scheduleModel; }
+
+    // QML accessible methods
     Q_INVOKABLE void goBack() override;
     Q_INVOKABLE void saveScheduleAsCSV();
     Q_INVOKABLE void printScheduleDirectly();
     Q_INVOKABLE void captureAndSave(QQuickItem* item, const QString& savePath = QString());
 
+    // Sorting methods
+    Q_INVOKABLE void applySorting(const QVariantMap& sortData);
+    Q_INVOKABLE void clearSorting();
+
     static QString generateFilename(const QString& basePath, int index, fileType type);
 
-signals:
-        void currentScheduleIndexChanged();
+    signals:
+        void schedulesSorted(int totalCount);
         void screenshotSaved(const QString& path);
         void screenshotFailed();
-        void scheduleChanged();
 
 private:
-    vector<InformativeSchedule> m_schedules;
-    int m_currentScheduleIndex;
+    std::vector<InformativeSchedule> m_schedules;
+    ScheduleModel* m_scheduleModel;
     IModel* modelConnection;
+    QMap<QString, QString> m_sortKeyMap;
+
+
+    // Track current sort state for optimization
+    QString m_currentSortField;
+    bool m_currentSortAscending = true;
 };
 
 #endif // SCHEDULES_DISPLAY_H
