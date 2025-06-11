@@ -1,6 +1,7 @@
 build/
 ../.idea/
 .idea/
+.env
 .vscode/
 cmake-build-debug/
 tests/model-tests/cmake-build-debug/

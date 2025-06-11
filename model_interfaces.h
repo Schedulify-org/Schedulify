@@ -71,7 +71,8 @@ enum class ModelOperation {
     VALIDATE_COURSES,
     GENERATE_SCHEDULES,
     SAVE_SCHEDULE,
-    PRINT_SCHEDULE
+    PRINT_SCHEDULE,
+    BOT_MESSAGE
 };
 
 class IModel {

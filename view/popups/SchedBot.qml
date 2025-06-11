@@ -15,6 +15,9 @@ Rectangle {
     property bool isOpen: false
     property alias messagesModel: messagesListModel
 
+    // Reference to the controller for model operations
+    property var controller: null
+
     // Hide completely when closed
     visible: isOpen
 
@@ -291,25 +294,45 @@ Rectangle {
             "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm")
         })
 
+        // Clear input field
         inputField.text = ""
 
-        // Simulate bot response after a short delay
-        var responses = [
-            "I can help you find schedules with no morning classes!",
-            "Let me check for schedules that start after 10:00 AM.",
-            "Great! I found 12 schedules that start at 10:00 AM or later. I've updated your schedule viewer to show these filtered options.",
-            "You can use the preference button to set more specific time preferences.",
-            "Would you like me to help you find schedules with minimal gaps between classes?"
-        ]
+        // Send message to model through controller
+        if (controller) {
+            controller.processBotMessage(messageText)
+        } else {
+            // Fallback if controller is not available
+            addBotResponse("I'm sorry, but I'm unable to process your request right now. Please try again later.")
+        }
+    }
 
-        var randomResponse = responses[Math.floor(Math.random() * responses.length)]
-
-        Qt.callLater(function() {
-            messagesModel.append({
-                "isBot": true,
-                "message": randomResponse,
-                "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm")
-            })
+    // Function to add bot response (called from controller)
+    function addBotResponse(responseText) {
+        messagesModel.append({
+            "isBot": true,
+            "message": responseText,
+            "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm")
         })
+    }
+
+    // Function to show typing indicator (optional enhancement)
+    function showTypingIndicator() {
+        messagesModel.append({
+            "isBot": true,
+            "message": "SchedBot is typing...",
+            "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
+            "isTyping": true
+        })
+    }
+
+    // Function to remove typing indicator
+    function removeTypingIndicator() {
+        for (var i = messagesModel.count - 1; i >= 0; i--) {
+            var item = messagesModel.get(i)
+            if (item.isTyping) {
+                messagesModel.remove(i)
+                break
+            }
+        }
     }
 }

@@ -32,6 +32,14 @@ Page {
 
     property var logWindow: null
 
+    // Connection to handle bot responses
+    Connections {
+        target: controller
+        function onBotResponseReceived(response) {
+            chatBot.addBotResponse(response)
+        }
+    }
+
     MouseArea {
         id: outsideClickArea
         anchors.fill: parent
@@ -685,14 +693,6 @@ Page {
             rightMargin: chatBot.isOpen ? chatBot.width : 0
         }
 
-        // Behavior for smooth transitions when chatbot opens/closes
-        Behavior on anchors.rightMargin {
-            NumberAnimation {
-                duration: 300
-                easing.type: Easing.OutCubic
-            }
-        }
-
         // Trim text based on stages (full, mid, min)
         function getFormattedText(courseName, courseId, building, room, type, cellWidth, cellHeight) {
             if (type === "Block") {
@@ -1025,7 +1025,7 @@ Page {
         }
     }
 
-    // SchedBot Component
+    // SchedBot Component - Pass controller reference
     SchedBot {
         id: chatBot
         anchors {
@@ -1033,7 +1033,8 @@ Page {
             bottom: footer.top
             right: parent.right
         }
-        z: 1000 // Ensure it's above other content
+        z: 1000
+        controller: schedulesDisplayPage.controller
     }
 
     // Footer

@@ -104,7 +104,7 @@ string JsonParser::informativeScheduleToJson(const InformativeSchedule& schedule
 
     stringstream json;
     json << indent << "{\n";
-    json << nextIndent << "\"index\": " << schedule.index << ",\n";
+    json << nextIndent << "\"index\": " << schedule.index + 1 << ",\n";
     json << nextIndent << "\"amount_days\": " << schedule.amount_days << ",\n";
     json << nextIndent << "\"amount_gaps\": " << schedule.amount_gaps << ",\n";
     json << nextIndent << "\"gaps_time\": " << schedule.gaps_time << ",\n";

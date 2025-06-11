@@ -1,5 +1,7 @@
 #include "schedules_display.h"
 #include <algorithm>
+#include <vector>
+#include <string>
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
         : ControllerManager(parent),
@@ -17,6 +19,77 @@ SchedulesDisplayController::~SchedulesDisplayController() {
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
     m_schedules = schedules;
     m_scheduleModel->loadSchedules(m_schedules);
+}
+
+void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
+    if (!modelConnection) {
+        emit botResponseReceived("I'm sorry, but I'm unable to process your request right now. Please try again later.");
+        return;
+    }
+
+    // Create vector with user message and operation type
+    std::vector<std::string> messageData;
+    messageData.push_back(userMessage.toStdString());
+    messageData.emplace_back("Find");
+
+    // Send to model using BOT_MESSAGE operation
+    try {
+        void* result = modelConnection->executeOperation(ModelOperation::BOT_MESSAGE, &messageData, "");
+
+        // The model returns a vector<string>*
+        if (result) {
+            auto* responseVector = static_cast<std::vector<std::string>*>(result);
+
+            // Check if vector has any responses
+            if (!responseVector->empty()) {
+                // Get the first cell of the vector (response message)
+                QString responseText = QString::fromStdString((*responseVector)[0]);
+
+                // Handle optional index in second cell
+                int scheduleIndex = -1; // Default value indicating no index
+                bool hasValidIndex = false;
+
+                if (responseVector->size() >= 2) {
+                    // Second cell exists, try to parse it as an integer
+                    const std::string& indexStr = (*responseVector)[1];
+
+                    if (!indexStr.empty()) {
+                        try {
+                            scheduleIndex = std::stoi(indexStr);
+                            hasValidIndex = true;
+                            qDebug() << "Received schedule index:" << scheduleIndex;
+                        } catch (const std::invalid_argument& e) {
+                            qWarning() << "Invalid index format in response:" << QString::fromStdString(indexStr);
+                        } catch (const std::out_of_range& e) {
+                            qWarning() << "Index out of range in response:" << QString::fromStdString(indexStr);
+                        }
+                    }
+                }
+
+                // Use the index if available and valid
+                if (hasValidIndex) {
+                    m_scheduleModel->jumpToSchedule(scheduleIndex);
+                } else {
+                    qDebug() << "No valid schedule index provided in response";
+                }
+
+                emit botResponseReceived(responseText);
+
+            } else {
+                emit botResponseReceived("I processed your request but don't have a response at the moment.");
+            }
+
+            delete responseVector; // Clean up the allocated memory
+        } else {
+            emit botResponseReceived("I'm sorry, I couldn't process your request. Please try rephrasing your question.");
+        }
+    } catch (const std::exception& e) {
+        qWarning() << "Error processing bot message:" << e.what();
+        emit botResponseReceived("An error occurred while processing your request. Please try again.");
+    } catch (...) {
+        qWarning() << "Unknown error processing bot message";
+        emit botResponseReceived("An unexpected error occurred. Please try again.");
+    }
 }
 
 void SchedulesDisplayController::applySorting(const QVariantMap& sortData) {

@@ -12,6 +12,8 @@
 #include "excel_parser.h"
 #include "validate_courses.h"
 #include "jsonParser.h"
+#include "botAdapter.h"
+#include "scheduleToMT.h"
 
 #include <algorithm>
 #include <cctype>
@@ -40,10 +42,12 @@ private:
     static vector<InformativeSchedule> generateSchedules(const vector<Course>& userInput);
     static void saveSchedule(const InformativeSchedule& infoSchedule, const string& path);
     static void printSchedule(const InformativeSchedule& infoSchedule);
+    static vector<string> messageBot(const vector<string>& userInput, const string& data);
 
     vector<Course> lastGeneratedCourses;
     vector<string> courseFileErrors;
     vector<InformativeSchedule> lastGeneratedSchedules;
+    string scheduleMetaData;
 };
 
 inline IModel* getModel() {

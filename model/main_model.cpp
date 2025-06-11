@@ -84,9 +84,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
     if (schedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");
     }
-
-    JsonParser::ConvertToJson(schedules, R"(C:\Users\Rotem Braun\OneDrive\Desktop\myjson.json)");
-    cout << JsonParser::ConvertToJsonString(schedules);
     return schedules;
 }
 
@@ -100,6 +97,17 @@ void Model::printSchedule(const InformativeSchedule& infoSchedule) {
     bool status = printSelectedSchedule(infoSchedule);
     string message = status ? "Schedule sent to printer" : "An error has accrued, unable to print schedule";
     Logger::get().logInfo(message);
+}
+
+vector<string> Model::messageBot(const vector<string>& userInput, const string& data) {
+    const string& sType = userInput[1];
+    if (sType == "Find") {
+        return askModel(userInput[0], data, QuestionType::FIND_ME);
+    } else if (sType == "Tell") {
+        return askModel(userInput[0], data, QuestionType::TELL_ME);
+    } else {
+        return {};
+    }
 }
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
@@ -127,6 +135,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
                 lastGeneratedSchedules = generateSchedules(*courses);
+                scheduleMetaData = CalculateMetaData(lastGeneratedSchedules);
                 return &lastGeneratedSchedules;
             } else {
                 Logger::get().logError("unable to generate schedules, aborting...");
@@ -150,6 +159,16 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("unable to print schedule, aborting...");
             }
             break;
+
+        case ModelOperation::BOT_MESSAGE:
+            if (data) {
+                const auto* userInput = static_cast<const vector<string>*>(data);
+                auto* botRespond = new vector<string>(messageBot(*userInput, scheduleMetaData));
+                return botRespond;
+            } else {
+                Logger::get().logError("invalid message");
+                return nullptr;
+            }
     }
     return nullptr;
 }
