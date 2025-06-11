@@ -20,6 +20,7 @@ Page {
     property int numberOfTimeSlots: 13
     property real headerHeight: 40
 
+    // Updated to account for chatbot width when open
     property real availableTableWidth: mainContent.width - 28
     property real availableTableHeight: mainContent.height - 41
 
@@ -371,6 +372,65 @@ Page {
                 }
             }
 
+            // ChatBot button
+            Button {
+                id: chatBotButton
+                anchors {
+                    right: logButtonC.left
+                    verticalCenter: parent.verticalCenter
+                    rightMargin: 10
+                }
+                width: 40
+                height: 40
+
+                background: Rectangle {
+                    color: chatBotMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                    radius: 10
+                    border.color: chatBot.isOpen ? "#3b82f6" : "transparent"
+                    border.width: chatBot.isOpen ? 2 : 0
+                }
+
+                contentItem: Item {
+                    anchors.fill: parent
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "🤖"
+                        font.pixelSize: 20
+                    }
+
+                    ToolTip {
+                        id: chatBotTooltip
+                        text: chatBot.isOpen ? "Close SchedBot" : "Open SchedBot"
+                        visible: chatBotMouseArea.containsMouse
+                        delay: 500
+                        timeout: 3000
+
+                        background: Rectangle {
+                            color: "#374151"
+                            radius: 4
+                            border.color: "#4b5563"
+                        }
+
+                        contentItem: Text {
+                            text: chatBotTooltip.text
+                            color: "white"
+                            font.pixelSize: 12
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: chatBotMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        chatBot.isOpen = !chatBot.isOpen
+                    }
+                }
+            }
+
             Button {
                 id: logButtonC
                 anchors {
@@ -459,7 +519,7 @@ Page {
                 width: 40
                 height: 40
                 anchors {
-                    right: logButtonC.left
+                    right: chatBotButton.left
                     verticalCenter: parent.verticalCenter
                     rightMargin: 10
                 }
@@ -622,6 +682,15 @@ Page {
             left: parent.left
             right: parent.right
             bottom: footer.top
+            rightMargin: chatBot.isOpen ? chatBot.width : 0
+        }
+
+        // Behavior for smooth transitions when chatbot opens/closes
+        Behavior on anchors.rightMargin {
+            NumberAnimation {
+                duration: 300
+                easing.type: Easing.OutCubic
+            }
         }
 
         // Trim text based on stages (full, mid, min)
@@ -954,6 +1023,17 @@ Page {
                 }
             }
         }
+    }
+
+    // SchedBot Component
+    SchedBot {
+        id: chatBot
+        anchors {
+            top: header.bottom
+            bottom: footer.top
+            right: parent.right
+        }
+        z: 1000 // Ensure it's above other content
     }
 
     // Footer
