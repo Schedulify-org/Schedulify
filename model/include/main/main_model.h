@@ -51,6 +51,7 @@ private:
     static void saveSchedule(const InformativeSchedule& infoSchedule, const string& path);
     static void printSchedule(const InformativeSchedule& infoSchedule);
     static vector<string> messageBot(const vector<string>& userInput, const string& data);
+    static bool deleteFileFromHistory(int fileId);
 
     vector<Course> lastGeneratedCourses;
     vector<string> courseFileErrors;

@@ -54,6 +54,63 @@ void FileInputController::refreshFileHistory() {
     Logger::get().logInfo("File history refreshed - " + std::to_string(m_fileHistoryModel->rowCount()) + " files available");
 }
 
+void FileInputController::deleteFileFromHistory(int fileId) {
+    Logger::get().logInfo("=== DELETING FILE FROM HISTORY ===");
+    Logger::get().logInfo("File ID to delete: " + std::to_string(fileId));
+
+    if (fileId <= 0) {
+        Logger::get().logError("Invalid file ID for deletion: " + std::to_string(fileId));
+        emit errorMessage("Invalid file ID for deletion");
+        return;
+    }
+
+    try {
+        // Get file details before deletion for logging
+        for (int i = 0; i < m_fileHistoryModel->rowCount(); ++i) {
+            if (m_fileHistoryModel->getFileId(i) == fileId) {
+                QModelIndex index = m_fileHistoryModel->index(i, 0);
+                QString fileName = m_fileHistoryModel->data(index, FileHistoryModel::FileNameRole).toString();
+                QString fileType = m_fileHistoryModel->data(index, FileHistoryModel::FileTypeRole).toString();
+
+                Logger::get().logInfo("Deleting file: '" + fileName.toStdString() + "' (" + fileType.toStdString() + ")");
+                break;
+            }
+        }
+
+        // Call model to delete file and its courses
+        bool* result = static_cast<bool*>(
+                modelConnection->executeOperation(ModelOperation::DELETE_FILE_FROM_HISTORY, &fileId, "")
+        );
+
+        if (result && *result) {
+            Logger::get().logInfo("Successfully deleted file and courses from database");
+
+            // Remove from selection if it was selected
+            auto it = std::find(m_selectedFileIds.begin(), m_selectedFileIds.end(), fileId);
+            if (it != m_selectedFileIds.end()) {
+                m_selectedFileIds.erase(it);
+                emit fileSelectionChanged();
+                Logger::get().logInfo("Removed deleted file from selection");
+            }
+
+            // Refresh the file history to update the UI
+            refreshFileHistory();
+
+            emit errorMessage("File deleted successfully from history");
+
+            delete result;
+        } else {
+            Logger::get().logError("Failed to delete file from history");
+            emit errorMessage("Failed to delete file from history. Please try again.");
+            if (result) delete result;
+        }
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during file deletion: " + string(e.what()));
+        emit errorMessage("Error occurred while deleting file: " + QString::fromStdString(e.what()));
+    }
+}
+
 void FileInputController::handleUploadAndContinue() {
     // Open file dialog to select .txt or .xlsx file, starting in Documents
     QString fileName = QFileDialog::getOpenFileName(

@@ -239,6 +239,70 @@ vector<FileEntity> Model::getFileHistory() {
     }
 }
 
+bool Model::deleteFileFromHistory(int fileId) {
+    try {
+        Logger::get().logInfo("=== DELETING FILE FROM HISTORY ===");
+        Logger::get().logInfo("File ID: " + std::to_string(fileId));
+
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logInfo("Initializing database for file deletion");
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for file deletion");
+                return false;
+            }
+        }
+
+        auto& db = DatabaseManager::getInstance();
+        if (!db.isConnected()) {
+            Logger::get().logError("Database not connected for file deletion");
+            return false;
+        }
+
+        // Get file details before deletion for logging
+        FileEntity file = db.files()->getFileById(fileId);
+        if (file.id != 0) {
+            Logger::get().logInfo("Deleting file: '" + file.file_name + "' (type: " + file.file_type + ")");
+
+            // Get count of courses that will be deleted
+            int courseCount = db.courses()->getCourseCountByFileId(fileId);
+            Logger::get().logInfo("This will delete " + std::to_string(courseCount) + " associated courses");
+
+            // Start transaction for atomic deletion
+            DatabaseTransaction transaction(db);
+
+            // Delete courses first (due to foreign key constraint)
+            if (!db.courses()->deleteCoursesByFileId(fileId)) {
+                Logger::get().logError("Failed to delete courses for file ID: " + std::to_string(fileId));
+                return false;
+            }
+
+            // Delete the file record
+            if (!db.files()->deleteFile(fileId)) {
+                Logger::get().logError("Failed to delete file record for ID: " + std::to_string(fileId));
+                return false;
+            }
+
+            // Commit the transaction
+            if (!transaction.commit()) {
+                Logger::get().logError("Failed to commit file deletion transaction");
+                return false;
+            }
+
+            Logger::get().logInfo("Successfully deleted file '" + file.file_name + "' and " +
+                                  std::to_string(courseCount) + " associated courses");
+            return true;
+        } else {
+            Logger::get().logError("File with ID " + std::to_string(fileId) + " not found");
+            return false;
+        }
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during file deletion: " + string(e.what()));
+        return false;
+    }
+}
+
 vector<string> Model::validateCourses(const vector<Course>& courses) {
     if (courses.empty()) {
         Logger::get().logError("No courses were found to validate");
@@ -347,6 +411,20 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             Logger::get().logInfo("File history retrieved: " + std::to_string(fileHistory->size()) + " files");
             return fileHistory;
         }
+
+        case ModelOperation::DELETE_FILE_FROM_HISTORY:
+            if (data) {
+                const int* fileId = static_cast<const int*>(data);
+                Logger::get().logInfo("=== STARTING FILE DELETION PROCESS ===");
+                bool success = deleteFileFromHistory(*fileId);
+                Logger::get().logInfo("=== FILE DELETION PROCESS COMPLETED ===");
+                Logger::get().logInfo("Result: " + string(success ? "SUCCESS" : "FAILED"));
+                bool* result = new bool(success);
+                return result;
+            } else {
+                Logger::get().logError("No file ID provided for deletion");
+                return nullptr;
+            }
 
         case ModelOperation::VALIDATE_COURSES:
             if (data) {

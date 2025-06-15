@@ -42,7 +42,8 @@ public:
     Q_INVOKABLE void toggleFileSelection(int index);
     Q_INVOKABLE bool isFileSelected(int index);
     Q_INVOKABLE void clearFileSelection();
-    Q_INVOKABLE void refreshFileHistory(); // NEW: Force refresh file history
+    Q_INVOKABLE void refreshFileHistory(); // Force refresh file history
+    Q_INVOKABLE void deleteFileFromHistory(int fileId); // Delete file from history
 
 private:
     QString selectedFilePath;

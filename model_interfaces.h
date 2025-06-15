@@ -86,7 +86,8 @@ enum class ModelOperation {
     RESTORE_DATABASE,
     GET_DATABASE_STATS,
     LOAD_FROM_HISTORY,
-    GET_FILE_HISTORY
+    GET_FILE_HISTORY,
+    DELETE_FILE_FROM_HISTORY
 };
 
 class IModel {

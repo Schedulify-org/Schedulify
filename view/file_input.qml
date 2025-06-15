@@ -69,6 +69,138 @@ Page {
         }
     }
 
+    // Delete confirmation dialog
+    Dialog {
+        id: deleteConfirmDialog
+        title: "Delete File from History"
+        width: 400
+        height: 200
+
+        property int fileId: -1
+        property string fileName: ""
+
+        anchors.centerIn: parent
+        modal: true
+
+        background: Rectangle {
+            color: "#ffffff"
+            radius: 8
+            border.color: "#e5e7eb"
+            border.width: 1
+        }
+
+        Column {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 20
+
+            Text {
+                text: "Are you sure you want to delete this file from history?"
+                font.pixelSize: 16
+                color: "#1f2937"
+                wrapMode: Text.WordWrap
+                width: parent.width
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 60
+                color: "#fef2f2"
+                radius: 6
+                border.color: "#fecaca"
+                border.width: 1
+
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    Text {
+                        text: deleteConfirmDialog.fileName
+                        font.pixelSize: 14
+                        font.bold: true
+                        color: "#dc2626"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Text {
+                        text: "This will also delete all courses from this file"
+                        font.pixelSize: 12
+                        color: "#991b1b"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+                }
+            }
+
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 15
+
+                Button {
+                    text: "Cancel"
+                    width: 100
+                    height: 36
+
+                    background: Rectangle {
+                        color: cancelMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
+                        border.color: "#d1d5db"
+                        border.width: 1
+                        radius: 4
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: "#374151"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 14
+                    }
+
+                    MouseArea {
+                        id: cancelMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            deleteConfirmDialog.close();
+                        }
+                    }
+                }
+
+                Button {
+                    text: "Delete"
+                    width: 100
+                    height: 36
+
+                    background: Rectangle {
+                        color: deleteConfirmMouseArea.containsMouse ? "#b91c1c" : "#dc2626"
+                        radius: 4
+                    }
+
+                    contentItem: Text {
+                        text: parent.text
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        font.pixelSize: 14
+                        font.bold: true
+                    }
+
+                    MouseArea {
+                        id: deleteConfirmMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            console.log("Confirmed delete for file ID:", deleteConfirmDialog.fileId);
+                            fileInputController.deleteFileFromHistory(deleteConfirmDialog.fileId);
+                            deleteConfirmDialog.close();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     function showErrorMessage(msg) {
         errorDialogText = msg;
         errorDialog.open();
@@ -555,6 +687,7 @@ Page {
 
                             MouseArea {
                                 anchors.fill: parent
+                                anchors.rightMargin: 50 // Leave space for delete button
                                 onClicked: {
                                     console.log("File clicked at index:", index, "File ID:", model.fileId, "File name:", model.fileName);
                                     fileInputController.toggleFileSelection(index);
@@ -601,6 +734,64 @@ Page {
                                     Text {
                                         text: `${model.fileType || "Unknown"} • ${model.formattedDate || "Unknown date"}`
                                         color: "#6b7280"
+                                        font.pixelSize: 12
+                                    }
+                                }
+                            }
+
+                            // Delete button
+                            Button {
+                                id: deleteButton
+                                anchors.right: parent.right
+                                anchors.rightMargin: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 32
+                                height: 32
+
+                                background: Rectangle {
+                                    color: deleteMouseArea.containsMouse ? "#fee2e2" : "transparent"
+                                    radius: 6
+                                    border.color: deleteMouseArea.containsMouse ? "#fca5a5" : "transparent"
+                                    border.width: 1
+                                }
+
+                                contentItem: Text {
+                                    text: "🗑️"
+                                    font.pixelSize: 14
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: deleteMouseArea.containsMouse ? "#dc2626" : "#6b7280"
+                                }
+
+                                MouseArea {
+                                    id: deleteMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+
+                                    onClicked: {
+                                        console.log("Delete button clicked for file:", model.fileName, "ID:", model.fileId);
+                                        deleteConfirmDialog.fileId = model.fileId;
+                                        deleteConfirmDialog.fileName = model.fileName || "Unknown File";
+                                        deleteConfirmDialog.open();
+                                    }
+                                }
+
+                                ToolTip {
+                                    visible: deleteMouseArea.containsMouse
+                                    text: "Delete file from history"
+                                    delay: 500
+                                    timeout: 3000
+
+                                    background: Rectangle {
+                                        color: "#374151"
+                                        radius: 4
+                                        border.color: "#4b5563"
+                                    }
+
+                                    contentItem: Text {
+                                        text: parent.text
+                                        color: "white"
                                         font.pixelSize: 12
                                     }
                                 }
