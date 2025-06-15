@@ -23,7 +23,7 @@ public:
 
 private:
     QSqlDatabase& db;
-    static const int CURRENT_SCHEMA_VERSION = 2;
+    static const int CURRENT_SCHEMA_VERSION = 3;  // Updated to version 3
 
     // Individual table creation methods
     bool createMetadataTable();
@@ -40,6 +40,11 @@ private:
 
     // Schema upgrade methods
     bool upgradeFromV1ToV2();
+    bool upgradeFromV2ToV3();  // New upgrade method
+
+    // Validation methods
+    bool validateFileTableColumns();
+    bool validateCourseTableColumns();  // New validation method
 
     // Utility methods
     bool executeQuery(const QString& query);

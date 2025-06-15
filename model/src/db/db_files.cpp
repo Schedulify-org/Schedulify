@@ -9,6 +9,9 @@ DatabaseFileManager::DatabaseFileManager(QSqlDatabase& database) : db(database) 
 }
 
 int DatabaseFileManager::insertFile(const string& fileName, const string& fileType) {
+    Logger::get().logInfo("=== INSERTING FILE WITH DIAGNOSTICS ===");
+    Logger::get().logInfo("File: '" + fileName + "', Type: '" + fileType + "'");
+
     if (!db.isOpen()) {
         Logger::get().logError("Database not open for file insertion");
         return -1;
@@ -24,8 +27,28 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
         return -1;
     }
 
-    Logger::get().logInfo("Inserting new file: " + fileName + " (type: " + fileType + ")");
+    // Test database connection before proceeding
+    QSqlQuery connectionTest(db);
+    if (!connectionTest.exec("SELECT 1")) {
+        Logger::get().logError("Database connection test failed: " + connectionTest.lastError().text().toStdString());
+        return -1;
+    }
 
+    // Check if file table exists
+    QSqlQuery tableCheck(db);
+    if (!tableCheck.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='file'")) {
+        Logger::get().logError("Cannot check for file table existence: " + tableCheck.lastError().text().toStdString());
+        return -1;
+    }
+
+    if (!tableCheck.next()) {
+        Logger::get().logError("File table does not exist in database!");
+        return -1;
+    }
+
+    Logger::get().logInfo("File table exists, proceeding with insertion");
+
+    // Prepare and execute the insertion query
     QSqlQuery query(db);
     query.prepare(R"(
         INSERT INTO file (file_name, file_type, upload_time, updated_at)
@@ -35,15 +58,51 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
     query.addBindValue(QString::fromStdString(fileName));
     query.addBindValue(QString::fromStdString(fileType));
 
+    Logger::get().logInfo("Executing file insertion query...");
+
     if (!query.exec()) {
-        Logger::get().logError("Failed to insert file '" + fileName + "': " + query.lastError().text().toStdString());
+        QString errorText = query.lastError().text();
+        QSqlError error = query.lastError();
+
+        Logger::get().logError("File insertion query failed!");
+        Logger::get().logError("Error text: " + errorText.toStdString());
+        Logger::get().logError("Error type: " + QString::number(error.type()).toStdString());
+        Logger::get().logError("Driver text: " + error.driverText().toStdString());
+        Logger::get().logError("Database text: " + error.databaseText().toStdString());
+
+        // Check if it's a constraint violation
+        if (errorText.contains("constraint", Qt::CaseInsensitive) ||
+            errorText.contains("unique", Qt::CaseInsensitive)) {
+            Logger::get().logError("Constraint violation - possible duplicate or invalid data");
+        }
+
+        // Check if it's a permission issue
+        if (errorText.contains("readonly", Qt::CaseInsensitive) ||
+            errorText.contains("permission", Qt::CaseInsensitive)) {
+            Logger::get().logError("Database permission issue - file may be read-only");
+        }
+
         return -1;
     }
 
     // Get the ID of the inserted file
     QVariant lastId = query.lastInsertId();
     if (!lastId.isValid()) {
-        Logger::get().logError("Failed to get file ID after insertion for: " + fileName);
+        Logger::get().logError("Failed to get file ID after insertion - lastInsertId() returned invalid");
+
+        // Try alternative method to get the ID
+        QSqlQuery idQuery(db);
+        idQuery.prepare("SELECT id FROM file WHERE file_name = ? AND file_type = ? ORDER BY upload_time DESC LIMIT 1");
+        idQuery.addBindValue(QString::fromStdString(fileName));
+        idQuery.addBindValue(QString::fromStdString(fileType));
+
+        if (idQuery.exec() && idQuery.next()) {
+            int altId = idQuery.value(0).toInt();
+            Logger::get().logInfo("Retrieved file ID using alternative method: " + std::to_string(altId));
+            return altId;
+        }
+
+        Logger::get().logError("Alternative ID retrieval also failed");
         return -1;
     }
 
@@ -53,7 +112,22 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
         return -1;
     }
 
-    Logger::get().logInfo("File inserted successfully: " + fileName + " (ID: " + std::to_string(fileId) + ")");
+    Logger::get().logInfo("=== FILE INSERTION SUCCESSFUL ===");
+    Logger::get().logInfo("File: '" + fileName + "' inserted with ID: " + std::to_string(fileId));
+
+    // Verify the insertion by reading it back
+    QSqlQuery verifyQuery(db);
+    verifyQuery.prepare("SELECT file_name, file_type FROM file WHERE id = ?");
+    verifyQuery.addBindValue(fileId);
+
+    if (verifyQuery.exec() && verifyQuery.next()) {
+        string verifyName = verifyQuery.value(0).toString().toStdString();
+        string verifyType = verifyQuery.value(1).toString().toStdString();
+        Logger::get().logInfo("Verification: ID " + std::to_string(fileId) + " -> '" + verifyName + "' (" + verifyType + ")");
+    } else {
+        Logger::get().logWarning("Could not verify inserted file - but insertion seemed successful");
+    }
+
     return fileId;
 }
 

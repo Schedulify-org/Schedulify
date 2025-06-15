@@ -6,26 +6,71 @@ ModelDatabaseIntegration& ModelDatabaseIntegration::getInstance() {
 }
 
 bool ModelDatabaseIntegration::initializeDatabase(const string& dbPath) {
+    Logger::get().logInfo("=== INITIALIZING DATABASE ===");
+
     QString qDbPath = dbPath.empty() ? QString() : QString::fromStdString(dbPath);
 
-    if (!DatabaseManager::getInstance().initializeDatabase(qDbPath)) {
-        Logger::get().logError("Failed to initialize database in integration layer");
-        return false;
+    // Check if already initialized
+    if (m_initialized && DatabaseManager::getInstance().isConnected()) {
+        Logger::get().logInfo("Database already initialized and connected");
+        return true;
     }
 
-    m_initialized = true;
+    // Try to initialize database with comprehensive error checking
+    try {
+        Logger::get().logInfo("Attempting database connection...");
 
-    // Set up initial metadata
-    updateLastAccessMetadata();
+        if (!DatabaseManager::getInstance().initializeDatabase(qDbPath)) {
+            Logger::get().logError("CRITICAL: DatabaseManager initialization failed");
 
-    // Log initialization
-    auto stats = getDatabaseStats();
-    Logger::get().logInfo("Database integration initialized. Stats: " +
-                          std::to_string(stats.courseCount) + " courses, " +
-                          std::to_string(stats.scheduleCount) + " schedules, " +
-                          std::to_string(stats.metadataCount) + " files");
+            // Try to diagnose the issue
+            Logger::get().logInfo("=== DATABASE DIAGNOSTIC ===");
 
-    return true;
+            // Check if SQLite driver is available
+            QStringList drivers = QSqlDatabase::drivers();
+            Logger::get().logInfo("Available SQL drivers: " + drivers.join(", ").toStdString());
+
+            if (!drivers.contains("QSQLITE")) {
+                Logger::get().logError("QSQLITE driver not available - this is a critical issue");
+                return false;
+            }
+
+            // Check directory permissions
+            QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+            Logger::get().logInfo("App data path: " + appDataPath.toStdString());
+
+            QDir appDir(appDataPath);
+            if (!appDir.exists()) {
+                Logger::get().logInfo("Creating app data directory...");
+                if (!appDir.mkpath(appDataPath)) {
+                    Logger::get().logError("Cannot create app data directory - permission issue");
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        m_initialized = true;
+        Logger::get().logInfo("Database manager initialized successfully");
+
+        // Set up initial metadata
+        updateLastAccessMetadata();
+
+        // Get and log database stats
+        auto stats = getDatabaseStats();
+        Logger::get().logInfo("Database integration initialized successfully");
+        Logger::get().logInfo("Stats: " + std::to_string(stats.courseCount) + " courses, " +
+                              std::to_string(stats.scheduleCount) + " schedules, " +
+                              std::to_string(stats.metadataCount) + " files");
+
+        return true;
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during database initialization: " + string(e.what()));
+        m_initialized = false;
+        return false;
+    }
 }
 
 bool ModelDatabaseIntegration::isInitialized() const {
@@ -34,6 +79,8 @@ bool ModelDatabaseIntegration::isInitialized() const {
 
 bool ModelDatabaseIntegration::loadCoursesToDatabase(const vector<Course>& courses, const string& fileName,
                                                      const string& fileType, const string& lut) {
+    Logger::get().logInfo("=== LOADING COURSES TO DATABASE ===");
+
     if (!isInitialized()) {
         Logger::get().logError("Database not initialized for course loading");
         return false;
@@ -41,7 +88,7 @@ bool ModelDatabaseIntegration::loadCoursesToDatabase(const vector<Course>& cours
 
     if (courses.empty()) {
         Logger::get().logWarning("No courses provided to load into database");
-        return true;
+        return true; // Not an error - just nothing to do
     }
 
     if (fileName.empty()) {
@@ -54,44 +101,88 @@ bool ModelDatabaseIntegration::loadCoursesToDatabase(const vector<Course>& cours
         return false;
     }
 
-    Logger::get().logInfo("Loading " + std::to_string(courses.size()) + " courses to database with file: " + fileName);
+    Logger::get().logInfo("Loading " + std::to_string(courses.size()) + " courses with file: " + fileName);
 
-    auto& db = DatabaseManager::getInstance();
+    try {
+        auto& db = DatabaseManager::getInstance();
 
-    // REQUIREMENT 1: Always create a new file entry for each upload
-    // Each file upload gets its own database entry, even if same name exists
-    int fileId = db.files()->insertFile(fileName, fileType);
-    if (fileId <= 0) {
-        Logger::get().logError("Failed to create file entry for: " + fileName);
+        // Verify database connection before proceeding
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during course loading");
+            return false;
+        }
+
+        // REQUIREMENT 1: Always create a new file entry for each upload
+        Logger::get().logInfo("Creating new file entry...");
+        int fileId = db.files()->insertFile(fileName, fileType);
+
+        if (fileId <= 0) {
+            Logger::get().logError("Failed to create file entry for: " + fileName);
+
+            // Try to diagnose the file insertion failure
+            Logger::get().logInfo("=== FILE INSERTION DIAGNOSTIC ===");
+
+            // Check if database is writable
+            auto testFiles = db.files()->getAllFiles();
+            Logger::get().logInfo("Current file count in database: " + std::to_string(testFiles.size()));
+
+            // Check if it's a permission or constraint issue
+            Logger::get().logError("Possible causes: database permissions, disk space, or constraint violations");
+
+            return false;
+        }
+
+        Logger::get().logInfo("Created new file entry with ID: " + std::to_string(fileId));
+
+        // Log course details before insertion
+        Logger::get().logInfo("=== COURSE INSERTION DEBUG ===");
+        for (size_t i = 0; i < std::min(courses.size(), size_t(3)); ++i) {
+            Logger::get().logInfo("Course " + std::to_string(i) + " to insert: ID=" + std::to_string(courses[i].id) +
+                                  ", Raw ID=" + courses[i].raw_id + ", Name=" + courses[i].name +
+                                  ", File ID=" + std::to_string(fileId));
+        }
+
+        // REQUIREMENT 2: Insert all courses with the new file_id
+        Logger::get().logInfo("Inserting courses with file ID: " + std::to_string(fileId));
+
+        if (!db.courses()->insertCourses(courses, fileId)) {
+            Logger::get().logError("Failed to insert courses into database for file ID: " + std::to_string(fileId));
+
+            // The file entry exists but courses failed - this is a partial failure
+            Logger::get().logWarning("File entry created but courses not saved - partial database state");
+
+            return false;
+        }
+
+        Logger::get().logInfo("Successfully inserted " + std::to_string(courses.size()) + " courses");
+
+        // Verify insertion by checking what was actually saved
+        Logger::get().logInfo("=== VERIFICATION CHECK ===");
+        auto savedCourses = db.courses()->getCoursesByFileId(fileId);
+        Logger::get().logInfo("Verification: " + std::to_string(savedCourses.size()) + " courses found for file ID " + std::to_string(fileId));
+
+        // Update metadata
+        db.updateMetadata("courses_loaded_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
+        db.updateMetadata("courses_count", std::to_string(courses.size()));
+        db.updateMetadata("last_loaded_file", fileName);
+        db.updateMetadata("last_file_type", fileType);
+
+        updateLastAccessMetadata();
+
+        Logger::get().logInfo("SUCCESS: All data saved to database");
+        Logger::get().logInfo("File ID: " + std::to_string(fileId) + ", Courses: " + std::to_string(courses.size()));
+
+        // Trigger callback if set
+        if (m_onCoursesLoaded) {
+            m_onCoursesLoaded(courses);
+        }
+
+        return true;
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during course loading: " + string(e.what()));
         return false;
     }
-
-    Logger::get().logInfo("Created new file entry with ID: " + std::to_string(fileId) + " for file: " + fileName);
-
-    // REQUIREMENT 2: Insert all courses with the new file_id
-    if (!db.courses()->insertCourses(courses, fileId)) {
-        Logger::get().logError("Failed to insert courses into database for file ID: " + std::to_string(fileId));
-        // Note: File entry will remain but without courses - this is acceptable for debugging
-        return false;
-    }
-
-    // Update metadata
-    db.updateMetadata("courses_loaded_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
-    db.updateMetadata("courses_count", std::to_string(courses.size()));
-    db.updateMetadata("last_loaded_file", fileName);
-    db.updateMetadata("last_file_type", fileType);
-
-    updateLastAccessMetadata();
-
-    Logger::get().logInfo("Successfully loaded " + std::to_string(courses.size()) +
-                          " courses to database with file ID: " + std::to_string(fileId));
-
-    // Trigger callback if set
-    if (m_onCoursesLoaded) {
-        m_onCoursesLoaded(courses);
-    }
-
-    return true;
 }
 
 // REQUIREMENT 3: Get courses by file IDs with conflict resolution
@@ -106,6 +197,7 @@ vector<Course> ModelDatabaseIntegration::getCoursesByFileIds(const vector<int>& 
         return {};
     }
 
+    Logger::get().logInfo("=== COURSE RETRIEVAL BY FILE IDS ===");
     Logger::get().logInfo("Loading courses from " + std::to_string(fileIds.size()) + " selected file(s)");
 
     // Log the specific file IDs being requested
@@ -121,8 +213,18 @@ vector<Course> ModelDatabaseIntegration::getCoursesByFileIds(const vector<int>& 
     auto courses = DatabaseManager::getInstance().courses()->getCoursesByFileIds(fileIds, warnings);
     updateLastAccessMetadata();
 
+    Logger::get().logInfo("=== COURSE RETRIEVAL RESULTS ===");
     Logger::get().logInfo("Retrieved " + std::to_string(courses.size()) + " courses from " +
                           std::to_string(fileIds.size()) + " file(s)");
+
+    // Log first few retrieved courses for debugging
+    if (!courses.empty()) {
+        Logger::get().logInfo("=== RETRIEVED COURSES DEBUG ===");
+        for (size_t i = 0; i < std::min(courses.size(), size_t(5)); ++i) {
+            Logger::get().logInfo("Retrieved course " + std::to_string(i) + ": ID=" + std::to_string(courses[i].id) +
+                                  ", Raw ID=" + courses[i].raw_id + ", Name=" + courses[i].name);
+        }
+    }
 
     // Log any conflict warnings that were generated
     if (!warnings.empty()) {
@@ -249,16 +351,45 @@ bool ModelDatabaseIntegration::updateFile(int fileId, const string& fileName, co
 }
 
 vector<FileEntity> ModelDatabaseIntegration::getAllFiles() {
+    Logger::get().logInfo("=== RETRIEVING ALL FILES FROM DATABASE ===");
+
     if (!isInitialized()) {
         Logger::get().logError("Database not initialized for file retrieval");
         return {};
     }
 
-    auto files = DatabaseManager::getInstance().files()->getAllFiles();
-    updateLastAccessMetadata();
+    try {
+        auto& db = DatabaseManager::getInstance();
 
-    Logger::get().logInfo("Retrieved " + std::to_string(files.size()) + " files from database");
-    return files;
+        // Verify database connection
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during file retrieval");
+            return {};
+        }
+
+        auto files = db.files()->getAllFiles();
+        updateLastAccessMetadata();
+
+        Logger::get().logInfo("Retrieved " + std::to_string(files.size()) + " files from database");
+
+        // Log file details for debugging
+        if (files.empty()) {
+            Logger::get().logInfo("No files found in database - this is normal for first use");
+        } else {
+            Logger::get().logInfo("=== FILE LIST ===");
+            for (const auto& file : files) {
+                Logger::get().logInfo("ID=" + std::to_string(file.id) + ", Name='" + file.file_name +
+                                      "', Type=" + file.file_type + ", Uploaded=" +
+                                      file.upload_time.toString("yyyy-MM-dd hh:mm:ss").toStdString());
+            }
+        }
+
+        return files;
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during file retrieval: " + string(e.what()));
+        return {};
+    }
 }
 
 FileEntity ModelDatabaseIntegration::getFileByName(const string& fileName) {

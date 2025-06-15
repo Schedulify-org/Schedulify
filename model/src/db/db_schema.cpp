@@ -36,7 +36,13 @@ bool DatabaseSchema::createMetadataTable() {
         )
     )";
 
-    return executeQuery(query);
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create metadata table");
+        return false;
+    }
+
+    Logger::get().logInfo("Metadata table created successfully");
+    return true;
 }
 
 bool DatabaseSchema::createFileTable() {
@@ -50,13 +56,20 @@ bool DatabaseSchema::createFileTable() {
         )
     )";
 
-    return executeQuery(query);
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create file table");
+        return false;
+    }
+
+    Logger::get().logInfo("File table created successfully");
+    return true;
 }
 
 bool DatabaseSchema::createCourseTable() {
     const QString query = R"(
         CREATE TABLE IF NOT EXISTS course (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            course_file_id INTEGER NOT NULL,
             raw_id TEXT NOT NULL,
             name TEXT NOT NULL,
             teacher TEXT NOT NULL,
@@ -68,11 +81,17 @@ bool DatabaseSchema::createCourseTable() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (file_id) REFERENCES file(id) ON DELETE CASCADE,
-            UNIQUE(raw_id, file_id)
+            UNIQUE(course_file_id, file_id)
         )
     )";
 
-    return executeQuery(query);
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create course table");
+        return false;
+    }
+
+    Logger::get().logInfo("Course table created successfully");
+    return true;
 }
 
 bool DatabaseSchema::createScheduleTable() {
@@ -91,7 +110,13 @@ bool DatabaseSchema::createScheduleTable() {
         )
     )";
 
-    return executeQuery(query);
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create schedule table");
+        return false;
+    }
+
+    Logger::get().logInfo("Schedule table created successfully");
+    return true;
 }
 
 bool DatabaseSchema::createScheduleMetadataTable() {
@@ -105,28 +130,99 @@ bool DatabaseSchema::createScheduleMetadataTable() {
         )
     )";
 
-    return executeQuery(query);
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create schedule_metadata table");
+        return false;
+    }
+
+    Logger::get().logInfo("Schedule metadata table created successfully");
+    return true;
 }
 
 bool DatabaseSchema::createMetadataIndexes() {
-    return executeQuery("CREATE INDEX IF NOT EXISTS idx_metadata_key ON metadata(key)");
+    Logger::get().logInfo("Creating metadata indexes...");
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_metadata_key ON metadata(key)")) {
+        Logger::get().logWarning("Failed to create metadata key index");
+        return false;
+    }
+
+    Logger::get().logInfo("Metadata indexes created successfully");
+    return true;
 }
 
 bool DatabaseSchema::createFileIndexes() {
-    return executeQuery("CREATE INDEX IF NOT EXISTS idx_file_name ON file(file_name)") &&
-           executeQuery("CREATE INDEX IF NOT EXISTS idx_file_type ON file(file_type)") &&
-           executeQuery("CREATE INDEX IF NOT EXISTS idx_file_upload_time ON file(upload_time)");
+    Logger::get().logInfo("Creating file indexes...");
+
+    bool success = true;
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_file_name ON file(file_name)")) {
+        Logger::get().logWarning("Failed to create file name index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_file_type ON file(file_type)")) {
+        Logger::get().logWarning("Failed to create file type index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_file_upload_time ON file(upload_time)")) {
+        Logger::get().logWarning("Failed to create file upload_time index");
+        success = false;
+    }
+
+    if (success) {
+        Logger::get().logInfo("File indexes created successfully");
+    }
+    return success;
 }
 
 bool DatabaseSchema::createCourseIndexes() {
-    return executeQuery("CREATE INDEX IF NOT EXISTS idx_course_raw_id ON course(raw_id)") &&
-           executeQuery("CREATE INDEX IF NOT EXISTS idx_course_name ON course(name)") &&
-           executeQuery("CREATE INDEX IF NOT EXISTS idx_course_file_id ON course(file_id)") &&
-           executeQuery("CREATE INDEX IF NOT EXISTS idx_course_raw_id_file_id ON course(raw_id, file_id)");
+    Logger::get().logInfo("Creating course indexes...");
+
+    bool success = true;
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_course_raw_id ON course(raw_id)")) {
+        Logger::get().logWarning("Failed to create course raw_id index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_course_name ON course(name)")) {
+        Logger::get().logWarning("Failed to create course name index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_course_file_id ON course(file_id)")) {
+        Logger::get().logWarning("Failed to create course file_id index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_course_course_file_id ON course(course_file_id)")) {
+        Logger::get().logWarning("Failed to create course course_file_id index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_course_composite ON course(course_file_id, file_id)")) {
+        Logger::get().logWarning("Failed to create course composite index");
+        success = false;
+    }
+
+    if (success) {
+        Logger::get().logInfo("Course indexes created successfully");
+    }
+    return success;
 }
 
 bool DatabaseSchema::createScheduleIndexes() {
-    return executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_index ON schedule(schedule_index)");
+    Logger::get().logInfo("Creating schedule indexes...");
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_index ON schedule(schedule_index)")) {
+        Logger::get().logWarning("Failed to create schedule index");
+        return false;
+    }
+
+    Logger::get().logInfo("Schedule indexes created successfully");
+    return true;
 }
 
 bool DatabaseSchema::dropAllTables() {
@@ -157,6 +253,14 @@ bool DatabaseSchema::upgradeSchema(int fromVersion, int toVersion) {
         return upgradeFromV1ToV2();
     }
 
+    if (fromVersion == 2 && toVersion == 3) {
+        return upgradeFromV2ToV3();
+    }
+
+    if (fromVersion == 1 && toVersion == 3) {
+        return upgradeFromV1ToV2() && upgradeFromV2ToV3();
+    }
+
     Logger::get().logError("Unsupported schema upgrade path: " + std::to_string(fromVersion) +
                            " -> " + std::to_string(toVersion));
     return false;
@@ -165,8 +269,7 @@ bool DatabaseSchema::upgradeSchema(int fromVersion, int toVersion) {
 bool DatabaseSchema::upgradeFromV1ToV2() {
     Logger::get().logInfo("Upgrading from schema v1 to v2...");
 
-    // Example upgrade: Add upload_time column to file table if it doesn't exist
-    // Check if column exists first
+    // Check if upload_time column exists in file table
     QSqlQuery checkQuery("PRAGMA table_info(file)", db);
     bool hasUploadTime = false;
 
@@ -179,22 +282,119 @@ bool DatabaseSchema::upgradeFromV1ToV2() {
     }
 
     if (!hasUploadTime) {
+        Logger::get().logInfo("Adding upload_time column to file table...");
         if (!executeQuery("ALTER TABLE file ADD COLUMN upload_time DATETIME DEFAULT CURRENT_TIMESTAMP")) {
+            Logger::get().logError("Failed to add upload_time column");
             return false;
         }
         Logger::get().logInfo("Added upload_time column to file table");
     }
 
-    // Add unique constraint to course table
-    if (!executeQuery("CREATE UNIQUE INDEX IF NOT EXISTS idx_course_unique_raw_id_file ON course(raw_id, file_id)")) {
-        return false;
+    // Update existing records to have upload_time = updated_at if upload_time is NULL
+    if (!executeQuery("UPDATE file SET upload_time = updated_at WHERE upload_time IS NULL")) {
+        Logger::get().logWarning("Failed to update existing upload_time values");
     }
 
     Logger::get().logInfo("Schema upgrade v1->v2 completed successfully");
     return true;
 }
 
+bool DatabaseSchema::upgradeFromV2ToV3() {
+    Logger::get().logInfo("Upgrading from schema v2 to v3...");
+
+    // Check if course_file_id column exists
+    QSqlQuery checkQuery("PRAGMA table_info(course)", db);
+    bool hasCourseFileId = false;
+
+    while (checkQuery.next()) {
+        QString columnName = checkQuery.value(1).toString();
+        if (columnName == "course_file_id") {
+            hasCourseFileId = true;
+            break;
+        }
+    }
+
+    if (!hasCourseFileId) {
+        Logger::get().logInfo("Adding course_file_id column to course table...");
+
+        // Add the new column
+        if (!executeQuery("ALTER TABLE course ADD COLUMN course_file_id INTEGER")) {
+            Logger::get().logError("Failed to add course_file_id column");
+            return false;
+        }
+
+        // Copy existing id values to course_file_id
+        if (!executeQuery("UPDATE course SET course_file_id = id WHERE course_file_id IS NULL")) {
+            Logger::get().logError("Failed to migrate course IDs");
+            return false;
+        }
+
+        Logger::get().logInfo("Added course_file_id column and migrated existing data");
+    }
+
+    // Remove the old unique constraint and add the new one
+    // SQLite doesn't support dropping constraints directly, so we need to recreate the table
+    Logger::get().logInfo("Recreating course table with new constraints...");
+
+    // Create backup table with new schema
+    QString backupTableQuery = R"(
+        CREATE TABLE course_backup AS
+        SELECT
+            course_file_id,
+            raw_id,
+            name,
+            teacher,
+            lectures_json,
+            tutorials_json,
+            labs_json,
+            blocks_json,
+            file_id,
+            created_at,
+            updated_at
+        FROM course
+    )";
+
+    if (!executeQuery(backupTableQuery)) {
+        Logger::get().logError("Failed to create backup table");
+        return false;
+    }
+
+    // Drop original table
+    if (!executeQuery("DROP TABLE course")) {
+        Logger::get().logError("Failed to drop original course table");
+        return false;
+    }
+
+    // Recreate with new schema
+    if (!createCourseTable()) {
+        Logger::get().logError("Failed to recreate course table");
+        return false;
+    }
+
+    // Restore data
+    QString restoreQuery = R"(
+        INSERT INTO course (course_file_id, raw_id, name, teacher, lectures_json, tutorials_json, labs_json, blocks_json, file_id, created_at, updated_at)
+        SELECT course_file_id, raw_id, name, teacher, lectures_json, tutorials_json, labs_json, blocks_json, file_id, created_at, updated_at
+        FROM course_backup
+    )";
+
+    if (!executeQuery(restoreQuery)) {
+        Logger::get().logError("Failed to restore course data");
+        return false;
+    }
+
+    // Drop backup table
+    if (!executeQuery("DROP TABLE course_backup")) {
+        Logger::get().logWarning("Failed to drop backup table");
+    }
+
+    Logger::get().logInfo("Schema upgrade v2->v3 completed successfully");
+    return true;
+}
+
 bool DatabaseSchema::validateSchema() {
+    Logger::get().logInfo("Validating database schema...");
+
     QStringList requiredTables = {"metadata", "file", "course", "schedule", "schedule_metadata"};
 
     for (const QString& table : requiredTables) {
@@ -204,7 +404,63 @@ bool DatabaseSchema::validateSchema() {
         }
     }
 
+    // Validate course table has required columns including course_file_id
+    if (!validateCourseTableColumns()) {
+        Logger::get().logError("Course table validation failed");
+        return false;
+    }
+
+    // Validate file table has required columns
+    if (!validateFileTableColumns()) {
+        Logger::get().logError("File table validation failed");
+        return false;
+    }
+
     Logger::get().logInfo("Schema validation passed");
+    return true;
+}
+
+bool DatabaseSchema::validateCourseTableColumns() {
+    QSqlQuery query("PRAGMA table_info(course)", db);
+    QStringList foundColumns;
+
+    while (query.next()) {
+        QString columnName = query.value(1).toString();
+        foundColumns << columnName;
+    }
+
+    QStringList requiredColumns = {"id", "course_file_id", "raw_id", "name", "teacher", "lectures_json", "tutorials_json", "labs_json", "blocks_json", "file_id", "created_at", "updated_at"};
+
+    for (const QString& required : requiredColumns) {
+        if (!foundColumns.contains(required)) {
+            Logger::get().logError("Course table missing required column: " + required.toStdString());
+            return false;
+        }
+    }
+
+    Logger::get().logInfo("Course table column validation passed");
+    return true;
+}
+
+bool DatabaseSchema::validateFileTableColumns() {
+    QSqlQuery query("PRAGMA table_info(file)", db);
+    QStringList foundColumns;
+
+    while (query.next()) {
+        QString columnName = query.value(1).toString();
+        foundColumns << columnName;
+    }
+
+    QStringList requiredColumns = {"id", "file_name", "file_type", "upload_time", "updated_at"};
+
+    for (const QString& required : requiredColumns) {
+        if (!foundColumns.contains(required)) {
+            Logger::get().logError("File table missing required column: " + required.toStdString());
+            return false;
+        }
+    }
+
+    Logger::get().logInfo("File table column validation passed");
     return true;
 }
 

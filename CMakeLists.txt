@@ -130,6 +130,7 @@ set(PROJECT_SOURCES
         model/src/db/db_schema.cpp
         model/src/db/db_files.cpp
         model/src/db/db_course.cpp
+        model/src/db/db_schedule.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

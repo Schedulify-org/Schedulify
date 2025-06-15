@@ -5,6 +5,7 @@
 #include "db_schema.h"
 #include "db_files.h"
 #include "db_courses.h"
+#include "db_schedules.h"
 #include "model_interfaces.h"
 #include "logger.h"
 
@@ -22,18 +23,23 @@
 
 using namespace std;
 
+// Forward declaration for friend class
+class DatabaseRepair;
+
 class DatabaseManager {
 public:
     static DatabaseManager& getInstance();
 
     // Database lifecycle
     bool initializeDatabase(const QString& dbPath = QString());
+    void debugDatabaseContents();
     bool isConnected() const;
     void closeDatabase();
 
     // Manager access - providing delegation to specialized managers
     DatabaseFileManager* files() { return fileManager.get(); }
     DatabaseCourseManager* courses() { return courseManager.get(); }
+    DatabaseScheduleManager* schedules() { return scheduleManager.get(); }
     DatabaseSchema* schema() { return schemaManager.get(); }
 
     // Metadata operations (kept in main manager for simplicity)
@@ -42,25 +48,47 @@ public:
     string getMetadata(const string& key, const string& defaultValue = "");
     vector<MetadataEntity> getAllMetadata();
 
-    // Schedule operations (TODO: move to separate manager later)
-    bool insertSchedule(const InformativeSchedule& schedule, const vector<int>& courseIds);
+    // Convenience methods that delegate to schedule manager
+    bool insertSchedule(const InformativeSchedule& schedule, const vector<int>& courseIds) {
+        return scheduleManager->insertSchedule(schedule, courseIds);
+    }
     bool insertSchedules(const vector<InformativeSchedule>& schedules,
-                         const vector<vector<int>>& allCourseIds);
-    bool deleteAllSchedules();
-    vector<InformativeSchedule> getAllSchedules();
-    InformativeSchedule getScheduleById(int id);
+                         const vector<vector<int>>& allCourseIds) {
+        return scheduleManager->insertSchedules(schedules, allCourseIds);
+    }
+    bool deleteAllSchedules() {
+        return scheduleManager->deleteAllSchedules();
+    }
+    vector<InformativeSchedule> getAllSchedules() {
+        return scheduleManager->getAllSchedules();
+    }
+    InformativeSchedule getScheduleById(int id) {
+        return scheduleManager->getScheduleById(id);
+    }
 
-    // Schedule metadata operations (TODO: move to separate manager later)
-    bool insertScheduleMetadata(int totalSchedules, const string& generationSettings);
-    bool updateScheduleMetadata(int id, const string& status);
-    vector<ScheduleMetadataEntity> getAllScheduleMetadata();
-    ScheduleMetadataEntity getLatestScheduleMetadata();
+    // Schedule metadata operations (delegate to schedule manager)
+    bool insertScheduleMetadata(int totalSchedules, const string& generationSettings) {
+        return scheduleManager->insertScheduleMetadata(totalSchedules, generationSettings);
+    }
+    bool updateScheduleMetadata(int id, const string& status) {
+        return scheduleManager->updateScheduleMetadata(id, status);
+    }
+    vector<ScheduleMetadataEntity> getAllScheduleMetadata() {
+        return scheduleManager->getAllScheduleMetadata();
+    }
+    ScheduleMetadataEntity getLatestScheduleMetadata() {
+        return scheduleManager->getLatestScheduleMetadata();
+    }
 
     // Utility operations
     bool clearAllData();
     bool exportToFile(const QString& filePath);
     bool importFromFile(const QString& filePath);
     int getTableRowCount(const string& tableName);
+
+    // Database repair and debugging
+    bool repairDatabase();
+    void debugDatabaseSchema();
 
     // Transaction support
     bool beginTransaction();
@@ -142,6 +170,9 @@ public:
     }
 
 private:
+    // Allow DatabaseRepair class to access private members
+    friend class DatabaseRepair;
+
     DatabaseManager() = default;
     ~DatabaseManager();
 
@@ -155,12 +186,6 @@ private:
     bool executeQuery(const QString& query, const QVariantList& params = QVariantList());
     QSqlQuery prepareQuery(const QString& query);
 
-    // Schedule JSON conversion helpers (TODO: move to separate helper class)
-    string scheduleToJson(const InformativeSchedule& schedule);
-    InformativeSchedule scheduleFromJson(const string& json, int id, int schedule_index,
-                                         int amount_days, int amount_gaps, int gaps_time,
-                                         int avg_start, int avg_end);
-
     // Database connection and managers
     QSqlDatabase db;
     bool isInitialized = false;
@@ -169,10 +194,10 @@ private:
     std::unique_ptr<DatabaseSchema> schemaManager;
     std::unique_ptr<DatabaseFileManager> fileManager;
     std::unique_ptr<DatabaseCourseManager> courseManager;
-    // TODO: Add schedule manager, metadata manager
+    std::unique_ptr<DatabaseScheduleManager> scheduleManager;
 
     // Database schema version for migrations
-    static const int CURRENT_SCHEMA_VERSION = 2;
+    static const int CURRENT_SCHEMA_VERSION = 3;  // Updated to version 3
 };
 
 class DatabaseTransaction {

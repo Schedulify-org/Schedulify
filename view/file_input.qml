@@ -35,6 +35,11 @@ Page {
             loadHistoryButton.enabled = fileInputController.selectedFileCount > 0;
             selectedCountText.text = fileInputController.selectedFileCount > 0 ?
                 `${fileInputController.selectedFileCount} file(s) selected` : "";
+
+            // Force update of list view to refresh checkbox states
+            if (fileHistoryList.model) {
+                fileHistoryList.model.forceRefresh();
+            }
         }
     }
 
@@ -528,12 +533,25 @@ Page {
                         }
 
                         delegate: Rectangle {
+                            id: fileDelegate
                             width: fileHistoryList.width
                             height: 60
-                            color: fileInputController.isFileSelected(index) ? "#eff6ff" : "#f9fafb"
-                            border.color: fileInputController.isFileSelected(index) ? "#3b82f6" : "#e5e7eb"
-                            border.width: fileInputController.isFileSelected(index) ? 2 : 1
+
+                            // Reactive properties for selection state
+                            property bool isSelected: fileInputController ? fileInputController.isFileSelected(index) : false
+
+                            color: isSelected ? "#eff6ff" : "#f9fafb"
+                            border.color: isSelected ? "#3b82f6" : "#e5e7eb"
+                            border.width: isSelected ? 2 : 1
                             radius: 6
+
+                            // Update selection state when the controller's selection changes
+                            Connections {
+                                target: fileInputController
+                                function onFileSelectionChanged() {
+                                    fileDelegate.isSelected = fileInputController ? fileInputController.isFileSelected(index) : false
+                                }
+                            }
 
                             MouseArea {
                                 anchors.fill: parent
@@ -551,10 +569,11 @@ Page {
                                 spacing: 10
 
                                 Rectangle {
+                                    id: checkbox
                                     width: 20
                                     height: 20
                                     radius: 3
-                                    color: fileInputController.isFileSelected(index) ? "#3b82f6" : "transparent"
+                                    color: fileDelegate.isSelected ? "#3b82f6" : "transparent"
                                     border.color: "#3b82f6"
                                     border.width: 2
                                     anchors.verticalCenter: parent.verticalCenter
@@ -564,7 +583,7 @@ Page {
                                         color: "white"
                                         font.pixelSize: 12
                                         anchors.centerIn: parent
-                                        visible: fileInputController.isFileSelected(index)
+                                        visible: fileDelegate.isSelected
                                     }
                                 }
 

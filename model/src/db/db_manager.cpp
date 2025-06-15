@@ -1,6 +1,9 @@
 #include "db_manager.h"
 #include "db_json_helpers.h"
 
+// Forward declaration
+class DatabaseRepair;
+
 DatabaseManager& DatabaseManager::getInstance() {
     static DatabaseManager instance;
     return instance;
@@ -10,8 +13,180 @@ DatabaseManager::~DatabaseManager() {
     closeDatabase();
 }
 
+// DatabaseRepair helper class - internal to this file
+class DatabaseRepair {
+public:
+    static bool repairDatabase(DatabaseManager& dbManager) {
+        Logger::get().logInfo("=== STARTING DATABASE REPAIR ===");
+
+        if (!dbManager.isConnected()) {
+            Logger::get().logError("Database not connected for repair");
+            return false;
+        }
+
+        // Step 1: Backup existing data if possible
+        Logger::get().logInfo("Step 1: Backing up existing data...");
+        auto backupData = backupExistingData(dbManager);
+
+        // Step 2: Drop and recreate problematic tables
+        Logger::get().logInfo("Step 2: Recreating database schema...");
+        if (!recreateSchema(dbManager)) {
+            Logger::get().logError("Failed to recreate schema");
+            return false;
+        }
+
+        // Step 3: Restore data if we had any
+        Logger::get().logInfo("Step 3: Restoring data...");
+        if (!restoreData(dbManager, backupData)) {
+            Logger::get().logWarning("Some data could not be restored");
+        }
+
+        Logger::get().logInfo("=== DATABASE REPAIR COMPLETED ===");
+        return true;
+    }
+
+private:
+    struct BackupData {
+        vector<MetadataEntity> metadata;
+        vector<FileEntity> files;
+        // Note: We won't backup courses/schedules as they can be regenerated
+    };
+
+    static BackupData backupExistingData(DatabaseManager& dbManager) {
+        BackupData backup;
+
+        try {
+            // Try to backup metadata
+            QSqlQuery metaQuery("SELECT key, value, description FROM metadata", dbManager.db);
+            while (metaQuery.next()) {
+                MetadataEntity meta;
+                meta.key = metaQuery.value(0).toString().toStdString();
+                meta.value = metaQuery.value(1).toString().toStdString();
+                meta.description = metaQuery.value(2).toString().toStdString();
+                backup.metadata.push_back(meta);
+            }
+            Logger::get().logInfo("Backed up " + std::to_string(backup.metadata.size()) + " metadata entries");
+
+            QSqlQuery fileQuery("SELECT file_name, file_type FROM file", dbManager.db);
+            while (fileQuery.next()) {
+                FileEntity file;
+                file.file_name = fileQuery.value(0).toString().toStdString();
+                file.file_type = fileQuery.value(1).toString().toStdString();
+                backup.files.push_back(file);
+            }
+            Logger::get().logInfo("Backed up " + std::to_string(backup.files.size()) + " file entries");
+
+        } catch (const std::exception& e) {
+            Logger::get().logWarning("Backup failed: " + string(e.what()));
+        }
+
+        return backup;
+    }
+
+    static bool recreateSchema(DatabaseManager& dbManager) {
+        try {
+            // Drop all existing tables
+            QStringList tables = {"schedule_metadata", "schedule", "course", "file", "metadata"};
+            for (const QString& table : tables) {
+                QSqlQuery dropQuery(dbManager.db);
+                dropQuery.exec("DROP TABLE IF EXISTS " + table);
+                Logger::get().logInfo("Dropped table: " + table.toStdString());
+            }
+
+            // Recreate schema using schema manager
+            if (!dbManager.schema()->createTables()) {
+                Logger::get().logError("Failed to recreate tables");
+                return false;
+            }
+
+            // Create indexes
+            if (!dbManager.schema()->createIndexes()) {
+                Logger::get().logWarning("Some indexes failed to create");
+            }
+
+            return true;
+
+        } catch (const std::exception& e) {
+            Logger::get().logError("Schema recreation failed: " + string(e.what()));
+            return false;
+        }
+    }
+
+    static bool restoreData(DatabaseManager& dbManager, const BackupData& backup) {
+        bool success = true;
+
+        // Restore metadata
+        for (const auto& meta : backup.metadata) {
+            if (!dbManager.insertMetadata(meta.key, meta.value, meta.description)) {
+                Logger::get().logWarning("Failed to restore metadata: " + meta.key);
+                success = false;
+            }
+        }
+
+        // Restore file entries (without courses - they'll need to be re-uploaded)
+        for (const auto& file : backup.files) {
+            int fileId = dbManager.insertFile(file.file_name, file.file_type);
+            if (fileId <= 0) {
+                Logger::get().logWarning("Failed to restore file: " + file.file_name);
+                success = false;
+            }
+        }
+
+        // Set schema version to current
+        dbManager.updateMetadata("schema_version", std::to_string(dbManager.getCurrentSchemaVersion()));
+        dbManager.updateMetadata("last_repair", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
+
+        return success;
+    }
+};
+
+// DatabaseManager methods that use DatabaseRepair
+bool DatabaseManager::repairDatabase() {
+    Logger::get().logInfo("Attempting database repair...");
+    return DatabaseRepair::repairDatabase(*this);
+}
+
+void DatabaseManager::debugDatabaseSchema() {
+    if (!isConnected()) {
+        Logger::get().logError("Database not connected for schema debug");
+        return;
+    }
+
+    Logger::get().logInfo("=== DATABASE SCHEMA DEBUG ===");
+
+    // List all tables
+    QSqlQuery tablesQuery("SELECT name FROM sqlite_master WHERE type='table'", db);
+    Logger::get().logInfo("Tables in database:");
+    while (tablesQuery.next()) {
+        QString tableName = tablesQuery.value(0).toString();
+        Logger::get().logInfo("- " + tableName.toStdString());
+
+        // Show columns for each table
+        QSqlQuery columnsQuery("PRAGMA table_info(" + tableName + ")", db);
+        while (columnsQuery.next()) {
+            QString columnName = columnsQuery.value(1).toString();
+            QString columnType = columnsQuery.value(2).toString();
+            Logger::get().logInfo("  Column: " + columnName.toStdString() + " (" + columnType.toStdString() + ")");
+        }
+    }
+
+    // List all indexes
+    QSqlQuery indexesQuery("SELECT name FROM sqlite_master WHERE type='index'", db);
+    Logger::get().logInfo("Indexes in database:");
+    while (indexesQuery.next()) {
+        QString indexName = indexesQuery.value(0).toString();
+        Logger::get().logInfo("- " + indexName.toStdString());
+    }
+
+    Logger::get().logInfo("=== END SCHEMA DEBUG ===");
+}
+
+// Simplified Emergency Database Initialization
 bool DatabaseManager::initializeDatabase(const QString& dbPath) {
+    Logger::get().logInfo("=== SMART DATABASE INITIALIZATION ===");
+
     if (isInitialized && db.isOpen()) {
+        Logger::get().logInfo("Database already initialized and open");
         return true;
     }
 
@@ -19,15 +194,23 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
 
     QString databasePath = dbPath;
     if (databasePath.isEmpty()) {
-        // Use application data directory
         QString appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-        QDir().mkpath(appDataPath);
+        QDir appDir;
+        appDir.mkpath(appDataPath);
         databasePath = QDir(appDataPath).filePath("schedulify.db");
     }
 
-    Logger::get().logInfo("Initializing database at: " + databasePath.toStdString());
+    Logger::get().logInfo("Database path: " + databasePath.toStdString());
 
-    // Setup SQLite connection
+    bool isExistingDatabase = QFile::exists(databasePath);
+    Logger::get().logInfo("Database file exists: " + std::string(isExistingDatabase ? "Yes" : "No"));
+
+    // Remove any existing connection
+    if (QSqlDatabase::contains("schedulify_connection")) {
+        QSqlDatabase::removeDatabase("schedulify_connection");
+    }
+
+    // Create new connection
     db = QSqlDatabase::addDatabase("QSQLITE", "schedulify_connection");
     db.setDatabaseName(databasePath);
 
@@ -36,52 +219,176 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
         return false;
     }
 
-    // Enable foreign keys
-    QSqlQuery pragmaQuery(db);
-    if (!pragmaQuery.exec("PRAGMA foreign_keys = ON")) {
-        Logger::get().logWarning("Failed to enable foreign keys: " + pragmaQuery.lastError().text().toStdString());
-    }
+    Logger::get().logInfo("Database opened successfully");
 
     // Initialize managers
     schemaManager = std::make_unique<DatabaseSchema>(db);
     fileManager = std::make_unique<DatabaseFileManager>(db);
     courseManager = std::make_unique<DatabaseCourseManager>(db);
+    scheduleManager = std::make_unique<DatabaseScheduleManager>(db);
 
-    // Create tables and indexes
-    if (!schemaManager->createTables()) {
-        Logger::get().logError("Failed to create database tables");
-        closeDatabase();
-        return false;
+    // Try to validate existing database first
+    bool needsSchemaCreation = false;
+    bool needsSchemaUpgrade = false;
+    int currentSchemaVersion = 0;
+
+    if (isExistingDatabase) {
+        Logger::get().logInfo("Validating existing database schema...");
+
+        // Check if metadata table exists
+        QSqlQuery checkQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'", db);
+        if (!checkQuery.exec() || !checkQuery.next()) {
+            Logger::get().logWarning("Metadata table not found - database needs initialization");
+            needsSchemaCreation = true;
+        } else {
+            // Check schema version
+            QSqlQuery versionQuery("SELECT value FROM metadata WHERE key = 'schema_version'", db);
+            if (versionQuery.exec() && versionQuery.next()) {
+                string version = versionQuery.value(0).toString().toStdString();
+                currentSchemaVersion = std::stoi(version);
+                Logger::get().logInfo("Found schema version: " + version);
+
+                if (currentSchemaVersion < getCurrentSchemaVersion()) {
+                    Logger::get().logInfo("Schema version outdated - needs upgrade from " +
+                                          std::to_string(currentSchemaVersion) + " to " +
+                                          std::to_string(getCurrentSchemaVersion()));
+                    needsSchemaUpgrade = true;
+                } else if (currentSchemaVersion > getCurrentSchemaVersion()) {
+                    Logger::get().logError("Database schema version is newer than supported - cannot proceed");
+                    closeDatabase();
+                    return false;
+                }
+            } else {
+                Logger::get().logWarning("No schema version found - needs initialization");
+                needsSchemaCreation = true;
+            }
+        }
+
+        // If existing database seems valid, try to validate full schema
+        if (!needsSchemaCreation && !needsSchemaUpgrade) {
+            if (!schemaManager->validateSchema()) {
+                Logger::get().logWarning("Schema validation failed - will recreate tables");
+                needsSchemaCreation = true;
+            } else {
+                Logger::get().logInfo("Existing database validated successfully");
+            }
+        }
+    } else {
+        Logger::get().logInfo("No existing database - will create new one");
+        needsSchemaCreation = true;
     }
 
-    if (!schemaManager->createIndexes()) {
-        Logger::get().logWarning("Failed to create some database indexes");
+    // Handle schema upgrade
+    if (needsSchemaUpgrade && !needsSchemaCreation) {
+        Logger::get().logInfo("Upgrading database schema...");
+        if (!schemaManager->upgradeSchema(currentSchemaVersion, getCurrentSchemaVersion())) {
+            Logger::get().logError("Schema upgrade failed - will recreate database");
+            needsSchemaCreation = true;
+            needsSchemaUpgrade = false;
+        } else {
+            Logger::get().logInfo("Schema upgrade completed successfully");
+            updateMetadata("schema_version", std::to_string(getCurrentSchemaVersion()));
+        }
     }
 
-    // Initialize schema version metadata
-    if (getMetadata("schema_version").empty()) {
+    // Create or recreate schema if needed
+    if (needsSchemaCreation) {
+        Logger::get().logInfo("Creating/updating database schema...");
+
+        // Create tables using schema manager
+        if (!schemaManager->createTables()) {
+            Logger::get().logError("Failed to create database tables");
+            closeDatabase();
+            return false;
+        }
+
+        // Insert initial metadata
         insertMetadata("schema_version", std::to_string(getCurrentSchemaVersion()), "Database schema version");
         insertMetadata("created_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString(), "Database creation timestamp");
+
+        Logger::get().logInfo("Database schema created successfully");
     }
 
-    // Validate schema
-    if (!schemaManager->validateSchema()) {
-        Logger::get().logError("Database schema validation failed");
+    // Create indexes (safe to call multiple times)
+    Logger::get().logInfo("Creating/updating database indexes...");
+    if (!schemaManager->createIndexes()) {
+        Logger::get().logWarning("Some indexes failed to create - continuing anyway");
+    }
+
+    // Test write capability
+    Logger::get().logInfo("Testing database write capability...");
+    QSqlQuery writeTest(db);
+    if (!writeTest.exec("CREATE TEMP TABLE write_test (id INTEGER)") ||
+        !writeTest.exec("INSERT INTO write_test (id) VALUES (1)") ||
+        !writeTest.exec("DROP TABLE write_test")) {
+        Logger::get().logError("Database write test failed: " + writeTest.lastError().text().toStdString());
         closeDatabase();
         return false;
     }
 
+    Logger::get().logInfo("Database write capability confirmed");
+
+    // Update last access time
+    updateMetadata("last_access", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
+
     isInitialized = true;
-    Logger::get().logInfo("Database initialized successfully");
+    Logger::get().logInfo("=== DATABASE INITIALIZATION SUCCESSFUL ===");
+
+    // Debug: Show what's currently in the database
+    debugDatabaseContents();
+
     return true;
 }
 
+void DatabaseManager::debugDatabaseContents() {
+    if (!isConnected()) return;
+
+    Logger::get().logInfo("=== DATABASE CONTENTS DEBUG ===");
+
+    // Count files
+    QSqlQuery fileCount("SELECT COUNT(*) FROM file", db);
+    if (fileCount.exec() && fileCount.next()) {
+        int count = fileCount.value(0).toInt();
+        Logger::get().logInfo("Files in database: " + std::to_string(count));
+
+        if (count > 0) {
+            QSqlQuery fileList("SELECT id, file_name, file_type FROM file ORDER BY upload_time DESC LIMIT 5", db);
+            while (fileList.next()) {
+                int id = fileList.value(0).toInt();
+                string name = fileList.value(1).toString().toStdString();
+                string type = fileList.value(2).toString().toStdString();
+                Logger::get().logInfo("  File ID " + std::to_string(id) + ": " + name + " (" + type + ")");
+            }
+        }
+    }
+
+    // Count courses
+    QSqlQuery courseCount("SELECT COUNT(*) FROM course", db);
+    if (courseCount.exec() && courseCount.next()) {
+        int count = courseCount.value(0).toInt();
+        Logger::get().logInfo("Courses in database: " + std::to_string(count));
+
+        if (count > 0) {
+            QSqlQuery courseList("SELECT file_id, COUNT(*) FROM course GROUP BY file_id", db);
+            while (courseList.next()) {
+                int fileId = courseList.value(0).toInt();
+                int courseCount = courseList.value(1).toInt();
+                Logger::get().logInfo("  File ID " + std::to_string(fileId) + " has " + std::to_string(courseCount) + " courses");
+            }
+        }
+    }
+
+    Logger::get().logInfo("=== END DATABASE CONTENTS ===");
+}
+
+// Rest of DatabaseManager implementation (metadata, utility methods, transactions, etc.)
 bool DatabaseManager::isConnected() const {
     return isInitialized && db.isOpen();
 }
 
 void DatabaseManager::closeDatabase() {
     // Reset managers before closing database
+    scheduleManager.reset();
     courseManager.reset();
     fileManager.reset();
     schemaManager.reset();
@@ -152,210 +459,6 @@ vector<MetadataEntity> DatabaseManager::getAllMetadata() {
     return metadata;
 }
 
-// Schedule operations (TODO: move to separate manager)
-bool DatabaseManager::insertSchedule(const InformativeSchedule& schedule, const vector<int>& courseIds) {
-    if (!isConnected()) return false;
-
-    // Create course IDs JSON
-    QJsonArray courseArray;
-    for (int id : courseIds) {
-        courseArray.append(id);
-    }
-    QJsonDocument courseDoc(courseArray);
-    string courseJson = courseDoc.toJson(QJsonDocument::Compact).toStdString();
-
-    // Create week JSON
-    string weekJson = scheduleToJson(schedule);
-
-    QSqlQuery query(db);
-    query.prepare(R"(
-        INSERT INTO schedule
-        (schedule_index, courses_json, week_json, amount_days, amount_gaps, gaps_time, avg_start, avg_end)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    )");
-
-    query.addBindValue(schedule.index);
-    query.addBindValue(QString::fromStdString(courseJson));
-    query.addBindValue(QString::fromStdString(weekJson));
-    query.addBindValue(schedule.amount_days);
-    query.addBindValue(schedule.amount_gaps);
-    query.addBindValue(schedule.gaps_time);
-    query.addBindValue(schedule.avg_start);
-    query.addBindValue(schedule.avg_end);
-
-    if (!query.exec()) {
-        Logger::get().logError("Failed to insert schedule: " + query.lastError().text().toStdString());
-        return false;
-    }
-
-    return true;
-}
-
-bool DatabaseManager::insertSchedules(const vector<InformativeSchedule>& schedules,
-                                      const vector<vector<int>>& allCourseIds) {
-    if (!isConnected()) return false;
-    if (schedules.size() != allCourseIds.size()) {
-        Logger::get().logError("Schedules and course IDs vectors size mismatch");
-        return false;
-    }
-
-    DatabaseTransaction transaction(*this);
-
-    for (size_t i = 0; i < schedules.size(); ++i) {
-        if (!insertSchedule(schedules[i], allCourseIds[i])) {
-            return false;
-        }
-    }
-
-    return transaction.commit();
-}
-
-bool DatabaseManager::deleteAllSchedules() {
-    if (!isConnected()) return false;
-
-    QSqlQuery query("DELETE FROM schedule", db);
-    if (!query.exec()) {
-        Logger::get().logError("Failed to delete all schedules: " + query.lastError().text().toStdString());
-        return false;
-    }
-
-    Logger::get().logInfo("Deleted all schedules from database");
-    return true;
-}
-
-vector<InformativeSchedule> DatabaseManager::getAllSchedules() {
-    vector<InformativeSchedule> schedules;
-    if (!isConnected()) return schedules;
-
-    QSqlQuery query(R"(
-        SELECT id, schedule_index, week_json, amount_days, amount_gaps, gaps_time, avg_start, avg_end
-        FROM schedule ORDER BY schedule_index
-    )", db);
-
-    while (query.next()) {
-        InformativeSchedule schedule = scheduleFromJson(
-                query.value(2).toString().toStdString(),  // week_json
-                query.value(0).toInt(),                   // id
-                query.value(1).toInt(),                   // schedule_index
-                query.value(3).toInt(),                   // amount_days
-                query.value(4).toInt(),                   // amount_gaps
-                query.value(5).toInt(),                   // gaps_time
-                query.value(6).toInt(),                   // avg_start
-                query.value(7).toInt()                    // avg_end
-        );
-        schedules.push_back(schedule);
-    }
-
-    Logger::get().logInfo("Loaded " + std::to_string(schedules.size()) + " schedules from database");
-    return schedules;
-}
-
-InformativeSchedule DatabaseManager::getScheduleById(int id) {
-    InformativeSchedule schedule;
-    if (!isConnected()) return schedule;
-
-    QSqlQuery query(db);
-    query.prepare(R"(
-        SELECT id, schedule_index, week_json, amount_days, amount_gaps, gaps_time, avg_start, avg_end
-        FROM schedule WHERE id = ?
-    )");
-    query.addBindValue(id);
-
-    if (query.exec() && query.next()) {
-        schedule = scheduleFromJson(
-                query.value(2).toString().toStdString(),  // week_json
-                query.value(0).toInt(),                   // id
-                query.value(1).toInt(),                   // schedule_index
-                query.value(3).toInt(),                   // amount_days
-                query.value(4).toInt(),                   // amount_gaps
-                query.value(5).toInt(),                   // gaps_time
-                query.value(6).toInt(),                   // avg_start
-                query.value(7).toInt()                    // avg_end
-        );
-    }
-
-    return schedule;
-}
-
-// Schedule metadata operations (TODO: move to separate manager)
-bool DatabaseManager::insertScheduleMetadata(int totalSchedules, const string& generationSettings) {
-    if (!isConnected()) return false;
-
-    QSqlQuery query(db);
-    query.prepare(R"(
-        INSERT INTO schedule_metadata (total_schedules, generation_settings_json)
-        VALUES (?, ?)
-    )");
-
-    query.addBindValue(totalSchedules);
-    query.addBindValue(QString::fromStdString(generationSettings));
-
-    if (!query.exec()) {
-        Logger::get().logError("Failed to insert schedule metadata: " + query.lastError().text().toStdString());
-        return false;
-    }
-
-    return true;
-}
-
-bool DatabaseManager::updateScheduleMetadata(int id, const string& status) {
-    if (!isConnected()) return false;
-
-    QSqlQuery query(db);
-    query.prepare("UPDATE schedule_metadata SET status = ? WHERE id = ?");
-    query.addBindValue(QString::fromStdString(status));
-    query.addBindValue(id);
-
-    if (!query.exec()) {
-        Logger::get().logError("Failed to update schedule metadata: " + query.lastError().text().toStdString());
-        return false;
-    }
-
-    return true;
-}
-
-vector<ScheduleMetadataEntity> DatabaseManager::getAllScheduleMetadata() {
-    vector<ScheduleMetadataEntity> metadata;
-    if (!isConnected()) return metadata;
-
-    QSqlQuery query(R"(
-        SELECT id, total_schedules, generation_settings_json, generated_at, status
-        FROM schedule_metadata ORDER BY generated_at DESC
-    )", db);
-
-    while (query.next()) {
-        ScheduleMetadataEntity entity;
-        entity.id = query.value(0).toInt();
-        entity.total_schedules = query.value(1).toInt();
-        entity.generation_settings_json = query.value(2).toString().toStdString();
-        entity.generated_at = query.value(3).toDateTime();
-        entity.status = query.value(4).toString().toStdString();
-        metadata.push_back(entity);
-    }
-
-    return metadata;
-}
-
-ScheduleMetadataEntity DatabaseManager::getLatestScheduleMetadata() {
-    ScheduleMetadataEntity entity;
-    if (!isConnected()) return entity;
-
-    QSqlQuery query(R"(
-        SELECT id, total_schedules, generation_settings_json, generated_at, status
-        FROM schedule_metadata ORDER BY generated_at DESC LIMIT 1
-    )", db);
-
-    if (query.next()) {
-        entity.id = query.value(0).toInt();
-        entity.total_schedules = query.value(1).toInt();
-        entity.generation_settings_json = query.value(2).toString().toStdString();
-        entity.generated_at = query.value(3).toDateTime();
-        entity.status = query.value(4).toString().toStdString();
-    }
-
-    return entity;
-}
-
 // Utility operations
 bool DatabaseManager::clearAllData() {
     if (!isConnected()) return false;
@@ -378,13 +481,11 @@ bool DatabaseManager::clearAllData() {
 }
 
 bool DatabaseManager::exportToFile(const QString& filePath) {
-    // TODO: Implement database export functionality
     Logger::get().logWarning("Database export functionality not yet implemented");
     return false;
 }
 
 bool DatabaseManager::importFromFile(const QString& filePath) {
-    // TODO: Implement database import functionality
     Logger::get().logWarning("Database import functionality not yet implemented");
     return false;
 }
@@ -439,17 +540,6 @@ QSqlQuery DatabaseManager::prepareQuery(const QString& query) {
     QSqlQuery sqlQuery(db);
     sqlQuery.prepare(query);
     return sqlQuery;
-}
-
-// Schedule JSON conversion helpers (TODO: move to separate helper class)
-string DatabaseManager::scheduleToJson(const InformativeSchedule& schedule) {
-    return DatabaseJsonHelpers::scheduleToJson(schedule);
-}
-
-InformativeSchedule DatabaseManager::scheduleFromJson(const string& json, int id, int schedule_index,
-                                                      int amount_days, int amount_gaps, int gaps_time,
-                                                      int avg_start, int avg_end) {
-    return DatabaseJsonHelpers::scheduleFromJson(json, id, schedule_index, amount_days, amount_gaps, gaps_time, avg_start, avg_end);
 }
 
 // DatabaseTransaction implementation
