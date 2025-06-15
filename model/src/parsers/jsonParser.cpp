@@ -98,6 +98,45 @@ string JsonParser::scheduleDaysToJsonArray(const vector<ScheduleDay>& days, int 
     return json.str();
 }
 
+string JsonParser::informativeScheduleToJsonCompact(const InformativeSchedule& schedule) {
+    stringstream json;
+    json << "{";
+    json << "\"index\":" << schedule.index + 1 << ",";
+    json << "\"amount_days\":" << schedule.amount_days << ",";
+    json << "\"amount_gaps\":" << schedule.amount_gaps << ",";
+    json << "\"gaps_time\":" << schedule.gaps_time << ",";
+    json << "\"avg_start\":" << schedule.avg_start << ",";
+    json << "\"avg_end\":" << schedule.avg_end << ",";
+    json << "\"week\":[";
+
+    for (size_t i = 0; i < schedule.week.size(); ++i) {
+        const ScheduleDay& day = schedule.week[i];
+        json << "{";
+        json << "\"day\":\"" << escapeJsonString(day.day) << "\",";
+        json << "\"day_items\":[";
+
+        for (size_t j = 0; j < day.day_items.size(); ++j) {
+            const ScheduleItem& item = day.day_items[j];
+            json << "{";
+            json << "\"courseName\":\"" << escapeJsonString(item.courseName) << "\",";
+            json << "\"raw_id\":\"" << escapeJsonString(item.raw_id) << "\",";
+            json << "\"type\":\"" << escapeJsonString(item.type) << "\",";
+            json << "\"start\":\"" << escapeJsonString(item.start) << "\",";
+            json << "\"end\":\"" << escapeJsonString(item.end) << "\",";
+            json << "\"building\":\"" << escapeJsonString(item.building) << "\",";
+            json << "\"room\":\"" << escapeJsonString(item.room) << "\"";
+            json << "}";
+            if (j < day.day_items.size() - 1) json << ",";
+        }
+
+        json << "]}";
+        if (i < schedule.week.size() - 1) json << ",";
+    }
+
+    json << "]}";
+    return json.str();
+}
+
 string JsonParser::informativeScheduleToJson(const InformativeSchedule& schedule, int indentLevel) {
     string indent = string(indentLevel * 2, ' ');
     string nextIndent = string((indentLevel + 1) * 2, ' ');
@@ -114,6 +153,28 @@ string JsonParser::informativeScheduleToJson(const InformativeSchedule& schedule
     json << indent << "}";
 
     return json.str();
+}
+
+bool JsonParser::writeJsonlToFile(const string& jsonlContent, const string& filename) {
+    ofstream file(filename, ios::binary);
+    if (!file.is_open()) {
+        cerr << "Error: Unable to open file " << filename << " for writing." << endl;
+        return false;
+    }
+
+    // Write UTF-8 BOM (Byte Order Mark) to ensure proper encoding recognition
+    file.write("\xEF\xBB\xBF", 3);
+
+    // Write the JSONL content
+    file << jsonlContent;
+    file.close();
+
+    if (file.fail()) {
+        cerr << "Error: Failed to write to file " << filename << endl;
+        return false;
+    }
+
+    return true;
 }
 
 bool JsonParser::writeJsonToFile(const string& jsonContent, const string& filename) {
@@ -136,6 +197,48 @@ bool JsonParser::writeJsonToFile(const string& jsonContent, const string& filena
     }
 
     return true;
+}
+
+bool JsonParser::ConvertToJsonl(const vector<InformativeSchedule>& schedules, const string& outputFilename) {
+    try {
+        stringstream jsonlContent;
+
+        // Each schedule becomes one line in the JSONL file
+        for (size_t i = 0; i < schedules.size(); ++i) {
+            jsonlContent << informativeScheduleToJsonCompact(schedules[i]) << "\n";
+        }
+
+        // Write to file
+        bool success = writeJsonlToFile(jsonlContent.str(), outputFilename);
+
+        if (success) {
+            cout << "Successfully converted " << schedules.size()
+                 << " schedules to JSONL file: " << outputFilename << endl;
+        }
+
+        return success;
+
+    } catch (const exception& e) {
+        cerr << "Error during JSONL conversion: " << e.what() << endl;
+        return false;
+    }
+}
+
+string JsonParser::ConvertToJsonlString(const vector<InformativeSchedule>& schedules) {
+    try {
+        stringstream jsonlContent;
+
+        // Each schedule becomes one line in the JSONL string
+        for (size_t i = 0; i < schedules.size(); ++i) {
+            jsonlContent << informativeScheduleToJsonCompact(schedules[i]) << "\n";
+        }
+
+        return jsonlContent.str();
+
+    } catch (const exception& e) {
+        cerr << "Error during JSONL string conversion: " << e.what() << endl;
+        return "";
+    }
 }
 
 bool JsonParser::ConvertToJson(const vector<InformativeSchedule>& schedules, const string& outputFilename) {
@@ -168,30 +271,5 @@ bool JsonParser::ConvertToJson(const vector<InformativeSchedule>& schedules, con
     } catch (const exception& e) {
         cerr << "Error during JSON conversion: " << e.what() << endl;
         return false;
-    }
-}
-
-string JsonParser::ConvertToJsonString(const vector<InformativeSchedule>& schedules) {
-    try {
-        stringstream jsonContent;
-        jsonContent << "{\n";
-        jsonContent << "  \"schedules\": [\n";
-
-        for (size_t i = 0; i < schedules.size(); ++i) {
-            jsonContent << "    " << informativeScheduleToJson(schedules[i], 2);
-            if (i < schedules.size() - 1) {
-                jsonContent << ",";
-            }
-            jsonContent << "\n";
-        }
-
-        jsonContent << "  ]\n";
-        jsonContent << "}";
-
-        return jsonContent.str();
-
-    } catch (const exception& e) {
-        cerr << "Error during JSON conversion: " << e.what() << endl;
-        return "";
     }
 }

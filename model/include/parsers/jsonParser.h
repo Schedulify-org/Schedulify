@@ -28,11 +28,17 @@ private:
     // Helper method to convert a vector of ScheduleDays to JSON array
     static std::string scheduleDaysToJsonArray(const std::vector<ScheduleDay>& days, int indentLevel = 0);
 
-    // Helper method to convert a single InformativeSchedule to JSON
+    // Helper method to convert a single InformativeSchedule to JSON (formatted)
     static std::string informativeScheduleToJson(const InformativeSchedule& schedule, int indentLevel = 0);
+
+    // Helper method to convert a single InformativeSchedule to compact JSON (for JSONL)
+    static std::string informativeScheduleToJsonCompact(const InformativeSchedule& schedule);
 
     // Helper method to write JSON string to file
     static bool writeJsonToFile(const std::string& jsonContent, const std::string& filename);
+
+    // Helper method to write JSONL string to file
+    static bool writeJsonlToFile(const std::string& jsonlContent, const std::string& filename);
 
 public:
     JsonParser() = default;
@@ -49,10 +55,17 @@ public:
 
     // Main method to convert vector of InformativeSchedule to JSON file
     static bool ConvertToJson(const std::vector<InformativeSchedule>& schedules,
-                       const std::string& outputFilename = "schedules.json");
+                              const std::string& outputFilename = "schedules.json");
+
+    // Main method to convert vector of InformativeSchedule to JSONL file
+    static bool ConvertToJsonl(const std::vector<InformativeSchedule>& schedules,
+                               const std::string& outputFilename = "schedules.jsonl");
 
     // Main method that returns JSON as string
     static std::string ConvertToJsonString(const std::vector<InformativeSchedule>& schedules);
+
+    // Main method that returns JSONL as string
+    static std::string ConvertToJsonlString(const std::vector<InformativeSchedule>& schedules);
 };
 
 #endif // JSON_PARSER_H
