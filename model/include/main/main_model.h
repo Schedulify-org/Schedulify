@@ -14,16 +14,22 @@
 #include "jsonParser.h"
 #include "botAdapter.h"
 #include "scheduleToMT.h"
+#include "model_db_integration.h"
+#include "db_manager.h"
 
 #include <algorithm>
 #include <cctype>
 #include <vector>
 #include <string>
 #include <iostream>
+#include <map>
+#include <QDateTime>
+#include <QSqlQuery>
 
 using std::string;
 using std::cout;
 using std::vector;
+using std::map;
 
 class Model : public IModel {
 public:
@@ -38,6 +44,8 @@ public:
 private:
     Model() {}
     static vector<Course> generateCourses(const string& path);
+    static vector<Course> loadCoursesFromHistory(const vector<int>& fileIds);
+    static vector<FileEntity> getFileHistory();
     static vector<string> validateCourses(const vector<Course>& courses);
     static vector<InformativeSchedule> generateSchedules(const vector<Course>& userInput);
     static void saveSchedule(const InformativeSchedule& infoSchedule, const string& path);

@@ -66,13 +66,27 @@ struct InformativeSchedule {
     vector<ScheduleDay> week;
 };
 
+struct FileLoadData {
+    vector<int> fileIds;
+    string operation_type;
+    string filePath;
+};
+
 enum class ModelOperation {
     GENERATE_COURSES,
     VALIDATE_COURSES,
     GENERATE_SCHEDULES,
     SAVE_SCHEDULE,
     PRINT_SCHEDULE,
-    BOT_MESSAGE
+    LOAD_COURSES_FROM_DB,
+    LOAD_SCHEDULES_FROM_DB,
+    CLEAR_DATABASE,
+    BOT_MESSAGE,
+    BACKUP_DATABASE,
+    RESTORE_DATABASE,
+    GET_DATABASE_STATS,
+    LOAD_FROM_HISTORY,
+    GET_FILE_HISTORY
 };
 
 class IModel {

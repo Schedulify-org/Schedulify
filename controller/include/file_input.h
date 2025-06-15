@@ -5,17 +5,25 @@
 #include "model_access.h"
 #include "model_interfaces.h"
 #include "course_selection.h"
+#include "file_model.h"
 #include "logger.h"
 
 #include <QFileDialog>
 #include <QStandardPaths>
+#include <algorithm>
 
 class FileInputController : public ControllerManager {
 Q_OBJECT
 
+    Q_PROPERTY(FileHistoryModel* fileHistoryModel READ fileHistoryModel CONSTANT)
+    Q_PROPERTY(int selectedFileCount READ selectedFileCount NOTIFY fileSelectionChanged)
+
 public:
     explicit FileInputController(QObject *parent = nullptr);
     ~FileInputController() override;
+
+    FileHistoryModel* fileHistoryModel() const { return m_fileHistoryModel; }
+    int selectedFileCount() const;
 
 public slots:
     void handleUploadAndContinue();
@@ -26,13 +34,28 @@ signals:
     void errorMessage(const QString &message);
     void fileSelected(bool hasFile);
     void fileNameChanged(const QString &fileName);
+    void fileSelectionChanged();
 
 public:
-    Q_INVOKABLE void loadFile();
+    Q_INVOKABLE void loadNewFile();
+    Q_INVOKABLE void loadFromHistory();
+    Q_INVOKABLE void toggleFileSelection(int index);
+    Q_INVOKABLE bool isFileSelected(int index);
+    Q_INVOKABLE void clearFileSelection();
+    Q_INVOKABLE void refreshFileHistory(); // NEW: Force refresh file history
 
 private:
     QString selectedFilePath;
     IModel* modelConnection;
+    FileHistoryModel* m_fileHistoryModel;
+    vector<int> m_selectedFileIds;
+
+    void loadFileHistory();
+    void proceedWithCourses(const vector<Course>& courses);
+
+    // Helper methods for debugging
+    void logFileSelectionState();
+    void validateFileSelection();
 };
 
 #endif // FILE_INPUT_H

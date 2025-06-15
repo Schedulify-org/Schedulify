@@ -7,6 +7,9 @@ import "."
 Page {
     id: inputScreen
 
+    // State for toggling between new file and history
+    property bool showHistory: false
+
     Connections {
         target: fileInputController
 
@@ -18,16 +21,20 @@ Page {
             showErrorMessage(message);
         }
 
-        // Connection for fileSelected signal
         function onFileSelected(hasFile) {
             continueButton.visible = hasFile;
         }
 
-        // Connection for fileNameChanged signal
         function onFileNameChanged(fileName) {
             fileNameText.text = fileName;
             fileNameText.visible = true;
             dropPrompt.visible = false;
+        }
+
+        function onFileSelectionChanged() {
+            loadHistoryButton.enabled = fileInputController.selectedFileCount > 0;
+            selectedCountText.text = fileInputController.selectedFileCount > 0 ?
+                `${fileInputController.selectedFileCount} file(s) selected` : "";
         }
     }
 
@@ -35,11 +42,25 @@ Page {
 
     Component.onDestruction: {
         if (logWindow) {
-            logWindow.destroy(); // Explicitly destroy
+            logWindow.destroy();
             logWindow = null;
             if (logDisplayController) {
                 logDisplayController.setLogWindowOpen(false);
             }
+        }
+    }
+
+    // Add this function for error dialogs
+    property string errorDialogText: ""
+
+    Dialog {
+        id: errorDialog
+        title: "Error"
+        standardButtons: Dialog.Ok
+
+        Text {
+            text: errorDialogText
+            wrapMode: Text.WordWrap
         }
     }
 
@@ -53,7 +74,7 @@ Page {
         anchors.fill: parent
         color: "#f9fafb"
 
-        // header
+        // Header
         Rectangle {
             id: header
             width: parent.width
@@ -61,7 +82,6 @@ Page {
             color: "#ffffff"
             border.color: "#e5e7eb"
 
-            // Title Label
             Label {
                 id: titleLabel
                 x: 16
@@ -71,90 +91,131 @@ Page {
                 color: "#1f2937"
             }
 
-            Button {
-                id: logButtonA
+            Row {
                 anchors {
                     right: parent.right
                     verticalCenter: parent.verticalCenter
                     rightMargin: 15
                 }
-                width: 40
-                height: 40
+                spacing: 10
 
-                background: Rectangle {
-                    color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
-                    radius: 10
-                }
+                // Refresh button for file history
+                Button {
+                    id: refreshButton
+                    width: 40
+                    height: 40
+                    visible: showHistory
 
-                // Custom content with SVG icon
-                contentItem: Item {
-                    anchors.fill: parent
-
-                    // SVG Icon
-                    Image {
-                        id: logIcon
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        source: "qrc:/icons/ic-logs.svg"
-                        sourceSize.width: 22
-                        sourceSize.height: 22
+                    background: Rectangle {
+                        color: refreshMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                        radius: 10
                     }
 
-                    // Hover tooltip
-                    ToolTip {
-                        id: logsTooltip
-                        text: "Open Application Logs"
-                        visible: logMouseArea.containsMouse
-                        delay: 500
-                        timeout: 3000
+                    contentItem: Item {
+                        anchors.fill: parent
 
-                        background: Rectangle {
+                        Text {
+                            anchors.centerIn: parent
+                            text: "↻"
+                            font.pixelSize: 18
                             color: "#374151"
-                            radius: 4
-                            border.color: "#4b5563"
                         }
 
-                        contentItem: Text {
-                            text: logsTooltip.text
-                            color: "white"
-                            font.pixelSize: 12
+                        ToolTip {
+                            id: refreshTooltip
+                            text: "Refresh File History"
+                            visible: refreshMouseArea.containsMouse
+                            delay: 500
+                            timeout: 3000
+                        }
+                    }
+
+                    MouseArea {
+                        id: refreshMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            console.log("Refreshing file history...");
+                            fileInputController.refreshFileHistory();
                         }
                     }
                 }
 
-                MouseArea {
-                    id: logMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        // Check if we already have a log window open
-                        if (logWindow && logWindow.visible) {
-                            // Bring existing window to front
-                            logWindow.raise();
-                            logWindow.requestActivate();
-                            return;
+                // Log button
+                Button {
+                    id: logButtonA
+                    width: 40
+                    height: 40
+
+                    background: Rectangle {
+                        color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                        radius: 10
+                    }
+
+                    contentItem: Item {
+                        anchors.fill: parent
+
+                        Image {
+                            id: logIcon
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            source: "qrc:/icons/ic-logs.svg"
+                            sourceSize.width: 22
+                            sourceSize.height: 22
                         }
 
-                        // Create new log window if none exists or if controller says none is open
-                        if (!logDisplayController.isLogWindowOpen || !logWindow) {
-                            var component = Qt.createComponent("qrc:/log_display.qml");
-                            if (component.status === Component.Ready) {
-                                logDisplayController.setLogWindowOpen(true);
-                                logWindow = component.createObject(inputScreen);
+                        ToolTip {
+                            id: logsTooltip
+                            text: "Open Application Logs"
+                            visible: logMouseArea.containsMouse
+                            delay: 500
+                            timeout: 3000
 
-                                if (logWindow) {
-                                    // Connect closing signal properly
-                                    logWindow.closing.connect(function(close) {
-                                        logDisplayController.setLogWindowOpen(false);
-                                        logWindow = null; // Clear our reference
-                                    });
+                            background: Rectangle {
+                                color: "#374151"
+                                radius: 4
+                                border.color: "#4b5563"
+                            }
 
-                                    logWindow.show();
+                            contentItem: Text {
+                                text: logsTooltip.text
+                                color: "white"
+                                font.pixelSize: 12
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        id: logMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (logWindow && logWindow.visible) {
+                                logWindow.raise();
+                                logWindow.requestActivate();
+                                return;
+                            }
+
+                            if (!logDisplayController.isLogWindowOpen || !logWindow) {
+                                var component = Qt.createComponent("qrc:/log_display.qml");
+                                if (component.status === Component.Ready) {
+                                    logDisplayController.setLogWindowOpen(true);
+                                    logWindow = component.createObject(inputScreen);
+
+                                    if (logWindow) {
+                                        logWindow.closing.connect(function(close) {
+                                            logDisplayController.setLogWindowOpen(false);
+                                            logWindow = null;
+                                        });
+
+                                        logWindow.show();
+                                    }
+                                } else {
+                                    console.error("Error creating log window:", component.errorString());
                                 }
-                            } else {
-                                console.error("Error creating log window:", component.errorString());
                             }
                         }
                     }
@@ -162,211 +223,452 @@ Page {
             }
         }
 
-        // Upload Container
+        // Toggle Button Section
         Rectangle {
-            id: uploadArea
-            anchors.centerIn: parent
-            width: root ? root.width - 100 : 500
-            height: root ? root.height - 400 : 300
+            id: toggleSection
+            anchors {
+                top: header.bottom
+                left: parent.left
+                right: parent.right
+                topMargin: 20
+            }
+            height: 60
+            color: "transparent"
+
+            Rectangle {
+                id: toggleContainer
+                anchors.centerIn: parent
+                width: 300
+                height: 40
+                color: "#f3f4f6"
+                radius: 20
+                border.color: "#d1d5db"
+                border.width: 1
+
+                Row {
+                    anchors.fill: parent
+
+                    Rectangle {
+                        id: newFileToggle
+                        width: parent.width / 2
+                        height: parent.height
+                        color: !showHistory ? "#4f46e5" : "transparent"
+                        radius: 20
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Upload New File"
+                            color: !showHistory ? "white" : "#6b7280"
+                            font.bold: !showHistory
+                            font.pixelSize: 14
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                showHistory = false
+                                console.log("Switched to Upload New File mode")
+                            }
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                    }
+
+                    Rectangle {
+                        id: historyToggle
+                        width: parent.width / 2
+                        height: parent.height
+                        color: showHistory ? "#4f46e5" : "transparent"
+                        radius: 20
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Previous Files"
+                            color: showHistory ? "white" : "#6b7280"
+                            font.bold: showHistory
+                            font.pixelSize: 14
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: {
+                                showHistory = true
+                                console.log("Switched to Previous Files mode")
+                                // Refresh file history when switching to history view
+                                fileInputController.refreshFileHistory()
+                            }
+                            cursorShape: Qt.PointingHandCursor
+                        }
+                    }
+                }
+            }
+        }
+
+        // Main Content
+        Rectangle {
+            id: mainContent
+            anchors {
+                top: toggleSection.bottom
+                left: parent.left
+                right: parent.right
+                bottom: footer.top
+                margins: 50
+                topMargin: 20
+            }
             color: "#ffffff"
             border.width: 2
             border.color: "#d1d5db"
             radius: 10
 
-            // Add DropArea to handle file drops
-            DropArea {
-                id: dropArea
-                anchors.fill: parent
+            // Upload New File Content
+            Column {
+                id: uploadContent
+                anchors.centerIn: parent
+                spacing: 20
+                visible: !showHistory
 
-                onEntered: function(drag) {
-                    uploadArea.border.color = "#4f46e5"
-                    uploadArea.border.width = 3
+                Label {
+                    text: "Upload New File"
+                    font.pixelSize: 24
+                    font.bold: true
+                    color: "#1f2937"
+                    anchors.horizontalCenter: parent.horizontalCenter
                 }
 
-                onExited: function() {
-                    uploadArea.border.color = "#d1d5db"
-                    uploadArea.border.width = 2
+                Label {
+                    text: "Upload your course file to start building your schedule"
+                    color: "#6b7280"
+                    anchors.horizontalCenter: parent.horizontalCenter
                 }
 
-                onDropped: function(drop) {
-                    uploadArea.border.color = "#d1d5db"
-                    uploadArea.border.width = 2
+                // Upload Area
+                Rectangle {
+                    id: uploadArea
+                    width: 450
+                    height: 250
+                    color: "#f9fafb"
+                    border.width: 2
+                    border.color: "#d1d5db"
+                    radius: 8
 
-                    if (drop.hasUrls) {
-                        let fileUrl = drop.urls[0];
-                        let filePath;
+                    DropArea {
+                        id: dropArea
+                        anchors.fill: parent
 
-                        // Handle platform differences in file URLs
-                        if (fileUrl.toString().startsWith("file:///")) {
-                            if (fileUrl.toString().match(/^file:\/\/\/[A-Za-z]:/)) {
-                                // Windows path
-                                filePath = fileUrl.toString().replace("file:///", "");
-                            } else {
-                                // Linux/Unix path
-                                filePath = fileUrl.toString().replace("file://", "");
-                            }
-                        } else {
-                            // Fallback for other formats
-                            filePath = fileUrl.toString();
+                        onEntered: function(drag) {
+                            uploadArea.border.color = "#4f46e5"
+                            uploadArea.border.width = 3
                         }
 
-                        fileInputController.handleFileSelected(filePath);
-                    } else {
-                        showErrorMessage("No valid file was dropped.");
+                        onExited: function() {
+                            uploadArea.border.color = "#d1d5db"
+                            uploadArea.border.width = 2
+                        }
+
+                        onDropped: function(drop) {
+                            uploadArea.border.color = "#d1d5db"
+                            uploadArea.border.width = 2
+
+                            if (drop.hasUrls) {
+                                let fileUrl = drop.urls[0];
+                                let filePath;
+
+                                if (fileUrl.toString().startsWith("file:///")) {
+                                    if (fileUrl.toString().match(/^file:\/\/\/[A-Za-z]:/)) {
+                                        filePath = fileUrl.toString().replace("file:///", "");
+                                    } else {
+                                        filePath = fileUrl.toString().replace("file://", "");
+                                    }
+                                } else {
+                                    filePath = fileUrl.toString();
+                                }
+
+                                console.log("File dropped:", filePath);
+                                fileInputController.handleFileSelected(filePath);
+                            } else {
+                                showErrorMessage("No valid file was dropped.");
+                            }
+                        }
+                    }
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 15
+
+                        Text {
+                            text: "📁"
+                            font.pixelSize: 48
+                            color: "#9ca3af"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        Label {
+                            id: dropPrompt
+                            text: "Drag and drop your file here, or click browse"
+                            color: "#6b7280"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        Label {
+                            id: fileNameText
+                            color: "#4f46e5"
+                            font.bold: true
+                            visible: false
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        Button {
+                            id: browseButton
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            background: Rectangle {
+                                color: browseMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                                radius: 4
+                                implicitWidth: 120
+                                implicitHeight: 40
+                            }
+                            font.bold: true
+                            contentItem: Text {
+                                text: "Browse Files"
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            MouseArea {
+                                id: browseMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    console.log("Browse button clicked");
+                                    fileInputController.handleUploadAndContinue();
+                                }
+                                cursorShape: Qt.PointingHandCursor
+                            }
+                        }
+
+                        Label {
+                            text: "Supported formats: TXT & XLSX"
+                            font.pixelSize: 12
+                            color: "#9ca3af"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
                     }
                 }
-            }
 
-            // Upload icon
-            Rectangle {
-                id: uploadIcon
-                width: 64
-                height: 64
-                color: "transparent"
-                anchors {
-                    horizontalCenter: parent.horizontalCenter
-                    verticalCenter: parent.verticalCenter
-                    bottomMargin: 16
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: "📁"
-                    font.pixelSize: 48
-                    anchors.verticalCenterOffset: -20
-                    anchors.horizontalCenterOffset: 0
-                    color: "#9ca3af"
-                }
-
-                // Drag and Drop Prompt
-                Label {
-                    id: dropPrompt
-                    anchors.centerIn: parent
-                    text: "Drag and drop your file here, or click here"
-                    anchors.verticalCenterOffset: 40
-                    anchors.horizontalCenterOffset: 0
-                    color: "#6b7280"
-                }
-
-                // File name display (initially hidden)
-                Label {
-                    id: fileNameText
-                    anchors.centerIn: parent
-                    color: "#4f46e5"
-                    anchors.verticalCenterOffset: 40
-                    anchors.horizontalCenterOffset: 0
-                    font.bold: true
-                    visible: false
-                }
-
-                // Browse Button
                 Button {
-                    id: browseButton
-                    anchors {
-                        top: fileNameText ? fileNameText.bottom : dropPrompt
-                        horizontalCenter: fileNameText ? fileNameText.horizontalCenter : dropPrompt
-                        topMargin: 20
-                    }
+                    id: continueButton
+                    visible: false
+                    anchors.horizontalCenter: parent.horizontalCenter
                     background: Rectangle {
-                        color: browseMouseArea.containsMouse ? "#35455c" : "#1f2937"
+                        color: generateCoursesMouseArea.containsMouse ? "#35455c" : "#1f2937"
                         radius: 4
-                        implicitWidth: 120
+                        implicitWidth: 194
                         implicitHeight: 40
                     }
                     font.bold: true
                     contentItem: Text {
-                        text: "Browse Files"
+                        text: "Upload Course's List →"
                         color: "white"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
                     MouseArea {
-                        id: browseMouseArea
+                        id: generateCoursesMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: fileInputController.handleUploadAndContinue()
+                        onClicked: {
+                            console.log("Continue button clicked - loading new file");
+                            fileInputController.loadNewFile();
+                        }
                         cursorShape: Qt.PointingHandCursor
                     }
                 }
+            }
 
-                // Supported Formats Text
+            // History Content
+            Column {
+                id: historyContent
+                anchors.fill: parent
+                anchors.margins: 30
+                spacing: 20
+                visible: showHistory
+
                 Label {
-                    id: supportedFormats
-                    anchors {
-                        top: browseButton.bottom
-                        horizontalCenter: browseButton.horizontalCenter
-                        topMargin: 16
+                    text: "Previous Files"
+                    font.pixelSize: 24
+                    font.bold: true
+                    color: "#1f2937"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                Label {
+                    text: "Select from previously uploaded course files"
+                    color: "#6b7280"
+                    anchors.horizontalCenter: parent.horizontalCenter
+                }
+
+                // File List
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    width: parent.width
+                    height: parent.height - 200
+
+                    ListView {
+                        id: fileHistoryList
+                        model: fileInputController.fileHistoryModel
+                        spacing: 8
+
+                        // Add empty state
+                        Text {
+                            anchors.centerIn: parent
+                            text: "No files uploaded yet.\nUpload a file first to see history."
+                            color: "#6b7280"
+                            horizontalAlignment: Text.AlignHCenter
+                            visible: fileHistoryList.count === 0
+                            font.pixelSize: 14
+                        }
+
+                        delegate: Rectangle {
+                            width: fileHistoryList.width
+                            height: 60
+                            color: fileInputController.isFileSelected(index) ? "#eff6ff" : "#f9fafb"
+                            border.color: fileInputController.isFileSelected(index) ? "#3b82f6" : "#e5e7eb"
+                            border.width: fileInputController.isFileSelected(index) ? 2 : 1
+                            radius: 6
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    console.log("File clicked at index:", index, "File ID:", model.fileId, "File name:", model.fileName);
+                                    fileInputController.toggleFileSelection(index);
+                                }
+                                cursorShape: Qt.PointingHandCursor
+                            }
+
+                            Row {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                anchors.leftMargin: 15
+                                spacing: 10
+
+                                Rectangle {
+                                    width: 20
+                                    height: 20
+                                    radius: 3
+                                    color: fileInputController.isFileSelected(index) ? "#3b82f6" : "transparent"
+                                    border.color: "#3b82f6"
+                                    border.width: 2
+                                    anchors.verticalCenter: parent.verticalCenter
+
+                                    Text {
+                                        text: "✓"
+                                        color: "white"
+                                        font.pixelSize: 12
+                                        anchors.centerIn: parent
+                                        visible: fileInputController.isFileSelected(index)
+                                    }
+                                }
+
+                                Column {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 2
+
+                                    Text {
+                                        text: model.fileName || "Unknown File"
+                                        color: "#1f2937"
+                                        font.pixelSize: 14
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        text: `${model.fileType || "Unknown"} • ${model.formattedDate || "Unknown date"}`
+                                        color: "#6b7280"
+                                        font.pixelSize: 12
+                                    }
+                                }
+                            }
+                        }
                     }
-                    text: "Supported formats: TXT & XLSX"
-                    font.pixelSize: 12
-                    color: "#9ca3af"
+                }
+
+                // Selection Info and Load Button
+                Column {
+                    width: parent.width
+                    spacing: 15
+
+                    Label {
+                        id: selectedCountText
+                        text: ""
+                        color: "#6b7280"
+                        font.pixelSize: 12
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
+
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 15
+
+                        Button {
+                            text: "Clear Selection"
+                            enabled: fileInputController.selectedFileCount > 0
+                            background: Rectangle {
+                                color: parent.enabled ? (clearMouseArea.containsMouse ? "#f3f4f6" : "#ffffff") : "#f9fafb"
+                                border.color: "#d1d5db"
+                                border.width: 1
+                                radius: 4
+                                implicitWidth: 120
+                                implicitHeight: 40
+                            }
+                            contentItem: Text {
+                                text: parent.text
+                                color: parent.enabled ? "#374151" : "#9ca3af"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            MouseArea {
+                                id: clearMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    console.log("Clear selection clicked");
+                                    fileInputController.clearFileSelection();
+                                }
+                                cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            }
+                        }
+
+                        Button {
+                            id: loadHistoryButton
+                            text: "Load Selected Files"
+                            enabled: false
+                            background: Rectangle {
+                                color: parent.enabled ? (loadMouseArea.containsMouse ? "#35455c" : "#1f2937") : "#9ca3af"
+                                radius: 4
+                                implicitWidth: 150
+                                implicitHeight: 40
+                            }
+                            contentItem: Text {
+                                text: parent.text
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            MouseArea {
+                                id: loadMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                onClicked: {
+                                    console.log("Load from history clicked with", fileInputController.selectedFileCount, "files selected");
+                                    fileInputController.loadFromHistory();
+                                }
+                                cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // Upload Button - Initially hidden
-        Button {
-            id: continueButton
-            width: 194
-            height: 40
-            visible: false  // Initially hidden until a file is selected
-            anchors {
-                top: uploadArea.bottom
-                horizontalCenter: uploadArea.horizontalCenter
-                topMargin: 8
-            }
-            background: Rectangle {
-                color: generateCoursesMouseArea.containsMouse ? "#35455c" : "#1f2937"
-                radius: 4
-                implicitWidth: 120
-                implicitHeight: 40
-            }
-            font.bold: true
-            contentItem: Text {
-                text: "Upload Course's List →"
-                color: "white"
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-            }
-            MouseArea {
-                id: generateCoursesMouseArea
-                anchors.fill: parent
-                hoverEnabled: true
-                onClicked: fileInputController.loadFile()
-                cursorShape: Qt.PointingHandCursor
-            }
-        }
-
-        // Upload Title Label
-        Label {
-            id: uploadTitle
-            y: 239
-            anchors {
-                bottom: uploadArea.top
-                left: uploadArea.left
-                bottomMargin: 29
-            }
-            text: "Upload Your Course List"
-            anchors.leftMargin: 0
-            font.pixelSize: 24
-            color: "#1f2937"
-        }
-
-        // Upload Description
-        Label {
-            id: uploadDescription
-            x: 50
-            y: 177
-            anchors {
-                top: uploadTitle.bottom
-                left: uploadTitle.left
-                bottomMargin: 16
-            }
-            text: "Upload your course file to start building your schedule"
-            color: "#6b7280"
-        }
-
-        // footer
+        // Footer
         Rectangle {
             id: footer
             anchors {
@@ -378,7 +680,6 @@ Page {
             color: "#ffffff"
             border.color: "#e5e7eb"
 
-            // Footer Text
             Label {
                 anchors.centerIn: parent
                 text: "© 2025 Schedulify. All rights reserved."

@@ -36,7 +36,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(OpenXLSX jsoncpp)
 
 # Find required packages
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Quick Qml QuickLayouts PrintSupport QuickControls2 Sql)
 
 # Find CURL
 find_package(CURL REQUIRED)
@@ -121,6 +121,15 @@ set(PROJECT_SOURCES
 
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/botAdapter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/apiManager.cpp
+        model/src/db/db_manager.cpp
+        model/src/db/model_db_integration.cpp
+        controller/adapters/view_models/file_model.h
+        controller/adapters/view_models/file_model.cpp
+        model/src/db/db_json_helpers.cpp
+        model/src/db/db_json_helpers.cpp
+        model/src/db/db_schema.cpp
+        model/src/db/db_files.cpp
+        model/src/db/db_course.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
@@ -138,12 +147,13 @@ target_include_directories(SchedGUI PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include/parsers
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include/schedule_algorithm
         ${CMAKE_CURRENT_SOURCE_DIR}/model/include/sched_bot
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/include/db
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/include
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers
         ${CMAKE_CURRENT_SOURCE_DIR}/logger
-        ${CURL_INCLUDE_DIRS}  # Add CURL include directories
+        ${CURL_INCLUDE_DIRS}
 )
 
 # Link Qt libraries, OpenXLSX, CURL, and jsoncpp
@@ -156,9 +166,10 @@ target_link_libraries(SchedGUI PRIVATE
         Qt6::QuickLayouts
         Qt6::PrintSupport
         Qt6::QuickControls2
+        Qt6::Sql
         OpenXLSX::OpenXLSX
-        ${CURL_LIBRARIES}     # Link CURL libraries
-        jsoncpp_lib           # Link jsoncpp
+        ${CURL_LIBRARIES}
+        jsoncpp_lib
 )
 
 # Add compiler definitions for CURL
@@ -181,17 +192,6 @@ set_target_properties(SchedGUI PROPERTIES
         MACOSX_BUNDLE TRUE
         WIN32_EXECUTABLE FALSE
 )
-
-if(EXISTS "${CMAKE_SOURCE_DIR}/.env")
-    configure_file(
-            "${CMAKE_SOURCE_DIR}/.env"
-            "${CMAKE_BINARY_DIR}/.env"
-            COPYONLY
-    )
-    message(STATUS "Copied .env file to build directory")
-else()
-    message(WARNING ".env file not found in project root. API_KEY environment variable should be set manually.")
-endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(SchedGUI)
