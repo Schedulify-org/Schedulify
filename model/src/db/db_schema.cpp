@@ -7,8 +7,6 @@ DatabaseSchema::DatabaseSchema(QSqlDatabase& database) : db(database) {
 }
 
 bool DatabaseSchema::createTables() {
-    Logger::get().logInfo("Creating database tables...");
-
     return createMetadataTable() &&
            createFileTable() &&
            createCourseTable() &&
@@ -17,8 +15,6 @@ bool DatabaseSchema::createTables() {
 }
 
 bool DatabaseSchema::createIndexes() {
-    Logger::get().logInfo("Creating database indexes...");
-
     return createMetadataIndexes() &&
            createFileIndexes() &&
            createCourseIndexes() &&
@@ -152,8 +148,6 @@ bool DatabaseSchema::createMetadataIndexes() {
 }
 
 bool DatabaseSchema::createFileIndexes() {
-    Logger::get().logInfo("Creating file indexes...");
-
     bool success = true;
 
     if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_file_name ON file(file_name)")) {
@@ -178,8 +172,6 @@ bool DatabaseSchema::createFileIndexes() {
 }
 
 bool DatabaseSchema::createCourseIndexes() {
-    Logger::get().logInfo("Creating course indexes...");
-
     bool success = true;
 
     if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_course_raw_id ON course(raw_id)")) {
@@ -214,8 +206,6 @@ bool DatabaseSchema::createCourseIndexes() {
 }
 
 bool DatabaseSchema::createScheduleIndexes() {
-    Logger::get().logInfo("Creating schedule indexes...");
-
     if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_index ON schedule(schedule_index)")) {
         Logger::get().logWarning("Failed to create schedule index");
         return false;
@@ -226,8 +216,6 @@ bool DatabaseSchema::createScheduleIndexes() {
 }
 
 bool DatabaseSchema::dropAllTables() {
-    Logger::get().logInfo("Dropping all database tables...");
-
     QStringList tables = {"schedule_metadata", "schedule", "course", "file", "metadata"};
 
     for (const QString& table : tables) {
@@ -242,9 +230,6 @@ bool DatabaseSchema::dropAllTables() {
 }
 
 bool DatabaseSchema::upgradeSchema(int fromVersion, int toVersion) {
-    Logger::get().logInfo("Upgrading schema from version " + std::to_string(fromVersion) +
-                          " to " + std::to_string(toVersion));
-
     if (fromVersion == toVersion) {
         return true; // No upgrade needed
     }
@@ -267,8 +252,6 @@ bool DatabaseSchema::upgradeSchema(int fromVersion, int toVersion) {
 }
 
 bool DatabaseSchema::upgradeFromV1ToV2() {
-    Logger::get().logInfo("Upgrading from schema v1 to v2...");
-
     // Check if upload_time column exists in file table
     QSqlQuery checkQuery("PRAGMA table_info(file)", db);
     bool hasUploadTime = false;
@@ -300,8 +283,6 @@ bool DatabaseSchema::upgradeFromV1ToV2() {
 }
 
 bool DatabaseSchema::upgradeFromV2ToV3() {
-    Logger::get().logInfo("Upgrading from schema v2 to v3...");
-
     // Check if course_file_id column exists
     QSqlQuery checkQuery("PRAGMA table_info(course)", db);
     bool hasCourseFileId = false;
@@ -332,8 +313,6 @@ bool DatabaseSchema::upgradeFromV2ToV3() {
         Logger::get().logInfo("Added course_file_id column and migrated existing data");
     }
 
-    // Remove the old unique constraint and add the new one
-    // SQLite doesn't support dropping constraints directly, so we need to recreate the table
     Logger::get().logInfo("Recreating course table with new constraints...");
 
     // Create backup table with new schema
@@ -393,8 +372,6 @@ bool DatabaseSchema::upgradeFromV2ToV3() {
 }
 
 bool DatabaseSchema::validateSchema() {
-    Logger::get().logInfo("Validating database schema...");
-
     QStringList requiredTables = {"metadata", "file", "course", "schedule", "schedule_metadata"};
 
     for (const QString& table : requiredTables) {
@@ -479,7 +456,6 @@ bool DatabaseSchema::executeQuery(const QString& query) {
     QSqlQuery sqlQuery(db);
     if (!sqlQuery.exec(query)) {
         Logger::get().logError("Failed to execute query: " + sqlQuery.lastError().text().toStdString());
-        Logger::get().logError("Query was: " + query.toStdString());
         return false;
     }
     return true;

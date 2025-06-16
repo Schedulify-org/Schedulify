@@ -17,22 +17,15 @@ vector<Course> Model::generateCourses(const string& path) {
     Logger::get().startCollecting();
 
     try {
-        Logger::get().logInfo("=== STARTING FILE UPLOAD PROCESS ===");
-        Logger::get().logInfo("File path: " + path);
-
-        // CRITICAL: Initialize database integration FIRST with error checking
         auto& dbIntegration = ModelDatabaseIntegration::getInstance();
         if (!dbIntegration.isInitialized()) {
-            Logger::get().logInfo("Initializing database for first time...");
             if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("CRITICAL: Failed to initialize database - proceeding without persistence");
-                // Continue without database - don't fail the entire operation
+                Logger::get().logError("Failed to initialize database - proceeding without persistence");
             } else {
                 Logger::get().logInfo("Database initialized successfully");
             }
         }
 
-        // Determine file type and use appropriate parser
         std::string extension = getFileExtension(path);
 
         if (extension == "xlsx") {
@@ -55,22 +48,12 @@ vector<Course> Model::generateCourses(const string& path) {
         } else {
             Logger::get().logInfo("Successfully parsed " + std::to_string(courses.size()) + " courses from " + path);
 
-            // Log first few course IDs for debugging
-            Logger::get().logInfo("=== COURSE UPLOAD DEBUG ===");
-            for (size_t i = 0; i < std::min(courses.size(), size_t(5)); ++i) {
-                Logger::get().logInfo("Course " + std::to_string(i) + ": ID=" + std::to_string(courses[i].id) +
-                                      ", Raw ID=" + courses[i].raw_id + ", Name=" + courses[i].name);
-            }
-
             // Extract file information from path
             size_t lastSlash = path.find_last_of("/\\");
             string fileName = (lastSlash != string::npos) ? path.substr(lastSlash + 1) : path;
             string fileType = extension;
 
-            Logger::get().logInfo("About to save " + std::to_string(courses.size()) + " courses to database");
-            Logger::get().logInfo("File: " + fileName + ", Type: " + fileType);
 
-            // REQUIREMENT 1 & 2: Try to load courses into database (but don't fail if it doesn't work)
             if (dbIntegration.isInitialized()) {
                 try {
                     if (dbIntegration.loadCoursesToDatabase(courses, fileName, fileType)) {
@@ -93,11 +76,18 @@ vector<Course> Model::generateCourses(const string& path) {
         Logger::get().logError("Exception during parsing: " + string(e.what()));
     }
 
-    Logger::get().logInfo("=== FILE UPLOAD PROCESS COMPLETED ===");
-    Logger::get().logInfo("Result: " + std::to_string(courses.size()) + " courses loaded");
+    Logger::get().logInfo(std::to_string(courses.size()) + " courses loaded");
 
     // Keep collecting enabled for validation phase
     return courses;
+}
+
+vector<Course> Model::loadCoursesFromDB() {
+    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+    if (!dbIntegration.isInitialized()) {
+        dbIntegration.initializeDatabase();
+    }
+    return dbIntegration.getCoursesFromDatabase();
 }
 
 vector<Course> Model::loadCoursesFromHistory(const vector<int>& fileIds) {
@@ -199,8 +189,6 @@ vector<Course> Model::loadCoursesFromHistory(const vector<int>& fileIds) {
 
 vector<FileEntity> Model::getFileHistory() {
     try {
-        Logger::get().logInfo("=== RETRIEVING FILE HISTORY ===");
-
         auto& dbIntegration = ModelDatabaseIntegration::getInstance();
         if (!dbIntegration.isInitialized()) {
             Logger::get().logInfo("Initializing database for file history");
@@ -222,17 +210,11 @@ vector<FileEntity> Model::getFileHistory() {
 
         // Log file history for debugging
         if (!files.empty()) {
-            Logger::get().logInfo("=== FILE HISTORY DETAILS ===");
-            for (const auto& file : files) {
-                Logger::get().logInfo("File ID " + std::to_string(file.id) + ": '" + file.file_name +
-                                      "' (type: " + file.file_type + ", uploaded: " +
-                                      file.upload_time.toString("yyyy-MM-dd hh:mm:ss").toStdString() + ")");
-            }
+            return files;
         } else {
             Logger::get().logInfo("No files found in database - this is normal for first use");
+            return {};
         }
-
-        return files;
     } catch (const std::exception& e) {
         Logger::get().logError("Exception during file history retrieval: " + string(e.what()));
         return {};
@@ -241,9 +223,6 @@ vector<FileEntity> Model::getFileHistory() {
 
 bool Model::deleteFileFromHistory(int fileId) {
     try {
-        Logger::get().logInfo("=== DELETING FILE FROM HISTORY ===");
-        Logger::get().logInfo("File ID: " + std::to_string(fileId));
-
         auto& dbIntegration = ModelDatabaseIntegration::getInstance();
         if (!dbIntegration.isInitialized()) {
             Logger::get().logInfo("Initializing database for file deletion");
@@ -262,16 +241,12 @@ bool Model::deleteFileFromHistory(int fileId) {
         // Get file details before deletion for logging
         FileEntity file = db.files()->getFileById(fileId);
         if (file.id != 0) {
-            Logger::get().logInfo("Deleting file: '" + file.file_name + "' (type: " + file.file_type + ")");
-
-            // Get count of courses that will be deleted
+            // Get count of courses
             int courseCount = db.courses()->getCourseCountByFileId(fileId);
-            Logger::get().logInfo("This will delete " + std::to_string(courseCount) + " associated courses");
 
-            // Start transaction for atomic deletion
             DatabaseTransaction transaction(db);
 
-            // Delete courses first (due to foreign key constraint)
+            // Delete courses first
             if (!db.courses()->deleteCoursesByFileId(fileId)) {
                 Logger::get().logError("Failed to delete courses for file ID: " + std::to_string(fileId));
                 return false;
@@ -307,7 +282,7 @@ vector<string> Model::validateCourses(const vector<Course>& courses) {
     if (courses.empty()) {
         Logger::get().logError("No courses were found to validate");
         Logger::get().stopCollecting();
-        return {}; // Return empty vector, not reference to member
+        return {}; // Return empty vector
     }
 
     Logger::get().logInfo("Validating " + std::to_string(courses.size()) + " courses");
@@ -379,66 +354,56 @@ vector<string> Model::messageBot(const vector<string>& userInput, const string& 
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
     switch (operation) {
-        case ModelOperation::GENERATE_COURSES:
+        case ModelOperation::GENERATE_COURSES: {
             if (!path.empty()) {
-                Logger::get().logInfo("=== STARTING FILE UPLOAD PROCESS ===");
-                Logger::get().logInfo("File path: " + path);
                 lastGeneratedCourses = generateCourses(path);
-                Logger::get().logInfo("=== FILE UPLOAD PROCESS COMPLETED ===");
-                Logger::get().logInfo("Result: " + std::to_string(lastGeneratedCourses.size()) + " courses loaded");
                 return &lastGeneratedCourses;
             } else {
                 Logger::get().logError("File not found, aborting...");
                 return nullptr;
             }
+        }
 
-        case ModelOperation::LOAD_FROM_HISTORY:
+        case ModelOperation::LOAD_FROM_HISTORY: {
             if (data) {
                 const auto* fileLoadData = static_cast<const FileLoadData*>(data);
-                Logger::get().logInfo("=== STARTING HISTORY LOAD PROCESS ===");
                 lastGeneratedCourses = loadCoursesFromHistory(fileLoadData->fileIds);
-                Logger::get().logInfo("=== HISTORY LOAD PROCESS COMPLETED ===");
-                Logger::get().logInfo("Result: " + std::to_string(lastGeneratedCourses.size()) + " courses loaded from history");
                 return &lastGeneratedCourses;
             } else {
                 Logger::get().logError("No file IDs provided for history loading");
                 return nullptr;
             }
+        }
 
         case ModelOperation::GET_FILE_HISTORY: {
-            Logger::get().logInfo("=== RETRIEVING FILE HISTORY ===");
             auto* fileHistory = new vector<FileEntity>(getFileHistory());
-            Logger::get().logInfo("File history retrieved: " + std::to_string(fileHistory->size()) + " files");
             return fileHistory;
         }
 
-        case ModelOperation::DELETE_FILE_FROM_HISTORY:
+        case ModelOperation::DELETE_FILE_FROM_HISTORY: {
             if (data) {
                 const int* fileId = static_cast<const int*>(data);
-                Logger::get().logInfo("=== STARTING FILE DELETION PROCESS ===");
                 bool success = deleteFileFromHistory(*fileId);
-                Logger::get().logInfo("=== FILE DELETION PROCESS COMPLETED ===");
-                Logger::get().logInfo("Result: " + string(success ? "SUCCESS" : "FAILED"));
                 bool* result = new bool(success);
                 return result;
             } else {
                 Logger::get().logError("No file ID provided for deletion");
                 return nullptr;
             }
+        }
 
-        case ModelOperation::VALIDATE_COURSES:
+        case ModelOperation::VALIDATE_COURSES: {
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
-                Logger::get().logInfo("=== STARTING COURSE VALIDATION ===");
                 auto* validationResult = new vector<string>(validateCourses(*courses));
-                Logger::get().logInfo("Course validation completed");
                 return validationResult;
             } else {
                 Logger::get().logError("No courses were found for validation, aborting...");
                 return nullptr;
             }
+        }
 
-        case ModelOperation::GENERATE_SCHEDULES:
+        case ModelOperation::GENERATE_SCHEDULES: {
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
                 lastGeneratedSchedules = generateSchedules(*courses);
@@ -448,8 +413,9 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("unable to generate schedules, aborting...");
                 return nullptr;
             }
+        }
 
-        case ModelOperation::SAVE_SCHEDULE:
+        case ModelOperation::SAVE_SCHEDULE: {
             if (data && !path.empty()) {
                 const auto* schedule = static_cast<const InformativeSchedule*>(data);
                 saveSchedule(*schedule, path);
@@ -457,8 +423,9 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("unable to save schedule, aborting...");
             }
             break;
+        }
 
-        case ModelOperation::PRINT_SCHEDULE:
+        case ModelOperation::PRINT_SCHEDULE: {
             if (data) {
                 const auto* schedule = static_cast<const InformativeSchedule*>(data);
                 printSchedule(*schedule);
@@ -466,16 +433,11 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("unable to print schedule, aborting...");
             }
             break;
+        }
 
         case ModelOperation::LOAD_COURSES_FROM_DB: {
             try {
-                Logger::get().logInfo("=== LOADING ALL COURSES FROM DATABASE ===");
-                auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-                if (!dbIntegration.isInitialized()) {
-                    dbIntegration.initializeDatabase();
-                }
-                lastGeneratedCourses = dbIntegration.getCoursesFromDatabase();
-                Logger::get().logInfo("Loaded " + std::to_string(lastGeneratedCourses.size()) + " courses from database");
+                lastGeneratedCourses = loadCoursesFromDB();
                 return &lastGeneratedCourses;
             } catch (const std::exception& e) {
                 Logger::get().logError("Failed to load courses from database: " + string(e.what()));
@@ -517,7 +479,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             }
         }
 
-        case ModelOperation::BOT_MESSAGE:
+        case ModelOperation::BOT_MESSAGE: {
             if (data) {
                 const auto* userInput = static_cast<const vector<string>*>(data);
                 auto* botRespond = new vector<string>(messageBot(*userInput, scheduleMetaData));
@@ -526,16 +488,19 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("invalid message");
                 return nullptr;
             }
+        }
 
-        case ModelOperation::BACKUP_DATABASE:
+        case ModelOperation::BACKUP_DATABASE: {
             Logger::get().logWarning("Database backup not yet implemented");
             break;
+        }
 
-        case ModelOperation::RESTORE_DATABASE:
+        case ModelOperation::RESTORE_DATABASE: {
             Logger::get().logWarning("Database restore not yet implemented");
             break;
+        }
 
-        case ModelOperation::GET_DATABASE_STATS:
+        case ModelOperation::GET_DATABASE_STATS: {
             try {
                 auto& dbIntegration = ModelDatabaseIntegration::getInstance();
                 if (dbIntegration.isInitialized()) {
@@ -547,6 +512,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("Failed to get database stats: " + string(e.what()));
                 return nullptr;
             }
+        }
     }
     return nullptr;
 }

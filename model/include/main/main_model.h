@@ -44,6 +44,7 @@ public:
 private:
     Model() {}
     static vector<Course> generateCourses(const string& path);
+    static vector<Course> loadCoursesFromDB();
     static vector<Course> loadCoursesFromHistory(const vector<int>& fileIds);
     static vector<FileEntity> getFileHistory();
     static vector<string> validateCourses(const vector<Course>& courses);

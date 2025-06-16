@@ -63,8 +63,6 @@ bool DatabaseCourseManager::insertCourses(const vector<Course>& courses, int fil
         return true;
     }
 
-    Logger::get().logInfo("Inserting " + std::to_string(courses.size()) + " courses for file ID: " + std::to_string(fileId));
-
     // Start transaction
     if (!db.transaction()) {
         Logger::get().logError("Failed to begin transaction for course insertion");
@@ -268,13 +266,9 @@ vector<Course> DatabaseCourseManager::getCoursesByFileIds(const vector<int>& fil
         return {};
     }
 
-    Logger::get().logInfo("=== COURSE RETRIEVAL BY FILE IDS DEBUG ===");
-    Logger::get().logInfo("Requested file IDs count: " + std::to_string(fileIds.size()));
-
     map<string, vector<CourseConflictInfo>> conflictMap;
 
     for (int fileId : fileIds) {
-        Logger::get().logInfo("Processing file ID: " + std::to_string(fileId));
 
         QSqlQuery query(db);
         query.prepare(R"(
@@ -516,10 +510,8 @@ bool DatabaseCourseManager::executeQuery(const QString& query, const QVariantLis
 
 Course DatabaseCourseManager::createCourseFromQuery(QSqlQuery& query) {
     Course course;
-
-    // Query returns: id (auto-increment), course_file_id, raw_id, name, teacher, lectures_json, tutorials_json, labs_json, blocks_json, file_id
-    int dbId = query.value(0).toInt();  // Auto-increment ID from database (not used in course object)
-    course.id = query.value(1).toInt();  // Use course_file_id as the course.id
+    int dbId = query.value(0).toInt();
+    course.id = query.value(1).toInt();
     course.raw_id = query.value(2).toString().toStdString();
     course.name = query.value(3).toString().toStdString();
     course.teacher = query.value(4).toString().toStdString();
@@ -535,8 +527,6 @@ vector<Course> DatabaseCourseManager::resolveConflicts(const map<string, vector<
                                                        vector<string>& warnings) {
     vector<Course> courses;
 
-    Logger::get().logInfo("=== RESOLVING COURSE CONFLICTS ===");
-
     for (const auto& pair : conflictMap) {
         const string& rawId = pair.first;
         const vector<CourseConflictInfo>& conflicts = pair.second;
@@ -544,7 +534,6 @@ vector<Course> DatabaseCourseManager::resolveConflicts(const map<string, vector<
         if (conflicts.size() == 1) {
             // No conflict, just add the course
             courses.push_back(conflicts[0].course);
-            Logger::get().logInfo("No conflict for raw_id: " + rawId);
         } else {
             // Multiple courses with same raw_id, resolve by upload time
             auto latest = std::max_element(conflicts.begin(), conflicts.end(),
@@ -560,17 +549,11 @@ vector<Course> DatabaseCourseManager::resolveConflicts(const map<string, vector<
 
             Logger::get().logWarning(warningMsg);
             Logger::get().logInfo("Conflict details for " + rawId + ":");
-            for (const auto& conflict : conflicts) {
-                Logger::get().logInfo("  - File: " + conflict.fileName + ", Upload: " +
-                                      conflict.uploadTime.toString("yyyy-MM-dd hh:mm:ss").toStdString() +
-                                      (conflict.uploadTime == latest->uploadTime ? " [SELECTED]" : ""));
-            }
         }
     }
 
-    Logger::get().logInfo("=== CONFLICT RESOLUTION COMPLETE ===");
-    Logger::get().logInfo("Final result: " + std::to_string(courses.size()) + " courses with " +
-                          std::to_string(warnings.size()) + " conflict(s) resolved");
+    Logger::get().logInfo("Resolved " + std::to_string(courses.size()) + " courses with " +
+                          std::to_string(warnings.size()) + " conflict(s)");
 
     return courses;
 }

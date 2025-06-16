@@ -28,16 +28,14 @@ public:
     bool isInitialized() const;
 
     // Data loading operations
-    bool loadCoursesToDatabase(const vector<Course>& courses, const string& fileName = "",
-                               const string& fileType = "", const string& lut = "");
-    bool loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules,
-                                 const vector<Course>& usedCourses);
+    bool loadCoursesToDatabase(const vector<Course>& courses, const string& fileName = "", const string& fileType = "");
+    bool loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules, const vector<Course>& usedCourses);
     bool loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules,
                                  const vector<vector<int>>& courseIdsPerSchedule);
 
     // File operations
-    bool insertFile(const string& fileName, const string& fileType, const string& lut = "");
-    bool updateFile(int fileId, const string& fileName, const string& fileType, const string& lut = "");
+    bool insertFile(const string& fileName, const string& fileType);
+    bool updateFile(int fileId, const string& fileName, const string& fileType);
     vector<FileEntity> getAllFiles();
     FileEntity getFileByName(const string& fileName);
     int getFileIdByName(const string& fileName);
@@ -64,7 +62,7 @@ public:
     struct DatabaseStats {
         int courseCount;
         int scheduleCount;
-        int metadataCount;        // Now represents file count for clarity
+        int metadataCount;
         int scheduleMetadataCount;
         string databaseSize;
         string lastUpdate;

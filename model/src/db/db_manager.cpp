@@ -1,7 +1,6 @@
 #include "db_manager.h"
 #include "db_json_helpers.h"
 
-// Forward declaration
 class DatabaseRepair;
 
 DatabaseManager& DatabaseManager::getInstance() {
@@ -13,35 +12,28 @@ DatabaseManager::~DatabaseManager() {
     closeDatabase();
 }
 
-// DatabaseRepair helper class - internal to this file
 class DatabaseRepair {
 public:
     static bool repairDatabase(DatabaseManager& dbManager) {
-        Logger::get().logInfo("=== STARTING DATABASE REPAIR ===");
-
         if (!dbManager.isConnected()) {
             Logger::get().logError("Database not connected for repair");
             return false;
         }
 
-        // Step 1: Backup existing data if possible
-        Logger::get().logInfo("Step 1: Backing up existing data...");
+        // Backup existing data if possible
         auto backupData = backupExistingData(dbManager);
 
-        // Step 2: Drop and recreate problematic tables
-        Logger::get().logInfo("Step 2: Recreating database schema...");
+        // Drop and recreate problematic tables
         if (!recreateSchema(dbManager)) {
             Logger::get().logError("Failed to recreate schema");
             return false;
         }
 
-        // Step 3: Restore data if we had any
-        Logger::get().logInfo("Step 3: Restoring data...");
+        // Restore data if we had any
         if (!restoreData(dbManager, backupData)) {
             Logger::get().logWarning("Some data could not be restored");
         }
 
-        Logger::get().logInfo("=== DATABASE REPAIR COMPLETED ===");
         return true;
     }
 
@@ -49,7 +41,6 @@ private:
     struct BackupData {
         vector<MetadataEntity> metadata;
         vector<FileEntity> files;
-        // Note: We won't backup courses/schedules as they can be regenerated
     };
 
     static BackupData backupExistingData(DatabaseManager& dbManager) {
@@ -65,7 +56,6 @@ private:
                 meta.description = metaQuery.value(2).toString().toStdString();
                 backup.metadata.push_back(meta);
             }
-            Logger::get().logInfo("Backed up " + std::to_string(backup.metadata.size()) + " metadata entries");
 
             QSqlQuery fileQuery("SELECT file_name, file_type FROM file", dbManager.db);
             while (fileQuery.next()) {
@@ -74,7 +64,6 @@ private:
                 file.file_type = fileQuery.value(1).toString().toStdString();
                 backup.files.push_back(file);
             }
-            Logger::get().logInfo("Backed up " + std::to_string(backup.files.size()) + " file entries");
 
         } catch (const std::exception& e) {
             Logger::get().logWarning("Backup failed: " + string(e.what()));
@@ -123,15 +112,6 @@ private:
             }
         }
 
-        // Restore file entries (without courses - they'll need to be re-uploaded)
-        for (const auto& file : backup.files) {
-            int fileId = dbManager.insertFile(file.file_name, file.file_type);
-            if (fileId <= 0) {
-                Logger::get().logWarning("Failed to restore file: " + file.file_name);
-                success = false;
-            }
-        }
-
         // Set schema version to current
         dbManager.updateMetadata("schema_version", std::to_string(dbManager.getCurrentSchemaVersion()));
         dbManager.updateMetadata("last_repair", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
@@ -140,7 +120,6 @@ private:
     }
 };
 
-// DatabaseManager methods that use DatabaseRepair
 bool DatabaseManager::repairDatabase() {
     Logger::get().logInfo("Attempting database repair...");
     return DatabaseRepair::repairDatabase(*this);
@@ -181,12 +160,8 @@ void DatabaseManager::debugDatabaseSchema() {
     Logger::get().logInfo("=== END SCHEMA DEBUG ===");
 }
 
-// Simplified Emergency Database Initialization
 bool DatabaseManager::initializeDatabase(const QString& dbPath) {
-    Logger::get().logInfo("=== SMART DATABASE INITIALIZATION ===");
-
     if (isInitialized && db.isOpen()) {
-        Logger::get().logInfo("Database already initialized and open");
         return true;
     }
 
@@ -200,10 +175,7 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
         databasePath = QDir(appDataPath).filePath("schedulify.db");
     }
 
-    Logger::get().logInfo("Database path: " + databasePath.toStdString());
-
     bool isExistingDatabase = QFile::exists(databasePath);
-    Logger::get().logInfo("Database file exists: " + std::string(isExistingDatabase ? "Yes" : "No"));
 
     // Remove any existing connection
     if (QSqlDatabase::contains("schedulify_connection")) {
@@ -233,8 +205,6 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
     int currentSchemaVersion = 0;
 
     if (isExistingDatabase) {
-        Logger::get().logInfo("Validating existing database schema...");
-
         // Check if metadata table exists
         QSqlQuery checkQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'", db);
         if (!checkQuery.exec() || !checkQuery.next()) {
@@ -246,12 +216,8 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
             if (versionQuery.exec() && versionQuery.next()) {
                 string version = versionQuery.value(0).toString().toStdString();
                 currentSchemaVersion = std::stoi(version);
-                Logger::get().logInfo("Found schema version: " + version);
 
                 if (currentSchemaVersion < getCurrentSchemaVersion()) {
-                    Logger::get().logInfo("Schema version outdated - needs upgrade from " +
-                                          std::to_string(currentSchemaVersion) + " to " +
-                                          std::to_string(getCurrentSchemaVersion()));
                     needsSchemaUpgrade = true;
                 } else if (currentSchemaVersion > getCurrentSchemaVersion()) {
                     Logger::get().logError("Database schema version is newer than supported - cannot proceed");
@@ -279,21 +245,18 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
     }
 
     // Handle schema upgrade
-    if (needsSchemaUpgrade && !needsSchemaCreation) {
-        Logger::get().logInfo("Upgrading database schema...");
+    if (needsSchemaUpgrade) {
         if (!schemaManager->upgradeSchema(currentSchemaVersion, getCurrentSchemaVersion())) {
             Logger::get().logError("Schema upgrade failed - will recreate database");
             needsSchemaCreation = true;
             needsSchemaUpgrade = false;
         } else {
-            Logger::get().logInfo("Schema upgrade completed successfully");
             updateMetadata("schema_version", std::to_string(getCurrentSchemaVersion()));
         }
     }
 
     // Create or recreate schema if needed
     if (needsSchemaCreation) {
-        Logger::get().logInfo("Creating/updating database schema...");
 
         // Create tables using schema manager
         if (!schemaManager->createTables()) {
@@ -310,13 +273,11 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
     }
 
     // Create indexes (safe to call multiple times)
-    Logger::get().logInfo("Creating/updating database indexes...");
     if (!schemaManager->createIndexes()) {
         Logger::get().logWarning("Some indexes failed to create - continuing anyway");
     }
 
     // Test write capability
-    Logger::get().logInfo("Testing database write capability...");
     QSqlQuery writeTest(db);
     if (!writeTest.exec("CREATE TEMP TABLE write_test (id INTEGER)") ||
         !writeTest.exec("INSERT INTO write_test (id) VALUES (1)") ||
@@ -326,62 +287,14 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
         return false;
     }
 
-    Logger::get().logInfo("Database write capability confirmed");
-
     // Update last access time
     updateMetadata("last_access", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
 
     isInitialized = true;
-    Logger::get().logInfo("=== DATABASE INITIALIZATION SUCCESSFUL ===");
-
-    // Debug: Show what's currently in the database
-    debugDatabaseContents();
 
     return true;
 }
 
-void DatabaseManager::debugDatabaseContents() {
-    if (!isConnected()) return;
-
-    Logger::get().logInfo("=== DATABASE CONTENTS DEBUG ===");
-
-    // Count files
-    QSqlQuery fileCount("SELECT COUNT(*) FROM file", db);
-    if (fileCount.exec() && fileCount.next()) {
-        int count = fileCount.value(0).toInt();
-        Logger::get().logInfo("Files in database: " + std::to_string(count));
-
-        if (count > 0) {
-            QSqlQuery fileList("SELECT id, file_name, file_type FROM file ORDER BY upload_time DESC LIMIT 5", db);
-            while (fileList.next()) {
-                int id = fileList.value(0).toInt();
-                string name = fileList.value(1).toString().toStdString();
-                string type = fileList.value(2).toString().toStdString();
-                Logger::get().logInfo("  File ID " + std::to_string(id) + ": " + name + " (" + type + ")");
-            }
-        }
-    }
-
-    // Count courses
-    QSqlQuery courseCount("SELECT COUNT(*) FROM course", db);
-    if (courseCount.exec() && courseCount.next()) {
-        int count = courseCount.value(0).toInt();
-        Logger::get().logInfo("Courses in database: " + std::to_string(count));
-
-        if (count > 0) {
-            QSqlQuery courseList("SELECT file_id, COUNT(*) FROM course GROUP BY file_id", db);
-            while (courseList.next()) {
-                int fileId = courseList.value(0).toInt();
-                int courseCount = courseList.value(1).toInt();
-                Logger::get().logInfo("  File ID " + std::to_string(fileId) + " has " + std::to_string(courseCount) + " courses");
-            }
-        }
-    }
-
-    Logger::get().logInfo("=== END DATABASE CONTENTS ===");
-}
-
-// Rest of DatabaseManager implementation (metadata, utility methods, transactions, etc.)
 bool DatabaseManager::isConnected() const {
     return isInitialized && db.isOpen();
 }
@@ -400,7 +313,6 @@ void DatabaseManager::closeDatabase() {
     isInitialized = false;
 }
 
-// Metadata operations
 bool DatabaseManager::insertMetadata(const string& key, const string& value, const string& description) {
     if (!isConnected()) return false;
 
@@ -459,7 +371,6 @@ vector<MetadataEntity> DatabaseManager::getAllMetadata() {
     return metadata;
 }
 
-// Utility operations
 bool DatabaseManager::clearAllData() {
     if (!isConnected()) return false;
 
@@ -481,12 +392,10 @@ bool DatabaseManager::clearAllData() {
 }
 
 bool DatabaseManager::exportToFile(const QString& filePath) {
-    Logger::get().logWarning("Database export functionality not yet implemented");
     return false;
 }
 
 bool DatabaseManager::importFromFile(const QString& filePath) {
-    Logger::get().logWarning("Database import functionality not yet implemented");
     return false;
 }
 
@@ -503,7 +412,6 @@ int DatabaseManager::getTableRowCount(const string& tableName) {
     return -1;
 }
 
-// Transaction support
 bool DatabaseManager::beginTransaction() {
     if (!isConnected()) return false;
     return db.transaction();
@@ -519,7 +427,6 @@ bool DatabaseManager::rollbackTransaction() {
     return db.rollback();
 }
 
-// Internal methods
 bool DatabaseManager::executeQuery(const QString& query, const QVariantList& params) {
     QSqlQuery sqlQuery(db);
     sqlQuery.prepare(query);
@@ -542,7 +449,6 @@ QSqlQuery DatabaseManager::prepareQuery(const QString& query) {
     return sqlQuery;
 }
 
-// DatabaseTransaction implementation
 DatabaseTransaction::DatabaseTransaction(DatabaseManager& dbManager) : db(dbManager) {
     db.beginTransaction();
 }

@@ -306,8 +306,6 @@ vector<InformativeSchedule> DatabaseScheduleManager::getSchedulesWithCourseIds(c
         return schedules;
     }
 
-    // For simplicity, we'll get all schedules and filter by course IDs in memory
-    // In a more sophisticated implementation, you might want to do this filtering in SQL
     vector<InformativeSchedule> allSchedules = getAllSchedules();
 
     for (const auto& schedule : allSchedules) {
@@ -438,7 +436,6 @@ vector<int> DatabaseScheduleManager::getCourseIdsForSchedule(int scheduleId) {
     return courseIds;
 }
 
-// Schedule metadata operations
 bool DatabaseScheduleManager::insertScheduleMetadata(int totalSchedules, const string& generationSettings) {
     if (!db.isOpen()) {
         Logger::get().logError("Database not open for schedule metadata insertion");
@@ -574,7 +571,6 @@ bool DatabaseScheduleManager::deleteAllScheduleMetadata() {
     return true;
 }
 
-// Schedule statistics
 int DatabaseScheduleManager::getScheduleCountByDays(int amountDays) {
     if (!db.isOpen()) {
         Logger::get().logError("Database not open for schedule count by days");
@@ -652,7 +648,6 @@ vector<InformativeSchedule> DatabaseScheduleManager::getSchedulesCreatedAfter(co
     return schedules;
 }
 
-// Helper methods
 bool DatabaseScheduleManager::executeQuery(const QString& query, const QVariantList& params) {
     if (!db.isOpen()) {
         Logger::get().logError("Database not open for query execution");

@@ -32,7 +32,6 @@ public:
 
     // Database lifecycle
     bool initializeDatabase(const QString& dbPath = QString());
-    void debugDatabaseContents();
     bool isConnected() const;
     void closeDatabase();
 

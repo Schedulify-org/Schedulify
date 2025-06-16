@@ -9,9 +9,6 @@ DatabaseFileManager::DatabaseFileManager(QSqlDatabase& database) : db(database) 
 }
 
 int DatabaseFileManager::insertFile(const string& fileName, const string& fileType) {
-    Logger::get().logInfo("=== INSERTING FILE WITH DIAGNOSTICS ===");
-    Logger::get().logInfo("File: '" + fileName + "', Type: '" + fileType + "'");
-
     if (!db.isOpen()) {
         Logger::get().logError("Database not open for file insertion");
         return -1;
@@ -46,8 +43,6 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
         return -1;
     }
 
-    Logger::get().logInfo("File table exists, proceeding with insertion");
-
     // Prepare and execute the insertion query
     QSqlQuery query(db);
     query.prepare(R"(
@@ -58,17 +53,12 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
     query.addBindValue(QString::fromStdString(fileName));
     query.addBindValue(QString::fromStdString(fileType));
 
-    Logger::get().logInfo("Executing file insertion query...");
-
     if (!query.exec()) {
         QString errorText = query.lastError().text();
         QSqlError error = query.lastError();
 
         Logger::get().logError("File insertion query failed!");
         Logger::get().logError("Error text: " + errorText.toStdString());
-        Logger::get().logError("Error type: " + QString::number(error.type()).toStdString());
-        Logger::get().logError("Driver text: " + error.driverText().toStdString());
-        Logger::get().logError("Database text: " + error.databaseText().toStdString());
 
         // Check if it's a constraint violation
         if (errorText.contains("constraint", Qt::CaseInsensitive) ||
@@ -112,21 +102,12 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
         return -1;
     }
 
-    Logger::get().logInfo("=== FILE INSERTION SUCCESSFUL ===");
     Logger::get().logInfo("File: '" + fileName + "' inserted with ID: " + std::to_string(fileId));
 
     // Verify the insertion by reading it back
     QSqlQuery verifyQuery(db);
     verifyQuery.prepare("SELECT file_name, file_type FROM file WHERE id = ?");
     verifyQuery.addBindValue(fileId);
-
-    if (verifyQuery.exec() && verifyQuery.next()) {
-        string verifyName = verifyQuery.value(0).toString().toStdString();
-        string verifyType = verifyQuery.value(1).toString().toStdString();
-        Logger::get().logInfo("Verification: ID " + std::to_string(fileId) + " -> '" + verifyName + "' (" + verifyType + ")");
-    } else {
-        Logger::get().logWarning("Could not verify inserted file - but insertion seemed successful");
-    }
 
     return fileId;
 }
@@ -151,8 +132,6 @@ bool DatabaseFileManager::updateFile(int fileId, const string& fileName, const s
         Logger::get().logError("Cannot update file with empty type");
         return false;
     }
-
-    Logger::get().logInfo("Updating file ID " + std::to_string(fileId) + " to: " + fileName + " (type: " + fileType + ")");
 
     QSqlQuery query(db);
     query.prepare(R"(
@@ -197,8 +176,6 @@ bool DatabaseFileManager::deleteFile(int fileId) {
         return false;
     }
 
-    Logger::get().logInfo("Deleting file: " + existingFile.file_name + " (ID: " + std::to_string(fileId) + ")");
-
     QSqlQuery query(db);
     query.prepare("DELETE FROM file WHERE id = ?");
     query.addBindValue(fileId);
@@ -227,8 +204,6 @@ bool DatabaseFileManager::deleteAllFiles() {
     // Get count before deletion for logging
     int fileCount = getFileCount();
 
-    Logger::get().logInfo("Deleting all files from database (" + std::to_string(fileCount) + " files)");
-
     QSqlQuery query("DELETE FROM file", db);
     if (!query.exec()) {
         Logger::get().logError("Failed to delete all files: " + query.lastError().text().toStdString());
@@ -248,8 +223,6 @@ vector<FileEntity> DatabaseFileManager::getAllFiles() {
         Logger::get().logError("Database not open for file retrieval");
         return files;
     }
-
-    Logger::get().logInfo("Retrieving all files from database");
 
     QSqlQuery query(R"(
         SELECT id, file_name, file_type, upload_time, updated_at
@@ -327,8 +300,6 @@ FileEntity DatabaseFileManager::getFileByName(const string& fileName) {
         Logger::get().logError("Cannot retrieve file with empty name");
         return file;
     }
-
-    Logger::get().logInfo("Retrieving most recent file with name: " + fileName);
 
     QSqlQuery query(db);
     query.prepare(R"(
@@ -486,8 +457,6 @@ vector<FileEntity> DatabaseFileManager::getFilesByType(const string& fileType) {
         return files;
     }
 
-    Logger::get().logInfo("Retrieving files of type: " + fileType);
-
     QSqlQuery query(db);
     query.prepare(R"(
         SELECT id, file_name, file_type, upload_time, updated_at
@@ -528,8 +497,6 @@ vector<FileEntity> DatabaseFileManager::getRecentFiles(int limit) {
         Logger::get().logError("Invalid limit for recent files: " + std::to_string(limit));
         return files;
     }
-
-    Logger::get().logInfo("Retrieving " + std::to_string(limit) + " most recent files");
 
     QSqlQuery query(db);
     query.prepare(R"(
