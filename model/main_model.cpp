@@ -441,10 +441,8 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         case ModelOperation::GENERATE_SCHEDULES:
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
-                Logger::get().logInfo("=== STARTING SCHEDULE GENERATION ===");
                 lastGeneratedSchedules = generateSchedules(*courses);
-                Logger::get().logInfo("=== SCHEDULE GENERATION COMPLETED ===");
-                Logger::get().logInfo("Result: " + std::to_string(lastGeneratedSchedules.size()) + " schedules generated");
+                scheduleMetaData = CalculateMetaData(lastGeneratedSchedules);
                 return &lastGeneratedSchedules;
             } else {
                 Logger::get().logError("unable to generate schedules, aborting...");
