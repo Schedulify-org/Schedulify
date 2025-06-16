@@ -55,146 +55,161 @@ Page {
         }
     }
 
-    // Add this function for error dialogs
-    property string errorDialogText: ""
-
-    Dialog {
-        id: errorDialog
-        title: "Error"
-        standardButtons: Dialog.Ok
-
-        Text {
-            text: errorDialogText
-            wrapMode: Text.WordWrap
-        }
-    }
-
-    // Delete confirmation dialog
+    // Delete confirmation dialog - styled to match main errorDialog
     Dialog {
         id: deleteConfirmDialog
-        title: "Delete File from History"
-        width: 400
-        height: 200
+        modal: true
+        title: ""
+        anchors.centerIn: parent
+        width: 450
+        height: 280
+        padding: 0
 
         property int fileId: -1
         property string fileName: ""
 
-        anchors.centerIn: parent
-        modal: true
+        // Remove default buttons and handle our own
+        standardButtons: Dialog.NoButton
+        closePolicy: Dialog.CloseOnEscape
 
+        // Modern clean background matching main error dialog
         background: Rectangle {
             color: "#ffffff"
             radius: 8
-            border.color: "#e5e7eb"
             border.width: 1
+            border.color: "#e5e7eb"
         }
 
-        Column {
-            anchors.fill: parent
-            anchors.margins: 20
-            spacing: 20
+        contentItem: Item {
+            width: parent.width
+            height: parent.height
 
-            Text {
-                text: "Are you sure you want to delete this file from history?"
-                font.pixelSize: 16
-                color: "#1f2937"
-                wrapMode: Text.WordWrap
-                width: parent.width
-            }
+            Column {
+                id: dialogContent
+                anchors.fill: parent
+                anchors.margins: 24
+                spacing: 16
 
-            Rectangle {
-                width: parent.width
-                height: 60
-                color: "#fef2f2"
-                radius: 6
-                border.color: "#fecaca"
-                border.width: 1
+                // Delete icon
+                Text {
+                    id: deleteIcon
+                    text: "🗑️"
+                    font.pixelSize: 32
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
 
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 4
+                // Delete title
+                Label {
+                    id: deleteTitle
+                    text: "Delete File from History"
+                    font.pixelSize: 18
+                    font.bold: true
+                    color: "#1e293b"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
 
-                    Text {
-                        text: deleteConfirmDialog.fileName
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: "#dc2626"
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
+                // Confirmation message
+                Label {
+                    id: deleteMessage
+                    text: "Are you sure you want to delete this file from history?"
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 14
+                    color: "#64748b"
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                }
 
-                    Text {
-                        text: "This will also delete all courses from this file"
-                        font.pixelSize: 12
-                        color: "#991b1b"
-                        anchors.horizontalCenter: parent.horizontalCenter
+                // File info box
+                Rectangle {
+                    width: parent.width
+                    height: 60
+                    color: "#fef2f2"
+                    radius: 6
+                    border.color: "#fecaca"
+                    border.width: 1
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        Text {
+                            text: deleteConfirmDialog.fileName
+                            font.pixelSize: 14
+                            font.bold: true
+                            color: "#dc2626"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        Text {
+                            text: "This will also delete all courses from this file"
+                            font.pixelSize: 12
+                            color: "#991b1b"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
                     }
                 }
             }
 
+            // Action buttons
             Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: 15
+                anchors {
+                    bottom: parent.bottom
+                    bottomMargin: 24
+                    horizontalCenter: parent.horizontalCenter
+                }
+                spacing: 12
 
                 Button {
-                    text: "Cancel"
+                    id: cancelButton
                     width: 100
                     height: 36
 
                     background: Rectangle {
-                        color: cancelMouseArea.containsMouse ? "#f3f4f6" : "#ffffff"
-                        border.color: "#d1d5db"
-                        border.width: 1
                         radius: 4
+                        color: cancelButton.pressed ? "#f3f4f6" : "#ffffff"
+                        border.width: 1
+                        border.color: "#d1d5db"
                     }
 
                     contentItem: Text {
-                        text: parent.text
+                        text: "Cancel"
                         color: "#374151"
+                        font.pixelSize: 14
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
-                        font.pixelSize: 14
                     }
 
-                    MouseArea {
-                        id: cancelMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            deleteConfirmDialog.close();
-                        }
+                    onClicked: {
+                        deleteConfirmDialog.close();
                     }
                 }
 
                 Button {
-                    text: "Delete"
+                    id: deleteButton
                     width: 100
                     height: 36
 
                     background: Rectangle {
-                        color: deleteConfirmMouseArea.containsMouse ? "#b91c1c" : "#dc2626"
                         radius: 4
+                        color: deleteButton.pressed ? "#b91c1c" : "#dc2626"
+                        border.width: 0
                     }
 
                     contentItem: Text {
-                        text: parent.text
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                        text: "Delete"
+                        color: "#ffffff"
                         font.pixelSize: 14
                         font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
 
-                    MouseArea {
-                        id: deleteConfirmMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            console.log("Confirmed delete for file ID:", deleteConfirmDialog.fileId);
-                            fileInputController.deleteFileFromHistory(deleteConfirmDialog.fileId);
-                            deleteConfirmDialog.close();
-                        }
+                    onClicked: {
+                        console.log("Confirmed delete for file ID:", deleteConfirmDialog.fileId);
+                        fileInputController.deleteFileFromHistory(deleteConfirmDialog.fileId);
+                        deleteConfirmDialog.close();
                     }
                 }
             }
@@ -202,8 +217,11 @@ Page {
     }
 
     function showErrorMessage(msg) {
-        errorDialogText = msg;
-        errorDialog.open();
+        // Use the main window's error dialog instead of local one
+        if (mainWindow) {
+            mainWindow.errorDialogText = msg;
+            mainWindow.errorDialog.open();
+        }
     }
 
     Rectangle {
@@ -741,7 +759,7 @@ Page {
 
                             // Delete button
                             Button {
-                                id: deleteButton
+                                id: deleteFileButton
                                 anchors.right: parent.right
                                 anchors.rightMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
@@ -749,9 +767,9 @@ Page {
                                 height: 32
 
                                 background: Rectangle {
-                                    color: deleteMouseArea.containsMouse ? "#fee2e2" : "transparent"
+                                    color: deleteFileMouseArea.containsMouse ? "#fee2e2" : "transparent"
                                     radius: 6
-                                    border.color: deleteMouseArea.containsMouse ? "#fca5a5" : "transparent"
+                                    border.color: deleteFileMouseArea.containsMouse ? "#fca5a5" : "transparent"
                                     border.width: 1
                                 }
 
@@ -760,11 +778,11 @@ Page {
                                     font.pixelSize: 14
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
-                                    color: deleteMouseArea.containsMouse ? "#dc2626" : "#6b7280"
+                                    color: deleteFileMouseArea.containsMouse ? "#dc2626" : "#6b7280"
                                 }
 
                                 MouseArea {
-                                    id: deleteMouseArea
+                                    id: deleteFileMouseArea
                                     anchors.fill: parent
                                     hoverEnabled: true
                                     cursorShape: Qt.PointingHandCursor
@@ -778,7 +796,7 @@ Page {
                                 }
 
                                 ToolTip {
-                                    visible: deleteMouseArea.containsMouse
+                                    visible: deleteFileMouseArea.containsMouse
                                     text: "Delete file from history"
                                     delay: 500
                                     timeout: 3000
