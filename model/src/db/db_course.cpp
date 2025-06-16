@@ -1,10 +1,5 @@
 #include "db_courses.h"
-#include "db_json_helpers.h"
-#include "logger.h"
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QVariant>
-#include <algorithm>
+
 
 DatabaseCourseManager::DatabaseCourseManager(QSqlDatabase& database) : db(database) {
 }
@@ -269,7 +264,6 @@ vector<Course> DatabaseCourseManager::getCoursesByFileIds(const vector<int>& fil
     map<string, vector<CourseConflictInfo>> conflictMap;
 
     for (int fileId : fileIds) {
-
         QSqlQuery query(db);
         query.prepare(R"(
             SELECT c.id, c.course_file_id, c.raw_id, c.name, c.teacher, c.lectures_json, c.tutorials_json,
@@ -492,26 +486,9 @@ vector<Course> DatabaseCourseManager::getCoursesByTeacher(const string& teacher)
     return courses;
 }
 
-bool DatabaseCourseManager::executeQuery(const QString& query, const QVariantList& params) {
-    QSqlQuery sqlQuery(db);
-    sqlQuery.prepare(query);
-
-    for (const QVariant& param : params) {
-        sqlQuery.addBindValue(param);
-    }
-
-    if (!sqlQuery.exec()) {
-        Logger::get().logError("Failed to execute query: " + sqlQuery.lastError().text().toStdString());
-        return false;
-    }
-
-    return true;
-}
-
 Course DatabaseCourseManager::createCourseFromQuery(QSqlQuery& query) {
     Course course;
-    int dbId = query.value(0).toInt();
-    course.id = query.value(1).toInt();
+    course.id = query.value(1).toInt();  // course_file_id
     course.raw_id = query.value(2).toString().toStdString();
     course.name = query.value(3).toString().toStdString();
     course.teacher = query.value(4).toString().toStdString();

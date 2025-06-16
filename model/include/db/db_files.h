@@ -2,6 +2,12 @@
 #define DB_FILES_H
 
 #include "db_entities.h"
+#include "logger.h"
+
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QSqlRecord>
+#include <QVariant>
 #include <QSqlDatabase>
 #include <vector>
 #include <string>
@@ -37,7 +43,6 @@ private:
     QSqlDatabase& db;
 
     // Helper methods
-    bool executeQuery(const QString& query, const QVariantList& params = QVariantList());
     FileEntity createFileEntityFromQuery(QSqlQuery& query);
 };
 

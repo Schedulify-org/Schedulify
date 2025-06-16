@@ -1,7 +1,4 @@
 #include "db_schema.h"
-#include "logger.h"
-#include <QSqlQuery>
-#include <QSqlError>
 
 DatabaseSchema::DatabaseSchema(QSqlDatabase& database) : db(database) {
 }
@@ -9,16 +6,13 @@ DatabaseSchema::DatabaseSchema(QSqlDatabase& database) : db(database) {
 bool DatabaseSchema::createTables() {
     return createMetadataTable() &&
            createFileTable() &&
-           createCourseTable() &&
-           createScheduleTable() &&
-           createScheduleMetadataTable();
+           createCourseTable();
 }
 
 bool DatabaseSchema::createIndexes() {
     return createMetadataIndexes() &&
            createFileIndexes() &&
-           createCourseIndexes() &&
-           createScheduleIndexes();
+           createCourseIndexes();
 }
 
 bool DatabaseSchema::createMetadataTable() {
@@ -87,51 +81,6 @@ bool DatabaseSchema::createCourseTable() {
     }
 
     Logger::get().logInfo("Course table created successfully");
-    return true;
-}
-
-bool DatabaseSchema::createScheduleTable() {
-    const QString query = R"(
-        CREATE TABLE IF NOT EXISTS schedule (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            schedule_index INTEGER NOT NULL,
-            courses_json TEXT NOT NULL,
-            week_json TEXT NOT NULL,
-            amount_days INTEGER DEFAULT 0,
-            amount_gaps INTEGER DEFAULT 0,
-            gaps_time INTEGER DEFAULT 0,
-            avg_start INTEGER DEFAULT 0,
-            avg_end INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    )";
-
-    if (!executeQuery(query)) {
-        Logger::get().logError("Failed to create schedule table");
-        return false;
-    }
-
-    Logger::get().logInfo("Schedule table created successfully");
-    return true;
-}
-
-bool DatabaseSchema::createScheduleMetadataTable() {
-    const QString query = R"(
-        CREATE TABLE IF NOT EXISTS schedule_metadata (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            total_schedules INTEGER NOT NULL,
-            generation_settings_json TEXT DEFAULT '{}',
-            generated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            status TEXT DEFAULT 'active'
-        )
-    )";
-
-    if (!executeQuery(query)) {
-        Logger::get().logError("Failed to create schedule_metadata table");
-        return false;
-    }
-
-    Logger::get().logInfo("Schedule metadata table created successfully");
     return true;
 }
 
@@ -205,18 +154,8 @@ bool DatabaseSchema::createCourseIndexes() {
     return success;
 }
 
-bool DatabaseSchema::createScheduleIndexes() {
-    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_index ON schedule(schedule_index)")) {
-        Logger::get().logWarning("Failed to create schedule index");
-        return false;
-    }
-
-    Logger::get().logInfo("Schedule indexes created successfully");
-    return true;
-}
-
 bool DatabaseSchema::dropAllTables() {
-    QStringList tables = {"schedule_metadata", "schedule", "course", "file", "metadata"};
+    QStringList tables = {"course", "file", "metadata"};
 
     for (const QString& table : tables) {
         if (!executeQuery("DROP TABLE IF EXISTS " + table)) {
@@ -236,14 +175,6 @@ bool DatabaseSchema::upgradeSchema(int fromVersion, int toVersion) {
 
     if (fromVersion == 1 && toVersion == 2) {
         return upgradeFromV1ToV2();
-    }
-
-    if (fromVersion == 2 && toVersion == 3) {
-        return upgradeFromV2ToV3();
-    }
-
-    if (fromVersion == 1 && toVersion == 3) {
-        return upgradeFromV1ToV2() && upgradeFromV2ToV3();
     }
 
     Logger::get().logError("Unsupported schema upgrade path: " + std::to_string(fromVersion) +
@@ -278,17 +209,12 @@ bool DatabaseSchema::upgradeFromV1ToV2() {
         Logger::get().logWarning("Failed to update existing upload_time values");
     }
 
-    Logger::get().logInfo("Schema upgrade v1->v2 completed successfully");
-    return true;
-}
-
-bool DatabaseSchema::upgradeFromV2ToV3() {
     // Check if course_file_id column exists
-    QSqlQuery checkQuery("PRAGMA table_info(course)", db);
+    QSqlQuery checkCourseQuery("PRAGMA table_info(course)", db);
     bool hasCourseFileId = false;
 
-    while (checkQuery.next()) {
-        QString columnName = checkQuery.value(1).toString();
+    while (checkCourseQuery.next()) {
+        QString columnName = checkCourseQuery.value(1).toString();
         if (columnName == "course_file_id") {
             hasCourseFileId = true;
             break;
@@ -313,66 +239,12 @@ bool DatabaseSchema::upgradeFromV2ToV3() {
         Logger::get().logInfo("Added course_file_id column and migrated existing data");
     }
 
-    Logger::get().logInfo("Recreating course table with new constraints...");
-
-    // Create backup table with new schema
-    QString backupTableQuery = R"(
-        CREATE TABLE course_backup AS
-        SELECT
-            course_file_id,
-            raw_id,
-            name,
-            teacher,
-            lectures_json,
-            tutorials_json,
-            labs_json,
-            blocks_json,
-            file_id,
-            created_at,
-            updated_at
-        FROM course
-    )";
-
-    if (!executeQuery(backupTableQuery)) {
-        Logger::get().logError("Failed to create backup table");
-        return false;
-    }
-
-    // Drop original table
-    if (!executeQuery("DROP TABLE course")) {
-        Logger::get().logError("Failed to drop original course table");
-        return false;
-    }
-
-    // Recreate with new schema
-    if (!createCourseTable()) {
-        Logger::get().logError("Failed to recreate course table");
-        return false;
-    }
-
-    // Restore data
-    QString restoreQuery = R"(
-        INSERT INTO course (course_file_id, raw_id, name, teacher, lectures_json, tutorials_json, labs_json, blocks_json, file_id, created_at, updated_at)
-        SELECT course_file_id, raw_id, name, teacher, lectures_json, tutorials_json, labs_json, blocks_json, file_id, created_at, updated_at
-        FROM course_backup
-    )";
-
-    if (!executeQuery(restoreQuery)) {
-        Logger::get().logError("Failed to restore course data");
-        return false;
-    }
-
-    // Drop backup table
-    if (!executeQuery("DROP TABLE course_backup")) {
-        Logger::get().logWarning("Failed to drop backup table");
-    }
-
-    Logger::get().logInfo("Schema upgrade v2->v3 completed successfully");
+    Logger::get().logInfo("Schema upgrade v1->v2 completed successfully");
     return true;
 }
 
 bool DatabaseSchema::validateSchema() {
-    QStringList requiredTables = {"metadata", "file", "course", "schedule", "schedule_metadata"};
+    QStringList requiredTables = {"metadata", "file", "course"};
 
     for (const QString& table : requiredTables) {
         if (!tableExists(table)) {
@@ -406,7 +278,9 @@ bool DatabaseSchema::validateCourseTableColumns() {
         foundColumns << columnName;
     }
 
-    QStringList requiredColumns = {"id", "course_file_id", "raw_id", "name", "teacher", "lectures_json", "tutorials_json", "labs_json", "blocks_json", "file_id", "created_at", "updated_at"};
+    QStringList requiredColumns = {"id", "course_file_id", "raw_id", "name", "teacher",
+                                   "lectures_json", "tutorials_json", "labs_json",
+                                   "blocks_json", "file_id", "created_at", "updated_at"};
 
     for (const QString& required : requiredColumns) {
         if (!foundColumns.contains(required)) {

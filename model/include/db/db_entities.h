@@ -49,46 +49,6 @@ struct CourseEntity {
               updated_at(QDateTime::currentDateTime()) {}
 };
 
-struct ScheduleEntity {
-    int id = 0;                   // Primary key (auto-increment)
-    int schedule_index = 0;       // Schedule index from InformativeSchedule
-    string courses_json;          // JSON array of course IDs used in this schedule
-    string week_json;             // JSON serialized complete week schedule
-    int amount_days = 0;          // Number of days with classes
-    int amount_gaps = 0;          // Number of gaps in schedule
-    int gaps_time = 0;            // Total gap time in minutes
-    int avg_start = 0;            // Average start time (minutes from midnight)
-    int avg_end = 0;              // Average end time (minutes from midnight)
-    QDateTime created_at;         // When schedule was generated
-
-    // Default constructor
-    ScheduleEntity() = default;
-
-    // Constructor for database insertion
-    ScheduleEntity(int index, const string& coursesJson, const string& weekJson,
-                   int days, int gaps, int gapsTime, int avgStart, int avgEnd)
-            : schedule_index(index), courses_json(coursesJson), week_json(weekJson),
-              amount_days(days), amount_gaps(gaps), gaps_time(gapsTime),
-              avg_start(avgStart), avg_end(avgEnd),
-              created_at(QDateTime::currentDateTime()) {}
-};
-
-struct ScheduleMetadataEntity {
-    int id = 0;                   // Primary key (auto-increment)
-    int total_schedules = 0;      // Total number of schedules generated
-    string generation_settings_json; // JSON of generation parameters and settings
-    QDateTime generated_at;       // When this batch of schedules was generated
-    string status;                // Status: "active", "archived", "deleted", etc.
-
-    // Default constructor
-    ScheduleMetadataEntity() = default;
-
-    // Constructor for database insertion
-    ScheduleMetadataEntity(int totalSchedules, const string& settings)
-            : total_schedules(totalSchedules), generation_settings_json(settings),
-              generated_at(QDateTime::currentDateTime()), status("active") {}
-};
-
 struct MetadataEntity {
     int id = 0;                   // Primary key (auto-increment)
     string key;                   // Metadata key (unique)
@@ -110,7 +70,6 @@ struct MetadataEntity {
 struct DatabaseStatistics {
     int total_files = 0;
     int total_courses = 0;
-    int total_schedules = 0;
     int total_metadata_entries = 0;
     string database_version;
     QDateTime last_accessed;

@@ -110,7 +110,7 @@ bool ModelDatabaseIntegration::loadCoursesToDatabase(const vector<Course>& cours
             Logger::get().logWarning("File entry created but courses not saved - partial database state");
             return false;
         }
-        
+
         // Update metadata
         db.updateMetadata("courses_loaded_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
         db.updateMetadata("courses_count", to_string(courses.size()));
@@ -159,81 +159,6 @@ vector<Course> ModelDatabaseIntegration::getCoursesByFileIds(const vector<int>& 
     }
 
     return courses;
-}
-
-bool ModelDatabaseIntegration::loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules,
-                                                       const vector<Course>& usedCourses) {
-    if (!isInitialized()) {
-        Logger::get().logError("Database not initialized for schedule loading");
-        return false;
-    }
-
-    if (schedules.empty()) {
-        Logger::get().logWarning("No schedules provided to load into database");
-        return true;
-    }
-
-    auto& db = DatabaseManager::getInstance();
-
-    // Clear existing schedules and metadata
-    if (!db.deleteAllSchedules()) {
-        Logger::get().logError("Failed to clear existing schedules");
-        return false;
-    }
-
-    // Extract course IDs for each schedule
-    vector<vector<int>> allCourseIds;
-    for (const auto& schedule : schedules) {
-        vector<int> courseIds = extractCourseIdsFromSchedule(schedule, usedCourses);
-        allCourseIds.push_back(courseIds);
-    }
-
-    return loadSchedulesToDatabase(schedules, allCourseIds);
-}
-
-bool ModelDatabaseIntegration::loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules,
-                                                       const vector<vector<int>>& courseIdsPerSchedule) {
-    if (!isInitialized()) {
-        Logger::get().logError("Database not initialized for schedule loading");
-        return false;
-    }
-
-    if (schedules.size() != courseIdsPerSchedule.size()) {
-        Logger::get().logError("Schedules and course IDs vectors size mismatch");
-        return false;
-    }
-
-    auto& db = DatabaseManager::getInstance();
-
-    // Insert schedules
-    if (!db.insertSchedules(schedules, courseIdsPerSchedule)) {
-        Logger::get().logError("Failed to insert schedules into database");
-        return false;
-    }
-
-    // Create generation settings JSON
-    string generationSettings = generateGenerationSettings(vector<Course>()); // Empty for now
-
-    // Insert schedule metadata
-    if (!db.insertScheduleMetadata(static_cast<int>(schedules.size()), generationSettings)) {
-        Logger::get().logError("Failed to insert schedule metadata");
-        return false;
-    }
-
-    // Update metadata
-    db.updateMetadata("schedules_loaded_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
-    db.updateMetadata("schedules_count", to_string(schedules.size()));
-
-    updateLastAccessMetadata();
-
-    Logger::get().logInfo("Successfully loaded " + to_string(schedules.size()) + " schedules to database");
-
-    // Trigger callback if set
-    if (m_onSchedulesLoaded) {
-        m_onSchedulesLoaded(schedules);
-    }
-
-    return true;
 }
 
 bool ModelDatabaseIntegration::insertFile(const string& fileName, const string& fileType) {
@@ -341,68 +266,6 @@ vector<Course> ModelDatabaseIntegration::getCoursesFromDatabase() {
     return courses;
 }
 
-vector<InformativeSchedule> ModelDatabaseIntegration::getSchedulesFromDatabase() {
-    if (!isInitialized()) {
-        Logger::get().logError("Database not initialized for schedule retrieval");
-        return {};
-    }
-
-    auto schedules = DatabaseManager::getInstance().getAllSchedules();
-    updateLastAccessMetadata();
-
-    Logger::get().logInfo("Retrieved " + to_string(schedules.size()) + " schedules from database");
-
-    return schedules;
-}
-
-bool ModelDatabaseIntegration::migrateExistingData(const vector<Course>& existingCourses,
-                                                   const vector<InformativeSchedule>& existingSchedules,
-                                                   const vector<Course>& usedCourses) {
-    if (!isInitialized()) {
-        Logger::get().logError("Database not initialized for migration");
-        return false;
-    }
-
-    auto& db = DatabaseManager::getInstance();
-    DatabaseTransaction transaction(db);
-
-    try {
-        if (!existingCourses.empty()) {
-            // Create a default migration file entry
-            string migrationFileName = "migration_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss").toStdString();
-            string migrationFileType = "migration";
-
-            if (!loadCoursesToDatabase(existingCourses, migrationFileName, migrationFileType)) {
-                Logger::get().logError("Failed to migrate courses");
-                return false;
-            }
-        }
-
-        if (!existingSchedules.empty()) {
-            if (!loadSchedulesToDatabase(existingSchedules, usedCourses)) {
-                Logger::get().logError("Failed to migrate schedules");
-                return false;
-            }
-        }
-
-        // Set migration metadata
-        db.updateMetadata("migration_completed_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
-        db.updateMetadata("migration_version", "1.0");
-
-        if (!transaction.commit()) {
-            Logger::get().logError("Failed to commit migration transaction");
-            return false;
-        }
-
-        Logger::get().logInfo("Data migration completed successfully");
-        return true;
-
-    } catch (const exception& e) {
-        Logger::get().logError("Exception during migration: " + string(e.what()));
-        return false;
-    }
-}
-
 bool ModelDatabaseIntegration::clearAllDatabaseData() {
     if (!isInitialized()) {
         Logger::get().logError("Database not initialized for clearing");
@@ -424,28 +287,6 @@ bool ModelDatabaseIntegration::clearAllDatabaseData() {
     return true;
 }
 
-bool ModelDatabaseIntegration::backupDatabase(const string& backupPath) {
-    if (!isInitialized()) {
-        Logger::get().logError("Database not initialized for backup");
-        return false;
-    }
-
-    // TODO: Implement database backup functionality
-    Logger::get().logWarning("Database backup functionality not yet implemented");
-    return false;
-}
-
-bool ModelDatabaseIntegration::restoreDatabase(const string& backupPath) {
-    if (!isInitialized()) {
-        Logger::get().logError("Database not initialized for restore");
-        return false;
-    }
-
-    // TODO: Implement database restore functionality
-    Logger::get().logWarning("Database restore functionality not yet implemented");
-    return false;
-}
-
 ModelDatabaseIntegration::DatabaseStats ModelDatabaseIntegration::getDatabaseStats() {
     DatabaseStats stats = {};
 
@@ -456,9 +297,8 @@ ModelDatabaseIntegration::DatabaseStats ModelDatabaseIntegration::getDatabaseSta
     auto& db = DatabaseManager::getInstance();
 
     stats.courseCount = db.getTableRowCount("course");
-    stats.scheduleCount = db.getTableRowCount("schedule");
-    stats.metadataCount = db.getTableRowCount("file"); // Changed to file count instead of metadata
-    stats.scheduleMetadataCount = db.getTableRowCount("schedule_metadata");
+    stats.fileCount = db.getTableRowCount("file");
+    stats.metadataCount = db.getTableRowCount("metadata");
 
     stats.lastUpdate = db.getMetadata("last_access", "Never");
 
@@ -483,49 +323,6 @@ bool ModelDatabaseIntegration::isAutoSaveEnabled() const {
 
 void ModelDatabaseIntegration::setOnCoursesLoaded(function<void(const vector<Course>&)> callback) {
     m_onCoursesLoaded = callback;
-}
-
-void ModelDatabaseIntegration::setOnSchedulesLoaded(function<void(const vector<InformativeSchedule>&)> callback) {
-    m_onSchedulesLoaded = callback;
-}
-
-vector<int> ModelDatabaseIntegration::extractCourseIdsFromSchedule(const InformativeSchedule& schedule,
-                                                                   const vector<Course>& availableCourses) {
-    set<int> uniqueIds;
-
-    // Extract course IDs from schedule items
-    for (const auto& day : schedule.week) {
-        for (const auto& item : day.day_items) {
-            // Find course by raw_id
-            auto it = find_if(availableCourses.begin(), availableCourses.end(),
-                                   [&item](const Course& course) {
-                                       return course.raw_id == item.raw_id;
-                                   });
-
-            if (it != availableCourses.end()) {
-                uniqueIds.insert(it->id);
-            }
-        }
-    }
-
-    return vector<int>(uniqueIds.begin(), uniqueIds.end());
-}
-
-string ModelDatabaseIntegration::generateGenerationSettings(const vector<Course>& usedCourses) {
-    QJsonObject settings;
-    settings["timestamp"] = QDateTime::currentDateTime().toString(Qt::ISODate);
-    settings["course_count"] = static_cast<int>(usedCourses.size());
-    settings["generation_method"] = "automatic";
-    settings["version"] = "1.0";
-
-    QJsonArray courseIds;
-    for (const auto& course : usedCourses) {
-        courseIds.append(course.id);
-    }
-    settings["course_ids"] = courseIds;
-
-    QJsonDocument doc(settings);
-    return doc.toJson(QJsonDocument::Compact).toStdString();
 }
 
 void ModelDatabaseIntegration::updateLastAccessMetadata() {

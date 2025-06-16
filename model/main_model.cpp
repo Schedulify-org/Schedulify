@@ -53,7 +53,6 @@ vector<Course> Model::generateCourses(const string& path) {
             string fileName = (lastSlash != string::npos) ? path.substr(lastSlash + 1) : path;
             string fileType = extension;
 
-
             if (dbIntegration.isInitialized()) {
                 try {
                     if (dbIntegration.loadCoursesToDatabase(courses, fileName, fileType)) {
@@ -124,7 +123,7 @@ vector<Course> Model::loadCoursesFromHistory(const vector<int>& fileIds) {
         }
         Logger::get().logInfo("Requested file IDs: [" + fileIdsList + "]");
 
-        // REQUIREMENT 3 & 4: Get courses by file IDs with conflict resolution
+        // Get courses by file IDs with conflict resolution
         courses = dbIntegration.getCoursesByFileIds(fileIds, warnings);
 
         Logger::get().logInfo("=== HISTORY LOADING RESULTS ===");
@@ -319,20 +318,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
     Logger::get().logInfo("Generated " + std::to_string(schedules.size()) + " possible schedules");
 
-    // Load schedules into database
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (dbIntegration.isInitialized()) {
-            if (dbIntegration.loadSchedulesToDatabase(schedules, userInput)) {
-                Logger::get().logInfo("Schedules successfully loaded into database");
-            } else {
-                Logger::get().logWarning("Failed to load schedules into database, continuing without persistence");
-            }
-        }
-    } catch (const std::exception& e) {
-        Logger::get().logWarning("Database error while loading schedules: " + string(e.what()));
-    }
-
     return schedules;
 }
 
@@ -441,22 +426,6 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 return &lastGeneratedCourses;
             } catch (const std::exception& e) {
                 Logger::get().logError("Failed to load courses from database: " + string(e.what()));
-                return nullptr;
-            }
-        }
-
-        case ModelOperation::LOAD_SCHEDULES_FROM_DB: {
-            try {
-                Logger::get().logInfo("=== LOADING SCHEDULES FROM DATABASE ===");
-                auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-                if (!dbIntegration.isInitialized()) {
-                    dbIntegration.initializeDatabase();
-                }
-                lastGeneratedSchedules = dbIntegration.getSchedulesFromDatabase();
-                Logger::get().logInfo("Loaded " + std::to_string(lastGeneratedSchedules.size()) + " schedules from database");
-                return &lastGeneratedSchedules;
-            } catch (const std::exception& e) {
-                Logger::get().logError("Failed to load schedules from database: " + string(e.what()));
                 return nullptr;
             }
         }

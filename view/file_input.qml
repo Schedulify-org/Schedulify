@@ -35,11 +35,6 @@ Page {
             loadHistoryButton.enabled = fileInputController.selectedFileCount > 0;
             selectedCountText.text = fileInputController.selectedFileCount > 0 ?
                 `${fileInputController.selectedFileCount} file(s) selected` : "";
-
-            // Force update of list view to refresh checkbox states
-            if (fileHistoryList.model) {
-                fileHistoryList.model.forceRefresh();
-            }
         }
     }
 
@@ -55,7 +50,7 @@ Page {
         }
     }
 
-    // Delete confirmation dialog - styled to match main errorDialog
+    // Delete confirmation dialog
     Dialog {
         id: deleteConfirmDialog
         modal: true
@@ -207,7 +202,6 @@ Page {
                     }
 
                     onClicked: {
-                        console.log("Confirmed delete for file ID:", deleteConfirmDialog.fileId);
                         fileInputController.deleteFileFromHistory(deleteConfirmDialog.fileId);
                         deleteConfirmDialog.close();
                     }
@@ -217,11 +211,9 @@ Page {
     }
 
     function showErrorMessage(msg) {
-        // Use the main window's error dialog instead of local one
-        if (mainWindow) {
-            mainWindow.errorDialogText = msg;
-            mainWindow.errorDialog.open();
-        }
+        errorDialogText = msg;
+        errorDialog.open();
+
     }
 
     Rectangle {
@@ -291,7 +283,6 @@ Page {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            console.log("Refreshing file history...");
                             fileInputController.refreshFileHistory();
                         }
                     }
@@ -422,7 +413,6 @@ Page {
                             anchors.fill: parent
                             onClicked: {
                                 showHistory = false
-                                console.log("Switched to Upload New File mode")
                             }
                             cursorShape: Qt.PointingHandCursor
                         }
@@ -447,7 +437,6 @@ Page {
                             anchors.fill: parent
                             onClicked: {
                                 showHistory = true
-                                console.log("Switched to Previous Files mode")
                                 // Refresh file history when switching to history view
                                 fileInputController.refreshFileHistory()
                             }
@@ -537,7 +526,6 @@ Page {
                                     filePath = fileUrl.toString();
                                 }
 
-                                console.log("File dropped:", filePath);
                                 fileInputController.handleFileSelected(filePath);
                             } else {
                                 showErrorMessage("No valid file was dropped.");
@@ -592,7 +580,6 @@ Page {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    console.log("Browse button clicked");
                                     fileInputController.handleUploadAndContinue();
                                 }
                                 cursorShape: Qt.PointingHandCursor
@@ -630,7 +617,6 @@ Page {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: {
-                            console.log("Continue button clicked - loading new file");
                             fileInputController.loadNewFile();
                         }
                         cursorShape: Qt.PointingHandCursor
@@ -707,7 +693,6 @@ Page {
                                 anchors.fill: parent
                                 anchors.rightMargin: 50 // Leave space for delete button
                                 onClicked: {
-                                    console.log("File clicked at index:", index, "File ID:", model.fileId, "File name:", model.fileName);
                                     fileInputController.toggleFileSelection(index);
                                 }
                                 cursorShape: Qt.PointingHandCursor
@@ -788,7 +773,6 @@ Page {
                                     cursorShape: Qt.PointingHandCursor
 
                                     onClicked: {
-                                        console.log("Delete button clicked for file:", model.fileName, "ID:", model.fileId);
                                         deleteConfirmDialog.fileId = model.fileId;
                                         deleteConfirmDialog.fileName = model.fileName || "Unknown File";
                                         deleteConfirmDialog.open();
@@ -797,7 +781,6 @@ Page {
 
                                 ToolTip {
                                     visible: deleteFileMouseArea.containsMouse
-                                    text: "Delete file from history"
                                     delay: 500
                                     timeout: 3000
 
@@ -808,7 +791,7 @@ Page {
                                     }
 
                                     contentItem: Text {
-                                        text: parent.text
+                                        text: "Delete file from history"
                                         color: "white"
                                         font.pixelSize: 12
                                     }
@@ -857,7 +840,6 @@ Page {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    console.log("Clear selection clicked");
                                     fileInputController.clearFileSelection();
                                 }
                                 cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
@@ -885,7 +867,6 @@ Page {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    console.log("Load from history clicked with", fileInputController.selectedFileCount, "files selected");
                                     fileInputController.loadFromHistory();
                                 }
                                 cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor

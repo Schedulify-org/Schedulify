@@ -90,13 +90,10 @@ void FileInputController::deleteFileFromHistory(int fileId) {
             if (it != m_selectedFileIds.end()) {
                 m_selectedFileIds.erase(it);
                 emit fileSelectionChanged();
-                Logger::get().logInfo("Removed deleted file from selection");
             }
 
             // Refresh the file history to update the UI
             refreshFileHistory();
-
-            emit errorMessage("File deleted successfully from history");
 
             delete result;
         } else {

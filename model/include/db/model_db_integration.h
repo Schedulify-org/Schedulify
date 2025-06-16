@@ -10,12 +10,7 @@
 #include <functional>
 #include <QFileInfo>
 #include <QDir>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QDateTime>
-#include <algorithm>
-#include <set>
 
 using namespace std;
 
@@ -29,9 +24,6 @@ public:
 
     // Data loading operations
     bool loadCoursesToDatabase(const vector<Course>& courses, const string& fileName = "", const string& fileType = "");
-    bool loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules, const vector<Course>& usedCourses);
-    bool loadSchedulesToDatabase(const vector<InformativeSchedule>& schedules,
-                                 const vector<vector<int>>& courseIdsPerSchedule);
 
     // File operations
     bool insertFile(const string& fileName, const string& fileType);
@@ -43,27 +35,17 @@ public:
     // Data retrieval operations
     vector<Course> getCoursesFromDatabase();
 
-    // REQUIREMENT 3: Get courses by file IDs with conflict resolution (REQUIREMENT 4)
+    // Get courses by file IDs with conflict resolution
     vector<Course> getCoursesByFileIds(const vector<int>& fileIds, vector<string>& warnings);
-
-    vector<InformativeSchedule> getSchedulesFromDatabase();
-
-    // Migration and maintenance
-    bool migrateExistingData(const vector<Course>& existingCourses,
-                             const vector<InformativeSchedule>& existingSchedules,
-                             const vector<Course>& usedCourses);
 
     // Utility operations
     bool clearAllDatabaseData();
-    bool backupDatabase(const string& backupPath);
-    bool restoreDatabase(const string& backupPath);
 
     // Statistics and info
     struct DatabaseStats {
         int courseCount;
-        int scheduleCount;
+        int fileCount;
         int metadataCount;
-        int scheduleMetadataCount;
         string databaseSize;
         string lastUpdate;
     };
@@ -76,20 +58,12 @@ public:
 
     // Event callbacks for data changes
     void setOnCoursesLoaded(std::function<void(const vector<Course>&)> callback);
-    void setOnSchedulesLoaded(std::function<void(const vector<InformativeSchedule>&)> callback);
 
 private:
     ModelDatabaseIntegration() = default;
     ~ModelDatabaseIntegration() = default;
 
-    // Disable copy/move
-    ModelDatabaseIntegration(const ModelDatabaseIntegration&) = delete;
-    ModelDatabaseIntegration& operator=(const ModelDatabaseIntegration&) = delete;
-
     // Helper methods
-    vector<int> extractCourseIdsFromSchedule(const InformativeSchedule& schedule,
-                                             const vector<Course>& availableCourses);
-    string generateGenerationSettings(const vector<Course>& usedCourses);
     void updateLastAccessMetadata();
 
     // State
@@ -98,7 +72,6 @@ private:
 
     // Callbacks
     std::function<void(const vector<Course>&)> m_onCoursesLoaded;
-    std::function<void(const vector<InformativeSchedule>&)> m_onSchedulesLoaded;
 };
 
 #endif // MODEL_DATABASE_INTEGRATION_H

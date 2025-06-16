@@ -1,9 +1,5 @@
 #include "db_files.h"
-#include "logger.h"
-#include <QSqlQuery>
-#include <QSqlError>
-#include <QSqlRecord>
-#include <QVariant>
+
 
 DatabaseFileManager::DatabaseFileManager(QSqlDatabase& database) : db(database) {
 }
@@ -55,7 +51,6 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
 
     if (!query.exec()) {
         QString errorText = query.lastError().text();
-        QSqlError error = query.lastError();
 
         Logger::get().logError("File insertion query failed!");
         Logger::get().logError("Error text: " + errorText.toStdString());
@@ -103,12 +98,6 @@ int DatabaseFileManager::insertFile(const string& fileName, const string& fileTy
     }
 
     Logger::get().logInfo("File: '" + fileName + "' inserted with ID: " + std::to_string(fileId));
-
-    // Verify the insertion by reading it back
-    QSqlQuery verifyQuery(db);
-    verifyQuery.prepare("SELECT file_name, file_type FROM file WHERE id = ?");
-    verifyQuery.addBindValue(fileId);
-
     return fileId;
 }
 
@@ -200,9 +189,6 @@ bool DatabaseFileManager::deleteAllFiles() {
         Logger::get().logError("Database not open for file deletion");
         return false;
     }
-
-    // Get count before deletion for logging
-    int fileCount = getFileCount();
 
     QSqlQuery query("DELETE FROM file", db);
     if (!query.exec()) {
@@ -524,28 +510,6 @@ vector<FileEntity> DatabaseFileManager::getRecentFiles(int limit) {
 
     Logger::get().logInfo("Retrieved " + std::to_string(files.size()) + " recent files");
     return files;
-}
-
-bool DatabaseFileManager::executeQuery(const QString& query, const QVariantList& params) {
-    if (!db.isOpen()) {
-        Logger::get().logError("Database not open for query execution");
-        return false;
-    }
-
-    QSqlQuery sqlQuery(db);
-    sqlQuery.prepare(query);
-
-    for (const QVariant& param : params) {
-        sqlQuery.addBindValue(param);
-    }
-
-    if (!sqlQuery.exec()) {
-        Logger::get().logError("Failed to execute query: " + sqlQuery.lastError().text().toStdString());
-        Logger::get().logError("Query was: " + query.toStdString());
-        return false;
-    }
-
-    return true;
 }
 
 FileEntity DatabaseFileManager::createFileEntityFromQuery(QSqlQuery& query) {

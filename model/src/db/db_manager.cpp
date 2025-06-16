@@ -1,17 +1,7 @@
 #include "db_manager.h"
 #include "db_json_helpers.h"
 
-class DatabaseRepair;
-
-DatabaseManager& DatabaseManager::getInstance() {
-    static DatabaseManager instance;
-    return instance;
-}
-
-DatabaseManager::~DatabaseManager() {
-    closeDatabase();
-}
-
+// Forward declaration for repair class
 class DatabaseRepair {
 public:
     static bool repairDatabase(DatabaseManager& dbManager) {
@@ -75,7 +65,7 @@ private:
     static bool recreateSchema(DatabaseManager& dbManager) {
         try {
             // Drop all existing tables
-            QStringList tables = {"schedule_metadata", "schedule", "course", "file", "metadata"};
+            QStringList tables = {"course", "file", "metadata"};
             for (const QString& table : tables) {
                 QSqlQuery dropQuery(dbManager.db);
                 dropQuery.exec("DROP TABLE IF EXISTS " + table);
@@ -119,6 +109,15 @@ private:
         return success;
     }
 };
+
+DatabaseManager& DatabaseManager::getInstance() {
+    static DatabaseManager instance;
+    return instance;
+}
+
+DatabaseManager::~DatabaseManager() {
+    closeDatabase();
+}
 
 bool DatabaseManager::repairDatabase() {
     Logger::get().logInfo("Attempting database repair...");
@@ -197,7 +196,6 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
     schemaManager = std::make_unique<DatabaseSchema>(db);
     fileManager = std::make_unique<DatabaseFileManager>(db);
     courseManager = std::make_unique<DatabaseCourseManager>(db);
-    scheduleManager = std::make_unique<DatabaseScheduleManager>(db);
 
     // Try to validate existing database first
     bool needsSchemaCreation = false;
@@ -257,7 +255,6 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
 
     // Create or recreate schema if needed
     if (needsSchemaCreation) {
-
         // Create tables using schema manager
         if (!schemaManager->createTables()) {
             Logger::get().logError("Failed to create database tables");
@@ -301,7 +298,6 @@ bool DatabaseManager::isConnected() const {
 
 void DatabaseManager::closeDatabase() {
     // Reset managers before closing database
-    scheduleManager.reset();
     courseManager.reset();
     fileManager.reset();
     schemaManager.reset();
@@ -376,7 +372,7 @@ bool DatabaseManager::clearAllData() {
 
     DatabaseTransaction transaction(*this);
 
-    QStringList tables = {"schedule_metadata", "schedule", "course", "file", "metadata"};
+    QStringList tables = {"course", "file", "metadata"};
 
     for (const QString& table : tables) {
         QSqlQuery query(db);
@@ -389,14 +385,6 @@ bool DatabaseManager::clearAllData() {
 
     Logger::get().logInfo("Cleared all data from database");
     return transaction.commit();
-}
-
-bool DatabaseManager::exportToFile(const QString& filePath) {
-    return false;
-}
-
-bool DatabaseManager::importFromFile(const QString& filePath) {
-    return false;
 }
 
 int DatabaseManager::getTableRowCount(const string& tableName) {
@@ -441,12 +429,6 @@ bool DatabaseManager::executeQuery(const QString& query, const QVariantList& par
     }
 
     return true;
-}
-
-QSqlQuery DatabaseManager::prepareQuery(const QString& query) {
-    QSqlQuery sqlQuery(db);
-    sqlQuery.prepare(query);
-    return sqlQuery;
 }
 
 DatabaseTransaction::DatabaseTransaction(DatabaseManager& dbManager) : db(dbManager) {

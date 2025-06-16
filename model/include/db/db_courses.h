@@ -3,6 +3,13 @@
 
 #include "db_entities.h"
 #include "model_interfaces.h"
+#include "db_json_helpers.h"
+#include "logger.h"
+
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QVariant>
+#include <algorithm>
 #include <QSqlDatabase>
 #include <vector>
 #include <string>
@@ -47,7 +54,6 @@ private:
     QSqlDatabase& db;
 
     // Helper methods
-    bool executeQuery(const QString& query, const QVariantList& params = QVariantList());
     Course createCourseFromQuery(QSqlQuery& query);
 
     // Conflict resolution helpers
