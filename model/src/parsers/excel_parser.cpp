@@ -3,24 +3,28 @@
 // Constructor implementation
 ExcelCourseParser::ExcelCourseParser() {
     dayMap = {
-            {"א", 1}, {"ב", 2}, {"ג", 3}, {"ד", 4},
-            {"ה", 5}, {"ו", 6}, {"ש", 7}
+            {"א", 1},
+            {"ב", 2},
+            {"ג", 3},
+            {"ד", 4},
+            {"ה", 5},
+            {"ו", 6},
+            {"ש", 7}
     };
 
     sessionTypeMap = {
-            {"הרצאה", SessionType::LECTURE},
-            {"תרגיל", SessionType::TUTORIAL},
-            {"מעבדה", SessionType::LAB},
-            {"ש.מחלקה", SessionType::UNSUPPORTED},
-            {"תגבור", SessionType::UNSUPPORTED},
-            {"הדרכה", SessionType::UNSUPPORTED},
-            {"קולוקויום רשות", SessionType::UNSUPPORTED},
-            {"רישום", SessionType::UNSUPPORTED},
-            {"תיזה", SessionType::UNSUPPORTED},
-            {"פרויקט", SessionType::UNSUPPORTED}
+            {"הרצאה",          SessionType::LECTURE},
+            {"תרגיל",          SessionType::TUTORIAL},
+            {"מעבדה",          SessionType::LAB},
+            {"ש.מחלקה",        SessionType::DEPARTMENTAL_SESSION},
+            {"תגבור",          SessionType::REINFORCEMENT},
+            {"הדרכה",          SessionType::GUIDANCE},
+            {"קולוקויום רשות", SessionType::OPTIONAL_COLLOQUIUM},
+            {"רישום",          SessionType::REGISTRATION},
+            {"תיזה",           SessionType::THESIS},
+            {"פרויקט",         SessionType::PROJECT}
     };
 }
-
 // Parse multiple rooms from single cell - handles both newlines and space-separated rooms
 vector<string> ExcelCourseParser::parseMultipleRooms(const string& roomStr) {
     vector<string> rooms;
@@ -309,7 +313,6 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
             }
 
             vector<string> rowData;
-
             for (uint32_t col = 1; col <= 10; ++col) {
                 auto cell = worksheet.cell(row, col);
                 string cellValue;
@@ -350,11 +353,9 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
 
             SessionType normalizedSessionType = getSessionType(sessionType);
             string normalizedSessionTypeName;
-
             if (normalizedSessionType == SessionType::UNSUPPORTED) {
                 continue;
             }
-
             switch (normalizedSessionType) {
                 case SessionType::LECTURE:
                     normalizedSessionTypeName = "lecture";
@@ -365,31 +366,53 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 case SessionType::LAB:
                     normalizedSessionTypeName = "lab";
                     break;
+                case SessionType::BLOCK:
+                    normalizedSessionTypeName = "block";
+                    break;
+                case SessionType::DEPARTMENTAL_SESSION:
+                    normalizedSessionTypeName = "departmental_session";
+                    break;
+                case SessionType::REINFORCEMENT:
+                    normalizedSessionTypeName = "reinforcement";
+                    break;
+                case SessionType::GUIDANCE:
+                    normalizedSessionTypeName = "guidance";
+                    break;
+                case SessionType::OPTIONAL_COLLOQUIUM:
+                    normalizedSessionTypeName = "optional_colloquium";
+                    break;
+                case SessionType::REGISTRATION:
+                    normalizedSessionTypeName = "registration";
+                    break;
+                case SessionType::THESIS:
+                    normalizedSessionTypeName = "thesis";
+                    break;
+                case SessionType::PROJECT:
+                    normalizedSessionTypeName = "project";
+                    break;
+                case SessionType::UNSUPPORTED:
+                    normalizedSessionTypeName = "unsupported";
+                    break;
             }
 
-            // **NEW: Check if timeSlot is empty or invalid - skip this row if so**
             if (timeSlot.empty() || timeSlot.find("'") == string::npos) {
                 continue; // Skip rows without valid time slots
             }
 
-            // **NEW: Parse sessions first to validate they have valid time slots**
             vector<Session> sessions = parseMultipleSessions(timeSlot, room, teachers);
 
-            // **NEW: Check if any sessions were successfully parsed with valid times**
             bool hasValidSessions = false;
-            for (const Session& session : sessions) {
+            for (const Session &session : sessions) {
                 if (session.day_of_week > 0 && !session.start_time.empty() && !session.end_time.empty()) {
                     hasValidSessions = true;
                     break;
                 }
             }
 
-            // **NEW: Skip this row if no valid sessions were found**
             if (!hasValidSessions) {
                 continue;
             }
 
-            // Create or update course
             if (courseMap.find(courseCode) == courseMap.end()) {
                 Course newCourse;
                 try {
@@ -411,40 +434,69 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 courseGroupMap[courseCode][groupKey] = newGroup;
             }
 
-            // **MODIFIED: Only add sessions that have valid times**
-            for (const Session& session : sessions) {
+            for (const Session &session : sessions) {
                 if (session.day_of_week > 0 && !session.start_time.empty() && !session.end_time.empty()) {
                     courseGroupMap[courseCode][groupKey].sessions.push_back(session);
                 }
             }
         }
 
-        // **FIXED: Convert groups to courses OUTSIDE the row loop - USING CAPITAL LETTERS**
-        for (auto& [courseCode, course] : courseMap) {
-            for (auto& [groupKey, group] : courseGroupMap[courseCode]) {
-                if (group.type == SessionType::LECTURE && !group.sessions.empty()) {
-                    course.Lectures.push_back(group);
-                } else if (group.type == SessionType::TUTORIAL && !group.sessions.empty()) {
-                    course.Tirgulim.push_back(group);
-                } else if (group.type == SessionType::LAB && !group.sessions.empty()) {
-                    course.labs.push_back(group);
+        for (auto &[courseCode, course] : courseMap) {
+            for (auto &[groupKey, group] : courseGroupMap[courseCode]) {
+                if (group.sessions.empty()) continue;
+
+                switch (group.type) {
+                    case SessionType::LECTURE:
+                        course.Lectures.push_back(group);
+                        break;
+                    case SessionType::TUTORIAL:
+                        course.Tirgulim.push_back(group);
+                        break;
+                    case SessionType::LAB:
+                        course.labs.push_back(group);
+                        break;
+                    case SessionType::BLOCK:
+                        course.blocks.push_back(group);
+                        break;
+                    case SessionType::DEPARTMENTAL_SESSION:
+                        course.DepartmentalSessions.push_back(group);
+                        break;
+                    case SessionType::REINFORCEMENT:
+                        course.Reinforcements.push_back(group);
+                        break;
+                    case SessionType::GUIDANCE:
+                        course.Guidance.push_back(group);
+                        break;
+                    case SessionType::OPTIONAL_COLLOQUIUM:
+                        course.OptionalColloquium.push_back(group);
+                        break;
+                    case SessionType::REGISTRATION:
+                        course.Registration.push_back(group);
+                        break;
+                    case SessionType::THESIS:
+                        course.Thesis.push_back(group);
+                        break;
+                    case SessionType::PROJECT:
+                        course.Project.push_back(group);
+                        break;
+                    case SessionType::UNSUPPORTED:
+                        // Can log if needed
+                        break;
                 }
             }
 
-            // **UPDATED: Keep courses that have at least one valid lecture, tutorial, or lab**
-            if (!course.Lectures.empty() || !course.Tirgulim.empty() || !course.labs.empty()) {
-                courses.push_back(course);
-            }
+            // **Include all courses regardless of type**
+            courses.push_back(course);
         }
 
         doc.close();
-
-    } catch (const exception& e) {
-        // Silently handle errors - in a real application you might want to log this
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to parse Excel file: " << e.what() << std::endl;
     }
 
     return courses;
 }
+
 
 string getDayName(int dayOfWeek) {
     switch(dayOfWeek) {

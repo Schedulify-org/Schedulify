@@ -11,9 +11,16 @@ enum class SessionType {
     TUTORIAL,
     LAB,
     BLOCK,
+    DEPARTMENTAL_SESSION,
+    REINFORCEMENT,
+    GUIDANCE,
+    OPTIONAL_COLLOQUIUM,
+    REGISTRATION,
+    THESIS,
+    PROJECT,
     UNSUPPORTED
-};
 
+};
 class Session {
 public:
     int day_of_week;
@@ -36,6 +43,13 @@ public:
     string name;
     string teacher;
     vector<Group> Lectures;
+    vector<Group> DepartmentalSessions; // ש.מחלקה
+    vector<Group> Reinforcements;       // תגבור
+    vector<Group> Guidance;             // הדרכה
+    vector<Group> OptionalColloquium;   // קולוקויום רשות
+    vector<Group> Registration;         // רישום
+    vector<Group> Thesis;
+    vector<Group> Project;
     vector<Group> Tirgulim;
     vector<Group> labs;
     vector<Group> blocks;
