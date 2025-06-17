@@ -39,6 +39,7 @@ public:
 class Course {
 public:
     int id;
+    int semester; // 1: semester A 2: semster B 3: Semester summer 4: All semesters 
     string raw_id;
     string name;
     string teacher;

@@ -25,6 +25,21 @@ ExcelCourseParser::ExcelCourseParser() {
             {"פרויקט",         SessionType::PROJECT}
     };
 }
+
+// Helper method to determine semester number from Hebrew period string
+int ExcelCourseParser::getSemesterNumber(const string& period) {
+    if (period == "סמסטר א'") {
+        return 1; // Semester A
+    } else if (period == "סמסטר ב'") {
+        return 2; // Semester B
+    } else if (period == "סמסטר קיץ") {
+        return 3; // Summer Semester
+    } else if (period == "שנתי") {
+        return 4; // Yearly course
+    }
+    return 0; // Unknown/unsupported semester
+}
+
 // Parse multiple rooms from single cell - handles both newlines and space-separated rooms
 vector<string> ExcelCourseParser::parseMultipleRooms(const string& roomStr) {
     vector<string> rooms;
@@ -343,9 +358,10 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
             string room = rowData[8];
             string notes = rowData[9];
 
-            // Filter for semester A only
-            if (period != "סמסטר א'") {
-                continue;
+            // Get semester number and filter for supported semesters
+            int semesterNumber = getSemesterNumber(period);
+            if (semesterNumber == 0) {
+                continue; // Skip unsupported semester types
             }
 
             auto [courseCode, groupCode] = parseCourseCode(fullCode);
@@ -423,6 +439,7 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 newCourse.raw_id = courseCode;
                 newCourse.name = courseName;
                 newCourse.teacher = teachers;
+                newCourse.semester = semesterNumber; // Set the semester field
                 courseMap[courseCode] = newCourse;
             }
 
@@ -496,7 +513,6 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
 
     return courses;
 }
-
 
 string getDayName(int dayOfWeek) {
     switch(dayOfWeek) {

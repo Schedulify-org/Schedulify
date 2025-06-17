@@ -562,47 +562,14 @@ bool CourseSelectionController::isCourseSelected(int index) {
 }
 
 void CourseSelectionController::filterCourses(const QString& searchText) {
-    currentSearchText = searchText; // Store the current search text
-
-    if (searchText.isEmpty()) {
-        resetFilter();
-        return;
-    }
-
-    QString searchLower = searchText.toLower();
-
-    filteredCourses.clear();
-    filteredIndicesMap.clear();
-
-    for (size_t i = 0; i < allCourses.size(); ++i) {
-        const Course& course = allCourses[i];
-        QString courseId = QString::fromStdString(course.raw_id).toLower();
-        QString courseName = QString::fromStdString(course.name).toLower();
-        QString teacherName = QString::fromStdString(course.teacher).toLower();
-
-        if (courseId.contains(searchLower) ||
-            courseName.contains(searchLower) ||
-            teacherName.contains(searchLower))
-        {
-            filteredCourses.push_back(course);
-            filteredIndicesMap.push_back(static_cast<int>(i));
-        }
-    }
-
-    m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
+    currentSearchText = searchText;
+    applyFilters();
 }
 
 void CourseSelectionController::resetFilter() {
-    currentSearchText.clear(); // Clear the search text
-
-    filteredCourses = allCourses;
-    filteredIndicesMap.clear();
-
-    for (size_t i = 0; i < allCourses.size(); ++i) {
-        filteredIndicesMap.push_back(static_cast<int>(i));
-    }
-
-    m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
+    currentSearchText.clear();
+    currentSemesterFilter = "ALL";
+    applyFilters();
 }
 
 void CourseSelectionController::createNewCourse(const QString& courseName, const QString& courseId,
@@ -751,4 +718,100 @@ Course CourseSelectionController::createCourseFromData(const QString& courseName
     }
 
     return course;
+}void CourseSelectionController::filterBySemester(const QString& semester) {
+    currentSemesterFilter = semester;
+    applyFilters();
+}
+
+void CourseSelectionController::applyFilters() {
+    filteredCourses.clear();
+    filteredIndicesMap.clear();
+
+    for (size_t i = 0; i < allCourses.size(); ++i) {
+        const Course& course = allCourses[i];
+
+        if (matchesSemesterFilter(course) && matchesSearchFilter(course, currentSearchText)) {
+            filteredCourses.push_back(course);
+            filteredIndicesMap.push_back(static_cast<int>(i));
+        }
+    }
+
+    m_filteredCourseModel->populateCoursesData(filteredCourses, filteredIndicesMap);
+}
+
+bool CourseSelectionController::matchesSemesterFilter(const Course& course) const {
+    if (currentSemesterFilter == "ALL") {
+        return true;
+    }
+
+    if (currentSemesterFilter == "A") {
+        return course.semester == 1 || course.semester == 4;
+    }
+
+    if (currentSemesterFilter == "B") {
+        return course.semester == 2 || course.semester == 4;
+    }
+
+    if (currentSemesterFilter == "SUMMER") {
+        return course.semester == 3 || course.semester == 4;
+    }
+
+    return true;
+}
+
+bool CourseSelectionController::matchesSearchFilter(const Course& course, const QString& searchText) const {
+    if (searchText.isEmpty()) {
+        return true;
+    }
+
+    QString searchLower = searchText.toLower();
+    QString courseId = QString::fromStdString(course.raw_id).toLower();
+    QString courseName = QString::fromStdString(course.name).toLower();
+    QString teacherName = QString::fromStdString(course.teacher).toLower();
+
+    return courseId.contains(searchLower) ||
+           courseName.contains(searchLower) ||
+           teacherName.contains(searchLower);
+}
+int CourseSelectionController::getSelectedCoursesCountForSemester(const QString& semester) {
+    int count = 0;
+
+    for (const auto& course : selectedCourses) {
+        if (semester == "A" && (course.semester == 1 || course.semester == 4)) {
+            count++;
+        } else if (semester == "B" && (course.semester == 2 || course.semester == 4)) {
+            count++;
+        } else if (semester == "SUMMER" && (course.semester == 3 || course.semester == 4)) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+QVariantList CourseSelectionController::getSelectedCoursesForSemester(const QString& semester) {
+    QVariantList result;
+
+    for (int i = 0; i < static_cast<int>(selectedCourses.size()); i++) {
+        const auto& course = selectedCourses[i];
+        bool shouldInclude = false;
+
+        if (semester == "A" && (course.semester == 1 || course.semester == 4)) {
+            shouldInclude = true;
+        } else if (semester == "B" && (course.semester == 2 || course.semester == 4)) {
+            shouldInclude = true;
+        } else if (semester == "SUMMER" && (course.semester == 3 || course.semester == 4)) {
+            shouldInclude = true;
+        }
+
+        if (shouldInclude) {
+            QVariantMap courseData;
+            courseData["courseId"] = QString::fromStdString(course.raw_id);
+            courseData["courseName"] = QString::fromStdString(course.name);
+            courseData["originalIndex"] = i;
+            result.append(courseData);
+        }
+    }
+
+    return result;
 }

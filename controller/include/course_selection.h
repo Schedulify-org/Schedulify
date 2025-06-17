@@ -62,11 +62,17 @@ public:
     Q_INVOKABLE void createNewCourse(const QString& courseName, const QString& courseId,
                                      const QString& teacherName, const QVariantList& sessionGroups);
 
+    // Semester filtering functionality
+    Q_INVOKABLE void filterBySemester(const QString& semester);
+
     Q_INVOKABLE void addBlockTime(const QString& day, const QString& startTime, const QString& endTime);
     Q_INVOKABLE void removeBlockTime(int index);
     Q_INVOKABLE void clearAllBlockTimes();
 
     Q_INVOKABLE void setupValidationTimeout(int timeoutMs);
+    Q_INVOKABLE int getSelectedCoursesCountForSemester(const QString& semester);
+    Q_INVOKABLE QVariantList getSelectedCoursesForSemester(const QString& semester);
+
 
 private slots:
     void onSchedulesGenerated(vector<InformativeSchedule>* schedules);
@@ -96,6 +102,10 @@ private:
     vector<int> selectedIndices;
     vector<int> filteredIndicesMap;
     QString currentSearchText;
+
+    // Semester filtering state: "ALL", "A", "B", "SUMMER"
+    QString currentSemesterFilter = "ALL";
+
     IModel* modelConnection;
     QThread* validatorThread = nullptr;
     QThread* workerThread = nullptr;
@@ -111,6 +121,11 @@ private:
     void cleanupValidatorThread();
     void setValidationInProgress(bool inProgress);
     void setValidationErrors(const QStringList& errors);
+
+    // Helper methods for semester filtering
+    void applyFilters();
+    bool matchesSemesterFilter(const Course& course) const;
+    bool matchesSearchFilter(const Course& course, const QString& searchText) const;
 
     inline static const int VALIDATION_TIMEOUT_MS = 60000;
     inline static const int THREAD_CLEANUP_TIMEOUT_MS = 10000;
