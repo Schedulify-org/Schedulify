@@ -46,6 +46,11 @@ public:
     Q_INVOKABLE bool hasSchedulesForSemester(const QString& semester) const;
     Q_INVOKABLE int getScheduleCountForSemester(const QString& semester) const;
 
+    // NEW: Loading state management methods
+    Q_INVOKABLE bool isSemesterLoading(const QString& semester) const;
+    Q_INVOKABLE bool isSemesterFinished(const QString& semester) const;
+    Q_INVOKABLE bool canClickSemester(const QString& semester) const;
+
     // QML accessible methods
     Q_INVOKABLE void goBack() override;
     Q_INVOKABLE void saveScheduleAsCSV();
@@ -59,6 +64,10 @@ public:
     // UPDATED: Include semester in filename
     static QString generateFilename(const QString& basePath, int index, fileType type, const QString& semester = "");
 
+    // NEW: Methods to be called from CourseSelectionController
+    void setSemesterLoading(const QString& semester, bool loading);
+    void setSemesterFinished(const QString& semester, bool finished);
+
 signals:
     void schedulesSorted(int totalCount);
     void screenshotSaved(const QString& path);
@@ -69,6 +78,10 @@ signals:
     void semesterSchedulesLoaded(const QString& semester);
     void allSemestersReady();
 
+    // NEW: Loading state signals
+    void semesterLoadingStateChanged(const QString& semester);
+    void semesterFinishedStateChanged(const QString& semester);
+
 private:
     // UPDATED: Replace single schedule vector with semester-specific vectors
     std::vector<InformativeSchedule> m_schedulesA;
@@ -78,6 +91,10 @@ private:
     // NEW: Semester management properties
     QString m_currentSemester = "A"; // Track which semester is currently being displayed
     bool m_allSemestersLoaded = false;
+
+    // NEW: Loading state tracking
+    QMap<QString, bool> m_semesterLoadingState;  // Track if semester is currently loading
+    QMap<QString, bool> m_semesterFinishedState; // Track if semester has finished loading
 
     ScheduleModel* m_scheduleModel;
     IModel* modelConnection;

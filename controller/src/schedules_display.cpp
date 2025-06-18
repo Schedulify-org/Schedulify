@@ -13,6 +13,15 @@ SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
     m_schedulesB.clear();
     m_schedulesSummer.clear();
 
+    // Initialize loading states - all semesters start as not loading and not finished
+    m_semesterLoadingState["A"] = false;
+    m_semesterLoadingState["B"] = false;
+    m_semesterLoadingState["SUMMER"] = false;
+
+    m_semesterFinishedState["A"] = false;
+    m_semesterFinishedState["B"] = false;
+    m_semesterFinishedState["SUMMER"] = false;
+
     connect(this, &SchedulesDisplayController::schedulesSorted, this, [this]() {
         emit m_scheduleModel->scheduleDataChanged();
     });
@@ -44,6 +53,10 @@ void SchedulesDisplayController::loadSemesterScheduleData(const QString& semeste
         m_schedulesSummer = schedules;
     }
 
+    // Mark semester as finished loading
+    setSemesterFinished(semester, true);
+    setSemesterLoading(semester, false);
+
     emit semesterSchedulesLoaded(semester);
 }
 
@@ -53,9 +66,9 @@ void SchedulesDisplayController::switchToSemester(const QString& semester) {
         return; // Already on this semester
     }
 
-    // Check if the semester has schedules
-    if (!hasSchedulesForSemester(semester)) {
-        qWarning() << "No schedules available for semester:" << semester;
+    // Check if the semester can be clicked (has finished loading)
+    if (!canClickSemester(semester)) {
+        qWarning() << "Semester" << semester << "is not ready to be clicked yet";
         return;
     }
 
@@ -89,6 +102,40 @@ bool SchedulesDisplayController::hasSchedulesForSemester(const QString& semester
         return !m_schedulesSummer.empty();
     }
     return false;
+}
+
+// NEW METHOD: Check if a semester is currently loading
+bool SchedulesDisplayController::isSemesterLoading(const QString& semester) const {
+    return m_semesterLoadingState.value(semester, false);
+}
+
+// NEW METHOD: Check if a semester has finished loading
+bool SchedulesDisplayController::isSemesterFinished(const QString& semester) const {
+    return m_semesterFinishedState.value(semester, false);
+}
+
+// NEW METHOD: Check if a semester button can be clicked
+bool SchedulesDisplayController::canClickSemester(const QString& semester) const {
+    // A semester can be clicked if:
+    // 1. It has finished loading (has schedules)
+    // 2. It's not currently loading
+    return isSemesterFinished(semester) && !isSemesterLoading(semester) && hasSchedulesForSemester(semester);
+}
+
+// NEW METHOD: Set semester loading state
+void SchedulesDisplayController::setSemesterLoading(const QString& semester, bool loading) {
+    if (m_semesterLoadingState.value(semester, false) != loading) {
+        m_semesterLoadingState[semester] = loading;
+        emit semesterLoadingStateChanged(semester);
+    }
+}
+
+// NEW METHOD: Set semester finished state
+void SchedulesDisplayController::setSemesterFinished(const QString& semester, bool finished) {
+    if (m_semesterFinishedState.value(semester, false) != finished) {
+        m_semesterFinishedState[semester] = finished;
+        emit semesterFinishedStateChanged(semester);
+    }
 }
 
 // NEW METHOD: Get schedule count for a semester

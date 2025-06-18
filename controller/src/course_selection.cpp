@@ -225,6 +225,13 @@ void CourseSelectionController::generateSemesterSchedules(const QString& semeste
         coursesToProcess.push_back(blockCourse);
     }
 
+    // UPDATED: Set loading state before starting generation
+    auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+    if (schedule_controller) {
+        schedule_controller->setSemesterLoading(semester, true);
+        schedule_controller->setSemesterFinished(semester, false);
+    }
+
     // Create a worker thread for the operation
     workerThread = new QThread();
     auto* worker = new ScheduleGenerator(modelConnection, coursesToProcess);
@@ -258,7 +265,6 @@ void CourseSelectionController::generateSemesterSchedules(const QString& semeste
         });
     }
 }
-
 // NEW METHOD: Handle completion of semester schedule generation
 void CourseSelectionController::onSemesterSchedulesGenerated(const QString& semester, vector<InformativeSchedule>* schedules) {
     // Hide loading overlay
@@ -269,9 +275,22 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
                                   Q_ARG(QVariant, QVariant(false)));
     }
 
+    // Get schedule controller reference
+    auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+
+    // UPDATED: Always clear loading state, regardless of success/failure
+    if (schedule_controller) {
+        schedule_controller->setSemesterLoading(semester, false);
+    }
+
     // Check if schedules were generated successfully
     if (!schedules || schedules->empty()) {
         emit errorMessage(QString("No valid schedules found for semester %1").arg(semester));
+
+        // Mark as finished even if failed, so user can move on
+        if (schedule_controller) {
+            schedule_controller->setSemesterFinished(semester, true);
+        }
 
         // Continue to next semester even if current one failed
         if (semester == "A") {
@@ -287,36 +306,30 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
     // Store schedules and emit signal for the schedules display controller
     emit semesterSchedulesGenerated(semester, schedules);
 
-    // If this is the first semester (A) being completed, navigate to schedules display
-    if (semester == "A") {
-        auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
-        if (schedule_controller) {
-            schedule_controller->loadSemesterScheduleData(semester, *schedules);
+    // Load the schedule data - this will automatically set finished state
+    if (schedule_controller) {
+        schedule_controller->loadSemesterScheduleData(semester, *schedules);
+
+        // If this is the first semester (A) being completed, navigate to schedules display
+        if (semester == "A") {
             goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
         }
+    }
 
-        // Continue generating other semesters
+    // Continue to next semester
+    if (semester == "A") {
         generateSemesterSchedules("B");
     } else if (semester == "B") {
-        // Store B schedules and continue to summer
-        auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
-        if (schedule_controller) {
-            schedule_controller->loadSemesterScheduleData(semester, *schedules);
-        }
-
         generateSemesterSchedules("SUMMER");
     } else if (semester == "SUMMER") {
-        // Store summer schedules - all generation complete
-        auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+        // All semesters complete
         if (schedule_controller) {
-            schedule_controller->loadSemesterScheduleData(semester, *schedules);
             schedule_controller->allSemestersGenerated();
         }
     }
 
     workerThread = nullptr;
 }
-
 // UPDATED: Handle semester-specific course selection
 void CourseSelectionController::toggleCourseSelection(int index) {
     if (index < 0 || index >= static_cast<int>(allCourses.size())) {

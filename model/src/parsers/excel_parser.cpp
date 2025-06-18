@@ -313,8 +313,9 @@ pair<string, string> ExcelCourseParser::parseCourseCode(const string& fullCode) 
 
 vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
     vector<Course> courses;
-    map<string, Course> courseMap;
-    map<string, map<string, Group>> courseGroupMap;
+    // Use courseCode + semester as key to create separate courses
+    map<string, Course> courseMap; // Key: courseCode_semester
+    map<string, map<string, Group>> courseGroupMap; // Key: courseCode_semester
 
     try {
         XLDocument doc;
@@ -368,10 +369,11 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
             if (courseCode.empty()) continue;
 
             SessionType normalizedSessionType = getSessionType(sessionType);
-            string normalizedSessionTypeName;
             if (normalizedSessionType == SessionType::UNSUPPORTED) {
                 continue;
             }
+
+            string normalizedSessionTypeName;
             switch (normalizedSessionType) {
                 case SessionType::LECTURE:
                     normalizedSessionTypeName = "lecture";
@@ -429,7 +431,10 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 continue;
             }
 
-            if (courseMap.find(courseCode) == courseMap.end()) {
+            // Create unique course key: courseCode + semester
+            string courseKey = courseCode + "_sem" + to_string(semesterNumber);
+
+            if (courseMap.find(courseKey) == courseMap.end()) {
                 Course newCourse;
                 try {
                     newCourse.id = stoi(courseCode);
@@ -439,27 +444,29 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                 newCourse.raw_id = courseCode;
                 newCourse.name = courseName;
                 newCourse.teacher = teachers;
-                newCourse.semester = semesterNumber; // Set the semester field
-                courseMap[courseCode] = newCourse;
+                newCourse.semester = semesterNumber; // Each course gets its specific semester
+                courseMap[courseKey] = newCourse;
             }
 
+            // Group key for this specific course-semester combination
             string groupKey = fullCode + "_" + normalizedSessionTypeName;
 
-            if (courseGroupMap[courseCode].find(groupKey) == courseGroupMap[courseCode].end()) {
+            if (courseGroupMap[courseKey].find(groupKey) == courseGroupMap[courseKey].end()) {
                 Group newGroup;
                 newGroup.type = normalizedSessionType;
-                courseGroupMap[courseCode][groupKey] = newGroup;
+                courseGroupMap[courseKey][groupKey] = newGroup;
             }
 
             for (const Session &session : sessions) {
                 if (session.day_of_week > 0 && !session.start_time.empty() && !session.end_time.empty()) {
-                    courseGroupMap[courseCode][groupKey].sessions.push_back(session);
+                    courseGroupMap[courseKey][groupKey].sessions.push_back(session);
                 }
             }
         }
 
-        for (auto &[courseCode, course] : courseMap) {
-            for (auto &[groupKey, group] : courseGroupMap[courseCode]) {
+        // Create final courses list
+        for (auto &[courseKey, course] : courseMap) {
+            for (auto &[groupKey, group] : courseGroupMap[courseKey]) {
                 if (group.sessions.empty()) continue;
 
                 switch (group.type) {
@@ -497,12 +504,10 @@ vector<Course> ExcelCourseParser::parseExcelFile(const string& filename) {
                         course.Project.push_back(group);
                         break;
                     case SessionType::UNSUPPORTED:
-                        // Can log if needed
                         break;
                 }
             }
 
-            // **Include all courses regardless of type**
             courses.push_back(course);
         }
 
