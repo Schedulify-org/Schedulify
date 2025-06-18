@@ -23,17 +23,28 @@ enum class fileType {
 };
 
 class SchedulesDisplayController : public ControllerManager {
-    Q_OBJECT
-        Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
+Q_OBJECT
+    Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
 
-    public:
+public:
     explicit SchedulesDisplayController(QObject *parent = nullptr);
     ~SchedulesDisplayController() override;
 
+    // UPDATED: Keep old method for backward compatibility during transition
     void loadScheduleData(const std::vector<InformativeSchedule>& schedules);
+
+    // NEW: Semester-specific methods
+    Q_INVOKABLE void loadSemesterScheduleData(const QString& semester, const std::vector<InformativeSchedule>& schedules);
+    Q_INVOKABLE void switchToSemester(const QString& semester);
+    Q_INVOKABLE void allSemestersGenerated();
 
     // Properties
     ScheduleModel* scheduleModel() const { return m_scheduleModel; }
+
+    // NEW: Semester query methods
+    Q_INVOKABLE QString getCurrentSemester() const { return m_currentSemester; }
+    Q_INVOKABLE bool hasSchedulesForSemester(const QString& semester) const;
+    Q_INVOKABLE int getScheduleCountForSemester(const QString& semester) const;
 
     // QML accessible methods
     Q_INVOKABLE void goBack() override;
@@ -45,23 +56,39 @@ class SchedulesDisplayController : public ControllerManager {
     Q_INVOKABLE void applySorting(const QVariantMap& sortData);
     Q_INVOKABLE void clearSorting();
 
-    static QString generateFilename(const QString& basePath, int index, fileType type);
+    // UPDATED: Include semester in filename
+    static QString generateFilename(const QString& basePath, int index, fileType type, const QString& semester = "");
 
-    signals:
-        void schedulesSorted(int totalCount);
-        void screenshotSaved(const QString& path);
-        void screenshotFailed();
+signals:
+    void schedulesSorted(int totalCount);
+    void screenshotSaved(const QString& path);
+    void screenshotFailed();
+
+    // NEW: Semester-specific signals
+    void currentSemesterChanged();
+    void semesterSchedulesLoaded(const QString& semester);
+    void allSemestersReady();
 
 private:
-    std::vector<InformativeSchedule> m_schedules;
+    // UPDATED: Replace single schedule vector with semester-specific vectors
+    std::vector<InformativeSchedule> m_schedulesA;
+    std::vector<InformativeSchedule> m_schedulesB;
+    std::vector<InformativeSchedule> m_schedulesSummer;
+
+    // NEW: Semester management properties
+    QString m_currentSemester = "A"; // Track which semester is currently being displayed
+    bool m_allSemestersLoaded = false;
+
     ScheduleModel* m_scheduleModel;
     IModel* modelConnection;
     QMap<QString, QString> m_sortKeyMap;
 
-
     // Track current sort state for optimization
     QString m_currentSortField;
     bool m_currentSortAscending = true;
+
+    // NEW: Helper methods
+    std::vector<InformativeSchedule>* getCurrentScheduleVector();
 };
 
 #endif // SCHEDULES_DISPLAY_H

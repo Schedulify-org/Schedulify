@@ -31,6 +31,10 @@ Page {
 
     property var logWindow: null
 
+    // NEW: Semester navigation properties
+    property string currentSemester: controller ? controller.getCurrentSemester() : "A"
+    property bool allSemestersLoaded: controller ? controller.allSemestersLoaded : false
+
     MouseArea {
         id: outsideClickArea
         anchors.fill: parent
@@ -38,7 +42,6 @@ Page {
         propagateComposedEvents: true
         onPressed: function(mouse) {
             if (inputField.activeFocus) {
-                // Check if click is outside the input field area
                 var inputRect = inputField.parent
                 var globalInputPos = inputRect.mapToItem(schedulesDisplayPage, 0, 0)
 
@@ -78,6 +81,21 @@ Page {
         }
     }
 
+    // NEW: Connections for semester management
+    Connections {
+        target: controller
+        function onCurrentSemesterChanged() {
+            currentSemester = controller.getCurrentSemester()
+            totalSchedules = scheduleModel ? scheduleModel.scheduleCount : 0
+        }
+        function onAllSemestersReady() {
+            allSemestersLoaded = true
+        }
+        function onSemesterSchedulesLoaded(semester) {
+            // Update button states when new semester data is loaded
+        }
+    }
+
     onDayColumnWidthChanged: {
         if (tableModel) {
             tableModel.updateRows()
@@ -94,7 +112,7 @@ Page {
     Rectangle {
         id: header
         width: parent.width
-        height: 80
+        height: 120  // Increased height to accommodate semester buttons
         color: "#ffffff"
         border.color: "#e5e7eb"
 
@@ -102,478 +120,722 @@ Page {
             anchors {
                 left: parent.left
                 right: parent.right
-                verticalCenter: parent.verticalCenter
+                top: parent.top
+                bottom: parent.bottom
+                margins: 15
             }
-            height: coursesBackButton.height
 
-            Button {
-                id: coursesBackButton
-                width: 40
-                height: 40
+            // Top row with back button and title
+            Item {
+                id: topRow
                 anchors {
                     left: parent.left
-                    leftMargin: 15
-                    verticalCenter: parent.verticalCenter
+                    right: parent.right
+                    top: parent.top
                 }
-                background: Rectangle {
-                    color: coursesBackMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
-                    radius: 4
+                height: 40
+
+                Button {
+                    id: coursesBackButton
+                    width: 40
+                    height: 40
+                    anchors {
+                        left: parent.left
+                        verticalCenter: parent.verticalCenter
+                    }
+                    background: Rectangle {
+                        color: coursesBackMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                        radius: 4
+                    }
+                    contentItem: Text {
+                        text: "←"
+                        font.pixelSize: 18
+                        color: "#1f2937"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    MouseArea {
+                        id: coursesBackMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: controller.goBack()
+                        cursorShape: Qt.PointingHandCursor
+                    }
+
+                    Component.onCompleted: {
+                        forceActiveFocus();
+                    }
                 }
-                contentItem: Text {
-                    text: "←"
-                    font.pixelSize: 18
+
+                Label {
+                    id: titleLabel
+                    text: "Generated schedules"
+                    font.pixelSize: 20
                     color: "#1f2937"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                MouseArea {
-                    id: coursesBackMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: controller.goBack()
-                    cursorShape: Qt.PointingHandCursor
+                    anchors {
+                        left: coursesBackButton.right
+                        leftMargin: 16
+                        verticalCenter: parent.verticalCenter
+                    }
                 }
 
-                Component.onCompleted: {
-                    forceActiveFocus();
+                // Right side buttons
+                RowLayout {
+                    anchors {
+                        right: parent.right
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: 10
+
+                    Button {
+                        id: preferenceButton
+                        width: 40
+                        height: 40
+
+                        background: Rectangle {
+                            color: preferenceMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                            radius: 10
+                        }
+
+                        contentItem: Item {
+                            anchors.fill: parent
+
+                            Image {
+                                id: preferenceIcon
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: "qrc:/icons/ic-preference.svg"
+                                sourceSize.width: 22
+                                sourceSize.height: 22
+                            }
+
+                            ToolTip {
+                                id: preferenceTooltip
+                                text: "Set Schedule Preference"
+                                visible: preferenceMouseArea.containsMouse
+                                delay: 500
+                                timeout: 3000
+
+                                background: Rectangle {
+                                    color: "#374151"
+                                    radius: 4
+                                    border.color: "#4b5563"
+                                }
+
+                                contentItem: Text {
+                                    text: preferenceTooltip.text
+                                    color: "white"
+                                    font.pixelSize: 12
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: preferenceMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: sortMenu.open()
+                        }
+                    }
+
+                    Button {
+                        id: exportButton
+                        width: 40
+                        height: 40
+
+                        property bool isExportEnabled: scheduleModel && totalSchedules > 0
+
+                        background: Rectangle {
+                            color: exportMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                            radius: 10
+                        }
+
+                        contentItem: Item {
+                            anchors.fill: parent
+
+                            Image {
+                                id: exportIcon
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: "qrc:/icons/ic-export.svg"
+                                sourceSize.width: 22
+                                sourceSize.height: 22
+                            }
+
+                            ToolTip {
+                                id: exportTooltip
+                                text: parent.parent.isExportEnabled ? "Export Schedule" : "No schedule to export"
+                                visible: exportMouseArea.containsMouse
+                                delay: 500
+                                timeout: 3000
+
+                                background: Rectangle {
+                                    color: "#374151"
+                                    radius: 4
+                                    border.color: "#4b5563"
+                                }
+
+                                contentItem: Text {
+                                    text: exportTooltip.text
+                                    color: "white"
+                                    font.pixelSize: 12
+                                }
+                            }
+                        }
+
+                        MouseArea {
+                            id: exportMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: parent.isExportEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                            onClicked: {
+                                if (parent.isExportEnabled) {
+                                    exportMenu.currentIndex = currentIndex
+                                    exportMenu.open()
+                                }
+                            }
+                        }
+                    }
+
+                    Button {
+                        id: logButtonC
+                        width: 40
+                        height: 40
+
+                        background: Rectangle {
+                            color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
+                            radius: 10
+                        }
+
+                        contentItem: Item {
+                            anchors.fill: parent
+
+                            Image {
+                                id: logIcon
+                                anchors.centerIn: parent
+                                width: 24
+                                height: 24
+                                source: "qrc:/icons/ic-logs.svg"
+                                sourceSize.width: 22
+                                sourceSize.height: 22
+                            }
+
+                            ToolTip {
+                                id: logsTooltip
+                                text: "Open Application Logs"
+                                visible: logMouseArea.containsMouse
+                                delay: 500
+                                timeout: 3000
+
+                                background: Rectangle {
+                                    color: "#374151"
+                                    radius: 4
+                                    border.color: "#4b5563"
+                                }
+
+                                contentItem: Text {
+                                    text: logsTooltip.text
+                                    color: "white"
+                                    font.pixelSize: 12
+                                }
+                            }
+                        }
+
+                        MouseArea  {
+                            id: logMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (logWindow && logWindow.visible) {
+                                    logWindow.raise();
+                                    logWindow.requestActivate();
+                                    return;
+                                }
+
+                                if (!logDisplayController.isLogWindowOpen || !logWindow) {
+                                    var component = Qt.createComponent("qrc:/log_display.qml");
+                                    if (component.status === Component.Ready) {
+                                        logDisplayController.setLogWindowOpen(true);
+                                        logWindow = component.createObject(schedulesDisplayPage);
+
+                                        if (logWindow) {
+                                            logWindow.closing.connect(function(close) {
+                                                logDisplayController.setLogWindowOpen(false);
+                                                logWindow = null;
+                                            });
+
+                                            logWindow.show();
+                                        }
+                                    } else {
+                                        console.error("Error creating log window:", component.errorString());
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            Label {
-                id: titleLabel
-                text: "Generated schedules"
-                font.pixelSize: 20
-                color: "#1f2937"
+            // NEW: Semester selector row
+            Item {
+                id: semesterRow
                 anchors {
-                    left: coursesBackButton.right
-                    leftMargin: 16
-                    verticalCenter: parent.verticalCenter
+                    left: parent.left
+                    right: parent.right
+                    top: topRow.bottom
+                    topMargin: 15
                 }
-            }
-
-            RowLayout {
-                id: topButtonsRow
-                width: parent.width
-                Layout.fillWidth: true
-                spacing: 10
-                Layout.alignment: Qt.AlignHCenter
+                height: 50
 
                 Rectangle {
-                    Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: Math.max(navigationRow.implicitWidth + 32, 280)
-                    Layout.preferredHeight: 56
-
+                    id: semesterSelectorBackground
+                    anchors.centerIn: parent
+                    width: semesterButtons.implicitWidth + 24
+                    height: 50
                     color: "#f8fafc"
                     radius: 12
                     border.color: "#e2e8f0"
                     border.width: 1
 
                     RowLayout {
-                        id: navigationRow
+                        id: semesterButtons
                         anchors.centerIn: parent
-                        spacing: 12
+                        spacing: 8
 
+                        // Semester A Button
                         Rectangle {
-                            id: prevButton
-                            radius: 6
-                            width: 36
-                            height: 36
-
-                            property bool isPrevEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoPrevious : false
-
-                            color: {
-                                if (!isPrevEnabled) return "#e5e7eb";
-                                return prevMouseArea.containsMouse ? "#35455c" : "#1f2937";
-                            }
-
-                            opacity: isPrevEnabled ? 1.0 : 0.5
-
-                            Text {
-                                text: "←"
-                                anchors.centerIn: parent
-                                color: parent.isPrevEnabled ? "white" : "#9ca3af"
-                                font.pixelSize: 16
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                id: prevMouseArea
-                                anchors.fill: parent
-                                hoverEnabled: parent.isPrevEnabled
-                                cursorShape: parent.isPrevEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                                enabled: parent.isPrevEnabled
-                                onClicked: {
-                                    if (scheduleModel) {
-                                        scheduleModel.previousSchedule()
-                                    }
-                                }
-                            }
-                        }
-
-                        Label {
-                            text: "Schedule"
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            color: "#475569"
-                        }
-
-                        Rectangle {
-                            Layout.preferredWidth: Math.max(inputField.contentWidth + 24, 60)
-                            Layout.preferredHeight: 40
-
-                            color: "#ffffff"
+                            id: semesterAButton
+                            Layout.preferredWidth: 100
+                            Layout.preferredHeight: 36
                             radius: 8
-                            border.color: {
-                                if (inputField.activeFocus) return "#3b82f6";
-                                if (!inputField.isValidInput && inputField.text !== "") return "#ef4444";
-                                return "#cbd5e1";
-                            }
-                            border.width: inputField.activeFocus ? 2 : 1
 
-                            TextField {
-                                id: inputField
-                                anchors.fill: parent
-                                anchors.margins: inputField.activeFocus ? 2 : 1
-
-                                placeholderText: currentIndex + 1
-                                placeholderTextColor: "#94a3b8"
-
-                                background: Rectangle {
-                                    color: "transparent"
-                                    radius: 6
-                                }
-
-                                color: "#1f2937"
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                horizontalAlignment: TextInput.AlignHCenter
-
-                                leftPadding: 12
-                                rightPadding: 12
-                                topPadding: 8
-                                bottomPadding: 8
-
-                                selectByMouse: true
-
-                                property bool isValidInput: true
-
-                                onTextChanged: {
-                                    var userInput = parseInt(text)
-                                    isValidInput = text === "" || (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules)
-                                }
-
-                                onEditingFinished: {
-                                    var userInput = parseInt(inputField.text)
-                                    if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
-                                        scheduleModel.jumpToSchedule(userInput)
-                                    }
-                                    inputField.text = ""
-                                    inputField.focus = false
-                                }
-
-                                Keys.onReturnPressed: {
-                                    var userInput = parseInt(inputField.text)
-                                    if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
-                                        scheduleModel.jumpToSchedule(userInput)
-                                    }
-                                    inputField.text = ""
-                                    inputField.focus = false
-                                }
-
-                                Keys.onEscapePressed: {
-                                    text = ""
-                                    focus = false
-                                }
-                            }
-
-                            ToolTip {
-                                id: errorTooltip
-                                text: `Please enter a number between 1 and ${totalSchedules}`
-                                visible: !inputField.isValidInput && inputField.text !== "" && inputField.activeFocus
-                                delay: 0
-                                timeout: 0
-
-                                background: Rectangle {
-                                    color: "#ef4444"
-                                    radius: 4
-                                    border.color: "#dc2626"
-                                }
-
-                                contentItem: Text {
-                                    text: errorTooltip.text
-                                    color: "white"
-                                    font.pixelSize: 11
-                                }
-                            }
-                        }
-
-                        Label {
-                            text: "of"
-                            font.pixelSize: 15
-                            font.weight: Font.Medium
-                            color: "#475569"
-                        }
-
-                        Rectangle {
-                            Layout.preferredWidth: totalLabel.implicitWidth + 16
-                            Layout.preferredHeight: 32
-
-                            color: totalSchedules > 0 ? "#dbeafe" : "#f1f5f9"
-                            radius: 6
-
-                            Label {
-                                id: totalLabel
-                                anchors.centerIn: parent
-                                text: totalSchedules > 0 ? totalSchedules : "No available schedules"
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
-                            }
-                        }
-
-                        Rectangle {
-                            id: nextButton
-                            radius: 6
-                            width: 36
-                            height: 36
-
-                            property bool isNextEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoNext : false
+                            property bool isAvailable: controller ? controller.hasSchedulesForSemester("A") : false
+                            property bool isActive: currentSemester === "A"
+                            property bool isEnabled: isAvailable
 
                             color: {
-                                if (!isNextEnabled) return "#e5e7eb";
-                                return nextMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                                if (!isEnabled) return "#f1f5f9"
+                                if (isActive) return "#3b82f6"
+                                return semesterAMouseArea.containsMouse ? "#dbeafe" : "#ffffff"
                             }
 
-                            opacity: isNextEnabled ? 1.0 : 0.5
+                            border.color: {
+                                if (!isEnabled) return "#e2e8f0"
+                                if (isActive) return "#2563eb"
+                                return "#cbd5e1"
+                            }
+                            border.width: isActive ? 2 : 1
 
                             Text {
-                                text: "→"
                                 anchors.centerIn: parent
-                                color: parent.isNextEnabled ? "white" : "#9ca3af"
-                                font.pixelSize: 16
-                                font.bold: true
+                                text: "Semester A"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                color: {
+                                    if (!parent.isEnabled) return "#94a3b8"
+                                    if (parent.isActive) return "#ffffff"
+                                    return "#475569"
+                                }
                             }
 
                             MouseArea {
-                                id: nextMouseArea
+                                id: semesterAMouseArea
                                 anchors.fill: parent
-                                hoverEnabled: parent.isNextEnabled
-                                cursorShape: parent.isNextEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                                enabled: parent.isNextEnabled
+                                hoverEnabled: parent.isEnabled
+                                cursorShape: parent.isEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isEnabled
                                 onClicked: {
-                                    if (scheduleModel) {
-                                        scheduleModel.nextSchedule()
+                                    if (controller) {
+                                        controller.switchToSemester("A")
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
 
-            Button {
-                id: logButtonC
-                anchors {
-                    right: parent.right
-                    verticalCenter: parent.verticalCenter
-                    rightMargin: 15
-                }
-                width: 40
-                height: 40
-
-                background: Rectangle {
-                    color: logMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
-                    radius: 10
-                }
-
-                contentItem: Item {
-                    anchors.fill: parent
-
-                    Image {
-                        id: logIcon
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        source: "qrc:/icons/ic-logs.svg"
-                        sourceSize.width: 22
-                        sourceSize.height: 22
-                    }
-
-                    ToolTip {
-                        id: logsTooltip
-                        text: "Open Application Logs"
-                        visible: logMouseArea.containsMouse
-                        delay: 500
-                        timeout: 3000
-
-                        background: Rectangle {
-                            color: "#374151"
-                            radius: 4
-                            border.color: "#4b5563"
-                        }
-
-                        contentItem: Text {
-                            text: logsTooltip.text
-                            color: "white"
-                            font.pixelSize: 12
-                        }
-                    }
-                }
-
-                MouseArea  {
-                    id: logMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (logWindow && logWindow.visible) {
-                            logWindow.raise();
-                            logWindow.requestActivate();
-                            return;
-                        }
-
-                        if (!logDisplayController.isLogWindowOpen || !logWindow) {
-                            var component = Qt.createComponent("qrc:/log_display.qml");
-                            if (component.status === Component.Ready) {
-                                logDisplayController.setLogWindowOpen(true);
-                                logWindow = component.createObject(schedulesDisplayPage);
-
-                                if (logWindow) {
-                                    logWindow.closing.connect(function(close) {
-                                        logDisplayController.setLogWindowOpen(false);
-                                        logWindow = null;
-                                    });
-
-                                    logWindow.show();
+                            // Loading indicator for Semester A
+                            Rectangle {
+                                visible: !parent.isAvailable && currentSemester === "A"
+                                anchors {
+                                    right: parent.right
+                                    top: parent.top
+                                    margins: 4
                                 }
-                            } else {
-                                console.error("Error creating log window:", component.errorString());
+                                width: 8
+                                height: 8
+                                radius: 4
+                                color: "#fbbf24"
+
+                                SequentialAnimation on opacity {
+                                    running: parent.visible
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: 0.3; duration: 500 }
+                                    NumberAnimation { to: 1.0; duration: 500 }
+                                }
+                            }
+                        }
+
+                        // Semester B Button
+                        Rectangle {
+                            id: semesterBButton
+                            Layout.preferredWidth: 100
+                            Layout.preferredHeight: 36
+                            radius: 8
+
+                            property bool isAvailable: controller ? controller.hasSchedulesForSemester("B") : false
+                            property bool isActive: currentSemester === "B"
+                            property bool isEnabled: isAvailable
+
+                            color: {
+                                if (!isEnabled) return "#f1f5f9"
+                                if (isActive) return "#3b82f6"
+                                return semesterBMouseArea.containsMouse ? "#dbeafe" : "#ffffff"
+                            }
+
+                            border.color: {
+                                if (!isEnabled) return "#e2e8f0"
+                                if (isActive) return "#2563eb"
+                                return "#cbd5e1"
+                            }
+                            border.width: isActive ? 2 : 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Semester B"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                color: {
+                                    if (!parent.isEnabled) return "#94a3b8"
+                                    if (parent.isActive) return "#ffffff"
+                                    return "#475569"
+                                }
+                            }
+
+                            MouseArea {
+                                id: semesterBMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: parent.isEnabled
+                                cursorShape: parent.isEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isEnabled
+                                onClicked: {
+                                    if (controller) {
+                                        controller.switchToSemester("B")
+                                    }
+                                }
+                            }
+
+                            // Loading indicator for Semester B
+                            Rectangle {
+                                visible: !parent.isAvailable && controller && controller.hasSchedulesForSemester("A")
+                                anchors {
+                                    right: parent.right
+                                    top: parent.top
+                                    margins: 4
+                                }
+                                width: 8
+                                height: 8
+                                radius: 4
+                                color: "#fbbf24"
+
+                                SequentialAnimation on opacity {
+                                    running: parent.visible
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: 0.3; duration: 500 }
+                                    NumberAnimation { to: 1.0; duration: 500 }
+                                }
+                            }
+                        }
+
+                        // Summer Semester Button
+                        Rectangle {
+                            id: semesterSummerButton
+                            Layout.preferredWidth: 120
+                            Layout.preferredHeight: 36
+                            radius: 8
+
+                            property bool isAvailable: controller ? controller.hasSchedulesForSemester("SUMMER") : false
+                            property bool isActive: currentSemester === "SUMMER"
+                            property bool isEnabled: isAvailable
+
+                            color: {
+                                if (!isEnabled) return "#f1f5f9"
+                                if (isActive) return "#3b82f6"
+                                return semesterSummerMouseArea.containsMouse ? "#dbeafe" : "#ffffff"
+                            }
+
+                            border.color: {
+                                if (!isEnabled) return "#e2e8f0"
+                                if (isActive) return "#2563eb"
+                                return "#cbd5e1"
+                            }
+                            border.width: isActive ? 2 : 1
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "Summer"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                color: {
+                                    if (!parent.isEnabled) return "#94a3b8"
+                                    if (parent.isActive) return "#ffffff"
+                                    return "#475569"
+                                }
+                            }
+
+                            MouseArea {
+                                id: semesterSummerMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: parent.isEnabled
+                                cursorShape: parent.isEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                                enabled: parent.isEnabled
+                                onClicked: {
+                                    if (controller) {
+                                        controller.switchToSemester("SUMMER")
+                                    }
+                                }
+                            }
+
+                            // Loading indicator for Summer
+                            Rectangle {
+                                visible: !parent.isAvailable && controller && (controller.hasSchedulesForSemester("A") || controller.hasSchedulesForSemester("B"))
+                                anchors {
+                                    right: parent.right
+                                    top: parent.top
+                                    margins: 4
+                                }
+                                width: 8
+                                height: 8
+                                radius: 4
+                                color: "#fbbf24"
+
+                                SequentialAnimation on opacity {
+                                    running: parent.visible
+                                    loops: Animation.Infinite
+                                    NumberAnimation { to: 0.3; duration: 500 }
+                                    NumberAnimation { to: 1.0; duration: 500 }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Button {
-                id: exportButton
-                width: 40
-                height: 40
+            // UPDATED: Schedule navigation (moved below semester selector)
+            Rectangle {
+                id: scheduleNavigation
                 anchors {
-                    right: logButtonC.left
-                    verticalCenter: parent.verticalCenter
-                    rightMargin: 10
+                    centerIn: parent
+                    bottom: parent.bottom
                 }
+                width: Math.max(navigationRow.implicitWidth + 32, 280)
+                height: 56
 
-                property bool isExportEnabled: scheduleModel && totalSchedules > 0
+                color: "#f8fafc"
+                radius: 12
+                border.color: "#e2e8f0"
+                border.width: 1
 
-                background: Rectangle {
-                    color: exportMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
-                    radius: 10
-                }
+                RowLayout {
+                    id: navigationRow
+                    anchors.centerIn: parent
+                    spacing: 12
 
-                contentItem: Item {
-                    anchors.fill: parent
+                    Rectangle {
+                        id: prevButton
+                        radius: 6
+                        width: 36
+                        height: 36
 
-                    Image {
-                        id: exportIcon
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        source: "qrc:/icons/ic-export.svg"
-                        sourceSize.width: 22
-                        sourceSize.height: 22
-                    }
+                        property bool isPrevEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoPrevious : false
 
-                    ToolTip {
-                        id: exportTooltip
-                        text: parent.parent.isExportEnabled ? "Export Schedule" : "No schedule to export"
-                        visible: exportMouseArea.containsMouse
-                        delay: 500
-                        timeout: 3000
-
-                        background: Rectangle {
-                            color: "#374151"
-                            radius: 4
-                            border.color: "#4b5563"
+                        color: {
+                            if (!isPrevEnabled) return "#e5e7eb";
+                            return prevMouseArea.containsMouse ? "#35455c" : "#1f2937";
                         }
 
-                        contentItem: Text {
-                            text: exportTooltip.text
-                            color: "white"
-                            font.pixelSize: 12
-                        }
-                    }
-                }
+                        opacity: isPrevEnabled ? 1.0 : 0.5
 
-                MouseArea {
-                    id: exportMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: parent.isExportEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
-                    onClicked: {
-                        if (parent.isExportEnabled) {
-                            exportMenu.currentIndex = currentIndex
-                            exportMenu.open()
-                        }
-                    }
-                }
-            }
-
-            Button {
-                id: preferenceButton
-                width: 40
-                height: 40
-                anchors {
-                    right: exportButton.left
-                    verticalCenter: parent.verticalCenter
-                    rightMargin: 10
-                }
-
-                background: Rectangle {
-                    color: preferenceMouseArea.containsMouse ? "#a8a8a8" : "#f3f4f6"
-                    radius: 10
-                }
-
-                contentItem: Item {
-                    anchors.fill: parent
-
-                    Image {
-                        id: preferenceIcon
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        source: "qrc:/icons/ic-preference.svg"
-                        sourceSize.width: 22
-                        sourceSize.height: 22
-                    }
-
-                    ToolTip {
-                        id: preferenceTooltip
-                        text: "Set Schedule Preference"
-                        visible: preferenceMouseArea.containsMouse
-                        delay: 500
-                        timeout: 3000
-
-                        background: Rectangle {
-                            color: "#374151"
-                            radius: 4
-                            border.color: "#4b5563"
+                        Text {
+                            text: "←"
+                            anchors.centerIn: parent
+                            color: parent.isPrevEnabled ? "white" : "#9ca3af"
+                            font.pixelSize: 16
+                            font.bold: true
                         }
 
-                        contentItem: Text {
-                            text: preferenceTooltip.text
-                            color: "white"
-                            font.pixelSize: 12
+                        MouseArea {
+                            id: prevMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: parent.isPrevEnabled
+                            cursorShape: parent.isPrevEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                            enabled: parent.isPrevEnabled
+                            onClicked: {
+                                if (scheduleModel) {
+                                    scheduleModel.previousSchedule()
+                                }
+                            }
                         }
                     }
-                }
 
-                MouseArea {
-                    id: preferenceMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: sortMenu.open()
+                    Label {
+                        text: "Schedule"
+                        font.pixelSize: 15
+                        font.weight: Font.Medium
+                        color: "#475569"
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: Math.max(inputField.contentWidth + 24, 60)
+                        Layout.preferredHeight: 40
+
+                        color: "#ffffff"
+                        radius: 8
+                        border.color: {
+                            if (inputField.activeFocus) return "#3b82f6";
+                            if (!inputField.isValidInput && inputField.text !== "") return "#ef4444";
+                            return "#cbd5e1";
+                        }
+                        border.width: inputField.activeFocus ? 2 : 1
+
+                        TextField {
+                            id: inputField
+                            anchors.fill: parent
+                            anchors.margins: inputField.activeFocus ? 2 : 1
+
+                            placeholderText: currentIndex + 1
+                            placeholderTextColor: "#94a3b8"
+
+                            background: Rectangle {
+                                color: "transparent"
+                                radius: 6
+                            }
+
+                            color: "#1f2937"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            horizontalAlignment: TextInput.AlignHCenter
+
+                            leftPadding: 12
+                            rightPadding: 12
+                            topPadding: 8
+                            bottomPadding: 8
+
+                            selectByMouse: true
+
+                            property bool isValidInput: true
+
+                            onTextChanged: {
+                                var userInput = parseInt(text)
+                                isValidInput = text === "" || (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules)
+                            }
+
+                            onEditingFinished: {
+                                var userInput = parseInt(inputField.text)
+                                if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
+                                    scheduleModel.jumpToSchedule(userInput)
+                                }
+                                inputField.text = ""
+                                inputField.focus = false
+                            }
+
+                            Keys.onReturnPressed: {
+                                var userInput = parseInt(inputField.text)
+                                if (!isNaN(userInput) && userInput > 0 && userInput <= totalSchedules) {
+                                    scheduleModel.jumpToSchedule(userInput)
+                                }
+                                inputField.text = ""
+                                inputField.focus = false
+                            }
+
+                            Keys.onEscapePressed: {
+                                text = ""
+                                focus = false
+                            }
+                        }
+
+                        ToolTip {
+                            id: errorTooltip
+                            text: `Please enter a number between 1 and ${totalSchedules}`
+                            visible: !inputField.isValidInput && inputField.text !== "" && inputField.activeFocus
+                            delay: 0
+                            timeout: 0
+
+                            background: Rectangle {
+                                color: "#ef4444"
+                                radius: 4
+                                border.color: "#dc2626"
+                            }
+
+                            contentItem: Text {
+                                text: errorTooltip.text
+                                color: "white"
+                                font.pixelSize: 11
+                            }
+                        }
+                    }
+
+                    Label {
+                        text: "of"
+                        font.pixelSize: 15
+                        font.weight: Font.Medium
+                        color: "#475569"
+                    }
+
+                    Rectangle {
+                        Layout.preferredWidth: totalLabel.implicitWidth + 16
+                        Layout.preferredHeight: 32
+
+                        color: totalSchedules > 0 ? "#dbeafe" : "#f1f5f9"
+                        radius: 6
+
+                        Label {
+                            id: totalLabel
+                            anchors.centerIn: parent
+                            text: totalSchedules > 0 ? `${totalSchedules} (${currentSemester})` : "No schedules"
+                            font.pixelSize: 14
+                            font.weight: Font.Medium
+                            color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                        }
+                    }
+
+                    Rectangle {
+                        id: nextButton
+                        radius: 6
+                        width: 36
+                        height: 36
+
+                        property bool isNextEnabled: scheduleModel && totalSchedules > 0 ? scheduleModel.canGoNext : false
+
+                        color: {
+                            if (!isNextEnabled) return "#e5e7eb";
+                            return nextMouseArea.containsMouse ? "#35455c" : "#1f2937";
+                        }
+
+                        opacity: isNextEnabled ? 1.0 : 0.5
+
+                        Text {
+                            text: "→"
+                            anchors.centerIn: parent
+                            color: parent.isNextEnabled ? "white" : "#9ca3af"
+                            font.pixelSize: 16
+                            font.bold: true
+                        }
+
+                        MouseArea {
+                            id: nextMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: parent.isNextEnabled
+                            cursorShape: parent.isNextEnabled ? Qt.PointingHandCursor : Qt.ForbiddenCursor
+                            enabled: parent.isNextEnabled
+                            onClicked: {
+                                if (scheduleModel) {
+                                    scheduleModel.nextSchedule()
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -703,12 +965,43 @@ Page {
 
                 Text {
                     anchors.centerIn: parent
-                    text: "No schedules match your filters.\nTry adjusting your filter criteria."
+                    text: controller && controller.hasSchedulesForSemester(currentSemester)
+                        ? "No schedules available for " + currentSemester
+                        : "Schedules for " + currentSemester + " are being generated..."
                     font.pixelSize: 24
                     font.bold: true
                     color: "#6b7280"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+                }
+
+                // Loading animation when schedules are being generated
+                Rectangle {
+                    visible: !controller || !controller.hasSchedulesForSemester(currentSemester)
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        top: parent.verticalCenter
+                        topMargin: 40
+                    }
+                    width: 32
+                    height: 32
+                    radius: 16
+                    color: "#3b82f6"
+
+                    SequentialAnimation on opacity {
+                        running: parent.visible
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 0.3; duration: 800 }
+                        NumberAnimation { to: 1.0; duration: 800 }
+                    }
+
+                    RotationAnimator on rotation {
+                        running: parent.visible
+                        from: 0
+                        to: 360
+                        duration: 2000
+                        loops: Animation.Infinite
+                    }
                 }
             }
 

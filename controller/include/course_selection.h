@@ -60,10 +60,14 @@ public:
     Q_INVOKABLE void generateSchedules();
     Q_INVOKABLE void deselectCourse(int index);
     Q_INVOKABLE void createNewCourse(const QString& courseName, const QString& courseId,
-                                     const QString& teacherName, const QVariantList& sessionGroups);
+                                     const QString& teacherName, int semester, const QVariantList& sessionGroups);
 
     // Semester filtering functionality
     Q_INVOKABLE void filterBySemester(const QString& semester);
+
+    // NEW: Semester-specific methods
+    Q_INVOKABLE QString getCourseSemester(int courseIndex);
+    Q_INVOKABLE bool canAddCourseToSemester(int courseIndex);
 
     Q_INVOKABLE void addBlockTime(const QString& day, const QString& startTime, const QString& endTime);
     Q_INVOKABLE void removeBlockTime(int index);
@@ -73,16 +77,20 @@ public:
     Q_INVOKABLE int getSelectedCoursesCountForSemester(const QString& semester);
     Q_INVOKABLE QVariantList getSelectedCoursesForSemester(const QString& semester);
 
-
 private slots:
-    void onSchedulesGenerated(vector<InformativeSchedule>* schedules);
     void onValidationTimeout();
+
+    // NEW: Semester-specific schedule generation slots
+    void onSemesterSchedulesGenerated(const QString& semester, vector<InformativeSchedule>* schedules);
 
 signals:
     void selectionChanged();
     void blockTimesChanged();
     void errorMessage(const QString &message);
     void validationStateChanged();
+
+    // NEW: Semester-specific signal
+    void semesterSchedulesGenerated(const QString& semester, vector<InformativeSchedule>* schedules);
 
 private:
     CourseModel* m_courseModel;
@@ -93,13 +101,21 @@ private:
     bool validationCompleted = false;
     bool m_validationInProgress = false;
     QStringList m_validationErrors;
+
     vector<Course> allCourses;
-    vector<Course> selectedCourses;
     vector<Course> filteredCourses;
     vector<Course> blockTimes;
     vector<BlockTime> userBlockTimes;
 
-    vector<int> selectedIndices;
+    // UPDATED: Replace single vectors with semester-specific vectors
+    vector<Course> selectedCoursesA;
+    vector<Course> selectedCoursesB;
+    vector<Course> selectedCoursesSummer;
+
+    vector<int> selectedIndicesA;
+    vector<int> selectedIndicesB;
+    vector<int> selectedIndicesSummer;
+
     vector<int> filteredIndicesMap;
     QString currentSearchText;
 
@@ -109,6 +125,10 @@ private:
     IModel* modelConnection;
     QThread* validatorThread = nullptr;
     QThread* workerThread = nullptr;
+
+    // NEW: Semester-specific helper methods
+    void updateSelectedCoursesModel();
+    void generateSemesterSchedules(const QString& semester);
 
     void updateBlockTimesModel();
     Course createSingleBlockTimeCourse();

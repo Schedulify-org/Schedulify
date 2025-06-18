@@ -68,6 +68,48 @@ Page {
         return allCourses;
     }
 
+    // NEW FUNCTION: Check if we can add a course based on its semester
+    function canAddCourseToSemester(courseIndex) {
+        // Use refreshCounter to make this reactive
+        var dummy = refreshCounter;
+
+        if (!courseSelectionController) {
+            return false;
+        }
+
+        // If course is already selected, we can always deselect it
+        if (isCourseSelectedSafe(courseIndex)) {
+            return true;
+        }
+
+        // Get the course's semester from the controller
+        var courseSemester = "";
+        if (courseSelectionController.getCourseSemester) {
+            courseSemester = courseSelectionController.getCourseSemester(courseIndex);
+        }
+
+        // Check if this semester has reached the limit
+        var semesterCount = getSelectedCoursesCountBySemester(courseSemester);
+        return semesterCount < 7;
+    }
+
+    // NEW FUNCTION: Get total selected courses across all semesters (for display only)
+    function getTotalSelectedCoursesCount() {
+        // Use refreshCounter to make this reactive
+        var dummy = refreshCounter;
+
+        if (!courseSelectionController || !courseSelectionController.selectedCoursesModel) {
+            return 0;
+        }
+
+        // Sum up all semesters for display purposes
+        var totalA = getSelectedCoursesCountBySemester("A");
+        var totalB = getSelectedCoursesCountBySemester("B");
+        var totalSummer = getSelectedCoursesCountBySemester("SUMMER");
+
+        return totalA + totalB + totalSummer;
+    }
+
     Component.onDestruction: {
         if (logWindow) {
             logWindow.destroy(); // Explicitly destroy
@@ -321,8 +363,8 @@ Page {
                         rightMargin: 10
                         verticalCenter: parent.verticalCenter
                     }
-                    visible: selectedCoursesRepeater.count > 0
-                    enabled: selectedCoursesRepeater.count > 0
+                    visible: getTotalSelectedCoursesCount() > 0
+                    enabled: getTotalSelectedCoursesCount() > 0
 
                     background: Rectangle {
                         color: generateMouseArea.containsMouse ? "#35455c" : "#1f2937"
@@ -982,7 +1024,7 @@ Page {
                             color: {
                                 if (isCourseSelectedSafe(originalIndex)) {
                                     return "#f0f9ff"
-                                } else if (selectedCoursesRepeater.count >= 7) {
+                                } else if (!canAddCourseToSemester(originalIndex)) {
                                     return "#e5e7eb"
                                 } else {
                                     return "#ffffff"
@@ -992,13 +1034,13 @@ Page {
                             border.color: {
                                 if (isCourseSelectedSafe(originalIndex)) {
                                     return "#3b82f6"
-                                } else if (selectedCoursesRepeater.count >= 7) {
+                                } else if (!canAddCourseToSemester(originalIndex)) {
                                     return "#d1d5db"
                                 } else {
                                     return "#e5e7eb"
                                 }
                             }
-                            opacity: selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex) ? 0.7 : 1
+                            opacity: !canAddCourseToSemester(originalIndex) && !courseSelectionController.isCourseSelected(originalIndex) ? 0.7 : 1
 
                             Connections {
                                 target: courseSelectionController
@@ -1009,7 +1051,7 @@ Page {
                                         courseDelegate.opacity = 1
                                         courseIdBox.color = "#dbeafe"
                                         courseIdBoxLabel.color = "#2563eb"
-                                    } else if (selectedCoursesRepeater.count >= 7) {
+                                    } else if (!canAddCourseToSemester(originalIndex)) {
                                         courseDelegate.color = "#e5e7eb"
                                         courseDelegate.border.color = "#d1d5db"
                                         courseDelegate.opacity = 0.7
@@ -1043,7 +1085,7 @@ Page {
                                     color: {
                                         if (isCourseSelectedSafe(originalIndex)) {
                                             return "#dbeafe"
-                                        } else if (selectedCoursesRepeater.count >= 7) {
+                                        } else if (!canAddCourseToSemester(originalIndex)) {
                                             return "#e5e7eb"
                                         } else {
                                             return "#f3f4f6"
@@ -1059,7 +1101,7 @@ Page {
                                         color: {
                                             if (isCourseSelectedSafe(originalIndex)) {
                                                 return "#2563eb"
-                                            } else if (selectedCoursesRepeater.count >= 7) {
+                                            } else if (!canAddCourseToSemester(originalIndex)) {
                                                 return "#9ca3af"
                                             } else {
                                                 return "#4b5563"
@@ -1091,7 +1133,7 @@ Page {
                                         font.pixelSize: 16
                                         font.bold: true
                                         color: {
-                                            if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
+                                            if (!canAddCourseToSemester(originalIndex) && !courseSelectionController.isCourseSelected(originalIndex)) {
                                                 return "#9ca3af"
                                             } else {
                                                 return "#1f2937"
@@ -1112,7 +1154,7 @@ Page {
                                         text: "Instructor: " + teacherName
                                         font.pixelSize: 14
                                         color: {
-                                            if (selectedCoursesRepeater.count >= 7 && !courseSelectionController.isCourseSelected(originalIndex)) {
+                                            if (!canAddCourseToSemester(originalIndex) && !courseSelectionController.isCourseSelected(originalIndex)) {
                                                 return "#9ca3af"
                                             } else {
                                                 return "#6b7280"
@@ -1130,11 +1172,23 @@ Page {
                                         return;
                                     }
 
-                                    if (selectedCoursesRepeater.count >= 7 && !isCourseSelectedSafe(originalIndex)) {
-                                        errorMessage = "You have selected the maximum of 7 courses"
-                                        errorMessageTimer.restart()
+                                    // Check if we can add this course to its semester
+                                    if (!canAddCourseToSemester(originalIndex)) {
+                                        // Get the course's semester for a more specific error message
+                                        var courseSemester = "";
+                                        if (courseSelectionController.getCourseSemester) {
+                                            courseSemester = courseSelectionController.getCourseSemester(originalIndex);
+                                        }
+
+                                        var semesterName = courseSemester === "A" ? "Semester A" :
+                                                courseSemester === "B" ? "Semester B" :
+                                                    courseSemester === "SUMMER" ? "Summer" :
+                                                    "this semester";
+
+                                        errorMessage = "You have selected the maximum of 7 courses for " + semesterName;
+                                        errorMessageTimer.restart();
                                     } else {
-                                        courseSelectionController.toggleCourseSelection(originalIndex)
+                                        courseSelectionController.toggleCourseSelection(originalIndex);
                                     }
                                 }
                             }

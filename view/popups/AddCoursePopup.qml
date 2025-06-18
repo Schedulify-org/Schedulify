@@ -16,17 +16,19 @@ Popup {
     property alias courseName: courseNameField.text
     property alias courseId: courseIdField.text
     property alias teacherName: teacherField.text
+    property alias selectedSemester: semesterCombo.currentIndex
 
     // Error handling properties
     property string errorMessage: ""
 
-    signal courseCreated(string courseName, string courseId, string teacherName, var sessionGroups)
+    signal courseCreated(string courseName, string courseId, string teacherName, int semester, var sessionGroups)
 
     // Clear all data
     function resetPopup() {
         courseNameField.text = ""
         courseIdField.text = ""
         teacherField.text = ""
+        semesterCombo.currentIndex = 0
         errorMessage = ""
         groupsModel.clear()
         groupsModel.append({
@@ -173,7 +175,7 @@ Popup {
         // Course Information Section
         Rectangle {
             width: parent.width
-            height: 230
+            height: 280
             color: "#f8fafc"
             radius: 12
             border.width: 1
@@ -234,9 +236,108 @@ Popup {
                         }
                     }
 
+                    // Semester Selection
+                    Column {
+                        Layout.preferredWidth: 150
+                        spacing: 8
+
+                        Text {
+                            text: "Semester *"
+                            font.pixelSize: 14
+                            font.bold: true
+                            color: "#374151"
+                        }
+
+                        Rectangle {
+                            width: parent.width
+                            height: 44
+                            color: "#ffffff"
+                            radius: 8
+                            border.width: 2
+                            border.color: "#e5e7eb"
+
+                            ComboBox {
+                                id: semesterCombo
+                                anchors.fill: parent
+                                anchors.margins: 2
+                                model: [
+                                    { text: "Semester A", value: 1, color: "#3b82f6" },
+                                    { text: "Semester B", value: 2, color: "#22c55e" },
+                                    { text: "Summer", value: 3, color: "#f59e0b" },
+                                    { text: "All Semesters", value: 4, color: "#8b5cf6" }
+                                ]
+                                textRole: "text"
+
+                                background: Rectangle {
+                                    color: "transparent"
+                                    radius: 6
+                                }
+
+                                contentItem: Rectangle {
+                                    color: "transparent"
+
+                                    Row {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 8
+
+                                        Rectangle {
+                                            width: 12
+                                            height: 12
+                                            radius: 6
+                                            color: semesterCombo.model[semesterCombo.currentIndex].color
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        Text {
+                                            text: semesterCombo.model[semesterCombo.currentIndex].text
+                                            font.pixelSize: 14
+                                            color: "#1f2937"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+                                }
+
+                                delegate: ItemDelegate {
+                                    width: semesterCombo.width
+                                    height: 40
+
+                                    background: Rectangle {
+                                        color: parent.hovered ? "#f3f4f6" : "#ffffff"
+                                        radius: 4
+                                    }
+
+                                    contentItem: Row {
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 12
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        spacing: 8
+
+                                        Rectangle {
+                                            width: 12
+                                            height: 12
+                                            radius: 6
+                                            color: modelData.color
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+
+                                        Text {
+                                            text: modelData.text
+                                            font.pixelSize: 14
+                                            color: "#1f2937"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Course Name
                     Column {
                         Layout.fillWidth: true
+                        Layout.columnSpan: 2
                         spacing: 8
 
                         Text {
@@ -388,7 +489,7 @@ Popup {
         ScrollView {
             id: groupsScrollView
             width: parent.width
-            height: parent.height - 350
+            height: parent.height - 400
             clip: true
             contentWidth: availableWidth
 
@@ -1063,6 +1164,9 @@ Popup {
                             return;
                         }
 
+                        // Get selected semester value
+                        var selectedSemesterValue = semesterCombo.model[semesterCombo.currentIndex].value;
+
                         // Collect session groups data and validate building/room fields
                         var sessionGroups = [];
                         var hasLecture = false;
@@ -1184,10 +1288,11 @@ Popup {
                             return;
                         }
 
-                        // Emit the signal
+                        // Emit the signal with semester value
                         courseCreated(courseNameField.text.trim(),
                             courseIdField.text.trim(),
                             teacherField.text.trim(),
+                            selectedSemesterValue,
                             sessionGroups);
 
                         // Reset and close
