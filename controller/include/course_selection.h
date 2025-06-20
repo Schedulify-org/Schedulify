@@ -25,9 +25,10 @@ struct BlockTime {
     QString day;
     QString startTime;
     QString endTime;
+    QString semester; // ADD this line
 
-    BlockTime(const QString& d, const QString& st, const QString& et)
-            : day(d), startTime(st), endTime(et) {}
+    BlockTime(const QString& d, const QString& st, const QString& et, const QString& sem = "A")
+            : day(d), startTime(st), endTime(et), semester(sem) {} // UPDATE constructor
 };
 
 class CourseSelectionController final : public ControllerManager {
@@ -54,6 +55,8 @@ public:
     void initiateCoursesData(const vector<Course>& courses);
 
     Q_INVOKABLE bool isCourseSelected(int index);
+    Q_INVOKABLE void addBlockTimeToSemester(const QString& day, const QString& startTime,
+                                            const QString& endTime, const QString& semester);
     Q_INVOKABLE void toggleCourseSelection(int index);
     Q_INVOKABLE void filterCourses(const QString &text);
     Q_INVOKABLE void resetFilter();
@@ -146,6 +149,10 @@ private:
     void applyFilters();
     bool matchesSemesterFilter(const Course& course) const;
     bool matchesSearchFilter(const Course& course, const QString& searchText) const;
+
+    // NEW: Per-semester block time methods
+    vector<BlockTime> getBlockTimesForCurrentSemester(const QString& semester);
+    Course createSingleBlockTimeCourseForSemester(const vector<BlockTime>& semesterBlockTimes, const QString& semester);
 
     inline static const int VALIDATION_TIMEOUT_MS = 60000;
     inline static const int THREAD_CLEANUP_TIMEOUT_MS = 10000;

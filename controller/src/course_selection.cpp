@@ -220,8 +220,9 @@ void CourseSelectionController::generateSemesterSchedules(const QString& semeste
     }
 
     // Add block times if they exist (block times apply to all semesters)
-    if (!userBlockTimes.empty()) {
-        Course blockCourse = createSingleBlockTimeCourse();
+    vector<BlockTime> currentSemesterBlockTimes = getBlockTimesForCurrentSemester(semester);
+    if (!currentSemesterBlockTimes.empty()) {
+        Course blockCourse = createSingleBlockTimeCourseForSemester(currentSemesterBlockTimes, semester);
         coursesToProcess.push_back(blockCourse);
     }
 
@@ -1020,8 +1021,9 @@ void CourseSelectionController::updateBlockTimesModel() {
         const BlockTime& blockTime = userBlockTimes[i];
         Course blockCourse;
         blockCourse.id = static_cast<int>(i) + 90000;
-        blockCourse.raw_id = (blockTime.startTime + " - " + blockTime.endTime).toStdString();
-        blockCourse.name = "Blocked Time";
+        // UPDATED: Include semester in the display
+        blockCourse.raw_id = (blockTime.startTime + " - " + blockTime.endTime + " (" + blockTime.semester + ")").toStdString();
+        blockCourse.name = "Blocked Time (" + blockTime.semester.toStdString() + ")";
         blockCourse.teacher = blockTime.day.toStdString(); // Store day in teacher field for display
 
         blockCourse.Lectures.clear();
@@ -1057,4 +1059,102 @@ int CourseSelectionController::getDayNumber(const QString& dayName) {
     if (dayName == "Friday") return 6;
     if (dayName == "Saturday") return 7;
     return 1;
+}
+void CourseSelectionController::addBlockTimeToSemester(const QString& day, const QString& startTime,
+                                                       const QString& endTime, const QString& semester) {
+    // Validate time format and logic first
+    if (startTime >= endTime) {
+        emit errorMessage("Start time must be before end time");
+        return;
+    }
+
+    // Helper function to convert time string to minutes for easier comparison
+    auto timeToMinutes = [](const QString& time) -> int {
+        QStringList parts = time.split(":");
+        if (parts.size() != 2) return -1;
+        int hours = parts[0].toInt();
+        int minutes = parts[1].toInt();
+        return hours * 60 + minutes;
+    };
+
+    int newStartMinutes = timeToMinutes(startTime);
+    int newEndMinutes = timeToMinutes(endTime);
+
+    if (newStartMinutes == -1 || newEndMinutes == -1) {
+        emit errorMessage("Invalid time format");
+        return;
+    }
+
+    // Check for overlaps with existing block times on the same day IN THE SAME SEMESTER
+    for (const auto& blockTime : userBlockTimes) {
+        // Only check against block times in the same semester
+        if (blockTime.day == day && blockTime.semester == semester) {
+            int existingStartMinutes = timeToMinutes(blockTime.startTime);
+            int existingEndMinutes = timeToMinutes(blockTime.endTime);
+
+            // Check if the new time block overlaps with the existing one
+            if (newStartMinutes < existingEndMinutes && newEndMinutes > existingStartMinutes) {
+                emit errorMessage(QString("Time block overlaps with existing block on %1 in semester %2 (%3 - %4)")
+                                          .arg(day)
+                                          .arg(semester)
+                                          .arg(blockTime.startTime)
+                                          .arg(blockTime.endTime));
+                return;
+            }
+        }
+    }
+
+    // If we get here, there's no overlap, so add the new block time with semester info
+    userBlockTimes.emplace_back(day, startTime, endTime, semester);
+    updateBlockTimesModel();
+
+    emit blockTimesChanged();
+}
+vector<BlockTime> CourseSelectionController::getBlockTimesForCurrentSemester(const QString& semester) {
+    vector<BlockTime> result;
+
+    // Filter userBlockTimes by semester
+    for (const auto& blockTime : userBlockTimes) {
+        if (blockTime.semester == semester) {
+            result.push_back(blockTime);
+        }
+    }
+
+    return result;
+}
+
+// ADD: Method to create block course for specific semester only
+Course CourseSelectionController::createSingleBlockTimeCourseForSemester(
+        const vector<BlockTime>& semesterBlockTimes, const QString& semester) {
+
+    Course blockCourse;
+    blockCourse.id = 90000;
+    blockCourse.raw_id = "TIME_BLOCKS_" + semester.toStdString();
+    blockCourse.name = "Time Block (" + semester.toStdString() + ")";
+    blockCourse.teacher = "System Generated";
+
+    blockCourse.Lectures.clear();
+    blockCourse.Tirgulim.clear();
+    blockCourse.labs.clear();
+    blockCourse.blocks.clear();
+
+    Group blockGroup;
+    blockGroup.type = SessionType::BLOCK;
+
+    for (const auto& blockTime : semesterBlockTimes) {
+        Session blockSession;
+        blockSession.day_of_week = getDayNumber(blockTime.day);
+        blockSession.start_time = blockTime.startTime.toStdString();
+        blockSession.end_time = blockTime.endTime.toStdString();
+        blockSession.building_number = "BLOCKED";
+        blockSession.room_number = "BLOCK";
+
+        blockGroup.sessions.push_back(blockSession);
+    }
+
+    if (!blockGroup.sessions.empty()) {
+        blockCourse.blocks.push_back(blockGroup);
+    }
+
+    return blockCourse;
 }

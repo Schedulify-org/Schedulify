@@ -170,8 +170,8 @@ Page {
         id: timeBlockPopup
         parent: Overlay.overlay
 
-        onBlockTimeAdded: function(day, startTime, endTime) {
-            courseSelectionController.addBlockTime(day, startTime, endTime);
+        onBlockTimeAdded: function(day, startTime, endTime, semester) {
+            courseSelectionController.addBlockTimeToSemester(day, startTime, endTime, semester);
         }
     }
 
@@ -179,8 +179,8 @@ Page {
         id: addCoursePopup
         parent: Overlay.overlay
 
-        onCourseCreated: function(courseName, courseId, teacherName, sessionGroups) {
-            courseSelectionController.createNewCourse(courseName, courseId, teacherName, sessionGroups);
+        onCourseCreated: function(courseName, courseId, teacherName, semester, sessionGroups) {
+            courseSelectionController.createNewCourse(courseName, courseId, teacherName, semester, sessionGroups);
         }
     }
 
