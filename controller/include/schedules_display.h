@@ -38,6 +38,9 @@ public:
     Q_INVOKABLE void switchToSemester(const QString& semester);
     Q_INVOKABLE void allSemestersGenerated();
 
+    // NEW: Method to reset to Semester A
+    Q_INVOKABLE void resetToSemesterA();
+
     // Properties
     ScheduleModel* scheduleModel() const { return m_scheduleModel; }
 

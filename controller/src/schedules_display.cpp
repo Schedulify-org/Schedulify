@@ -92,6 +92,16 @@ void SchedulesDisplayController::allSemestersGenerated() {
     emit allSemestersReady();
 }
 
+// NEW METHOD: Reset to Semester A - THIS IS THE NEW METHOD YOU NEED
+void SchedulesDisplayController::resetToSemesterA() {
+    m_currentSemester = "A";
+    // If Semester A has schedules, load them into the model
+    if (!m_schedulesA.empty()) {
+        m_scheduleModel->loadSchedules(m_schedulesA);
+    }
+    emit currentSemesterChanged();
+}
+
 // NEW METHOD: Check if a semester has schedules
 bool SchedulesDisplayController::hasSchedulesForSemester(const QString& semester) const {
     if (semester == "A") {

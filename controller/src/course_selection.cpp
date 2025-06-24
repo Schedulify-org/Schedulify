@@ -188,6 +188,13 @@ void CourseSelectionController::generateSchedules() {
         return;
     }
 
+    // NEW: Force reset to Semester A when starting generation
+    // This ensures the schedules display will show Semester A first
+    auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+    if (schedule_controller) {
+        schedule_controller->resetToSemesterA();
+    }
+
     // Start with Semester A
     generateSemesterSchedules("A");
 }
@@ -284,13 +291,24 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
         schedule_controller->setSemesterLoading(semester, false);
     }
 
-    // Check if schedules were generated successfully
+    // FIXED: Check if schedules were generated successfully
     if (!schedules || schedules->empty()) {
-        emit errorMessage(QString("No valid schedules found for semester %1").arg(semester));
-
-        // Mark as finished even if failed, so user can move on
+        // IMPORTANT: Do NOT mark as finished if no schedules were generated
+        // This prevents the semester button from becoming clickable when there are no schedules
         if (schedule_controller) {
-            schedule_controller->setSemesterFinished(semester, true);
+            schedule_controller->setSemesterFinished(semester, false); // Changed from true to false
+
+            // Clear any existing schedules for this semester to ensure consistency
+            schedule_controller->loadSemesterScheduleData(semester, std::vector<InformativeSchedule>());
+        }
+
+        // Only show error message if this is the current semester we're trying to view
+        // or if it's the first semester (A) which would be visible
+        if (semester == "A" || schedule_controller->getCurrentSemester() == semester) {
+            emit errorMessage(QString("No valid schedules found for semester %1").arg(semester));
+        } else {
+            // For other semesters, just log the issue
+            Logger::get().logWarning("No valid schedules found for semester " + semester.toStdString());
         }
 
         // Continue to next semester even if current one failed
@@ -298,16 +316,22 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
             generateSemesterSchedules("B");
         } else if (semester == "B") {
             generateSemesterSchedules("SUMMER");
+        } else if (semester == "SUMMER") {
+            // All semesters complete - notify that all processing is done
+            if (schedule_controller) {
+                schedule_controller->allSemestersGenerated();
+            }
         }
 
         workerThread = nullptr;
         return;
     }
 
+    // SUCCESS CASE: Schedules were generated
     // Store schedules and emit signal for the schedules display controller
     emit semesterSchedulesGenerated(semester, schedules);
 
-    // Load the schedule data - this will automatically set finished state
+    // Load the schedule data - this will automatically set finished state to true
     if (schedule_controller) {
         schedule_controller->loadSemesterScheduleData(semester, *schedules);
 
