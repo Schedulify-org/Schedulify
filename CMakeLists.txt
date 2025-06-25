@@ -125,6 +125,8 @@ set(PROJECT_SOURCES
         model/src/db/model_db_integration.cpp
         controller/adapters/view_models/file_model.h
         controller/adapters/view_models/file_model.cpp
+        controller/adapters/thread_workers/ChatBot.h
+        controller/adapters/thread_workers/ChatBot.cpp
         model/src/db/db_json_helpers.cpp
         model/src/db/db_json_helpers.cpp
         model/src/db/db_schema.cpp

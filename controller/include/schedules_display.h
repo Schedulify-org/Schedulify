@@ -5,6 +5,7 @@
 #include "model_access.h"
 #include "model_interfaces.h"
 #include "schedule_model.h"
+#include "ChatBot.h"
 
 #include <QObject>
 #include <QVariant>
@@ -16,6 +17,7 @@
 #include <QStandardPaths>
 #include <QQuickItemGrabResult>
 #include <QtQuick/QQuickItem>
+#include <QThread>
 
 enum class fileType {
     PNG,
@@ -55,6 +57,8 @@ signals:
     void screenshotSaved(const QString& path);
     void screenshotFailed();
     void botResponseReceived(const QString& response);
+
+
 
 private:
     std::vector<InformativeSchedule> m_schedules;

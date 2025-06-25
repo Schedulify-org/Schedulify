@@ -32,13 +32,13 @@ Page {
 
     property var logWindow: null
 
-    // Connection to handle bot responses
-    Connections {
-        target: controller
-        function onBotResponseReceived(response) {
-            chatBot.addBotResponse(response)
-        }
-    }
+    // REMOVE THIS CONNECTION - This is causing the duplicate response
+    // Connections {
+    //     target: controller
+    //     function onBotResponseReceived(response) {
+    //         chatBot.addBotResponse(response)
+    //     }
+    // }
 
     MouseArea {
         id: outsideClickArea
