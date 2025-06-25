@@ -401,10 +401,13 @@ Page {
                 contentItem: Item {
                     anchors.fill: parent
 
-                    Text {
+                    Image {
                         anchors.centerIn: parent
-                        text: "🤖"
-                        font.pixelSize: 20
+                        width: 24
+                        height: 24
+                        source: "qrc:/icons/ic-assistant.svg"
+                        sourceSize.width: 24
+                        sourceSize.height: 24
                     }
 
                     ToolTip {

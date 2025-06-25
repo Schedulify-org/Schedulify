@@ -67,7 +67,8 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
     connect(worker, &BotWorker::finished, [worker, workerThread]() {
         worker->deleteLater();
         workerThread->quit();
-        workerThread->wait();
+        // Remove the wait() call to prevent "Thread tried to wait on itself" error
+        // The thread will clean itself up automatically
         workerThread->deleteLater();
     });
 

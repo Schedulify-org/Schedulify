@@ -100,10 +100,13 @@ Rectangle {
                     }
                 }
 
-                Text {
+                Image {
                     anchors.centerIn: parent
-                    text: "🤖"
-                    font.pixelSize: 16
+                    width: 20
+                    height: 20
+                    source: "qrc:/icons/ic-assistant.svg"
+                    sourceSize.width: 20
+                    sourceSize.height: 20
                 }
             }
 
@@ -335,7 +338,9 @@ Rectangle {
 
             ScrollView {
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.min(inputField.implicitHeight + 16, 100)
+                Layout.preferredHeight: 46  // Fixed height for exactly 2 rows
+                Layout.maximumHeight: 46    // Prevent expansion
+                Layout.minimumHeight: 46    // Prevent shrinking
 
                 TextArea {
                     id: inputField
@@ -346,6 +351,9 @@ Rectangle {
                     wrapMode: TextArea.Wrap
                     selectByMouse: true
 
+                    // Force exactly 2 rows
+                    height: 46
+
                     background: Rectangle {
                         color: "#ffffff"
                         border.color: inputField.activeFocus ? "#3b82f6" : "#d1d5db"
@@ -353,7 +361,7 @@ Rectangle {
                         radius: 8
                     }
 
-                    Keys.onReturnPressed: {
+                    Keys.onReturnPressed: function(event) {
                         if (event.modifiers & Qt.ControlModifier) {
                             event.accepted = false
                         } else {

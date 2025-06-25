@@ -20,5 +20,6 @@
         <file>icons/ic-loading.svg</file>
         <file>icons/ic-valid.svg</file>
         <file>icons/ic-warning.svg</file>
+        <file>icons/ic-assistant.svg</file>
     </qresource>
 </RCC>

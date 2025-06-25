@@ -32,9 +32,11 @@ Page {
         }
 
         function onFileSelectionChanged() {
-            loadHistoryButton.enabled = fileInputController.selectedFileCount > 0;
-            selectedCountText.text = fileInputController.selectedFileCount > 0 ?
-                `${fileInputController.selectedFileCount} file(s) selected` : "";
+            if (fileInputController) {
+                loadHistoryButton.enabled = fileInputController.selectedFileCount > 0;
+                selectedCountText.text = fileInputController.selectedFileCount > 0 ?
+                    `${fileInputController.selectedFileCount} file(s) selected` : "";
+            }
         }
     }
 
@@ -202,7 +204,9 @@ Page {
                     }
 
                     onClicked: {
-                        fileInputController.deleteFileFromHistory(deleteConfirmDialog.fileId);
+                        if (fileInputController) {
+                            fileInputController.deleteFileFromHistory(deleteConfirmDialog.fileId);
+                        }
                         deleteConfirmDialog.close();
                     }
                 }
@@ -213,7 +217,6 @@ Page {
     function showErrorMessage(msg) {
         errorDialogText = msg;
         errorDialog.open();
-
     }
 
     Rectangle {
@@ -283,7 +286,9 @@ Page {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            fileInputController.refreshFileHistory();
+                            if (fileInputController) {
+                                fileInputController.refreshFileHistory();
+                            }
                         }
                     }
                 }
@@ -438,7 +443,9 @@ Page {
                             onClicked: {
                                 showHistory = true
                                 // Refresh file history when switching to history view
-                                fileInputController.refreshFileHistory()
+                                if (fileInputController) {
+                                    fileInputController.refreshFileHistory()
+                                }
                             }
                             cursorShape: Qt.PointingHandCursor
                         }
@@ -526,7 +533,9 @@ Page {
                                     filePath = fileUrl.toString();
                                 }
 
-                                fileInputController.handleFileSelected(filePath);
+                                if (fileInputController) {
+                                    fileInputController.handleFileSelected(filePath);
+                                }
                             } else {
                                 showErrorMessage("No valid file was dropped.");
                             }
@@ -580,7 +589,9 @@ Page {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    fileInputController.handleUploadAndContinue();
+                                    if (fileInputController) {
+                                        fileInputController.handleUploadAndContinue();
+                                    }
                                 }
                                 cursorShape: Qt.PointingHandCursor
                             }
@@ -617,7 +628,9 @@ Page {
                         anchors.fill: parent
                         hoverEnabled: true
                         onClicked: {
-                            fileInputController.loadNewFile();
+                            if (fileInputController) {
+                                fileInputController.loadNewFile();
+                            }
                         }
                         cursorShape: Qt.PointingHandCursor
                     }
@@ -655,7 +668,7 @@ Page {
 
                     ListView {
                         id: fileHistoryList
-                        model: fileInputController.fileHistoryModel
+                        model: fileInputController ? fileInputController.fileHistoryModel : null
                         spacing: 8
 
                         // Add empty state
@@ -685,7 +698,9 @@ Page {
                             Connections {
                                 target: fileInputController
                                 function onFileSelectionChanged() {
-                                    fileDelegate.isSelected = fileInputController ? fileInputController.isFileSelected(index) : false
+                                    if (fileInputController) {
+                                        fileDelegate.isSelected = fileInputController.isFileSelected(index)
+                                    }
                                 }
                             }
 
@@ -693,7 +708,9 @@ Page {
                                 anchors.fill: parent
                                 anchors.rightMargin: 50 // Leave space for delete button
                                 onClicked: {
-                                    fileInputController.toggleFileSelection(index);
+                                    if (fileInputController) {
+                                        fileInputController.toggleFileSelection(index);
+                                    }
                                 }
                                 cursorShape: Qt.PointingHandCursor
                             }
@@ -820,7 +837,7 @@ Page {
 
                         Button {
                             text: "Clear Selection"
-                            enabled: fileInputController.selectedFileCount > 0
+                            enabled: fileInputController ? fileInputController.selectedFileCount > 0 : false
                             background: Rectangle {
                                 color: parent.enabled ? (clearMouseArea.containsMouse ? "#f3f4f6" : "#ffffff") : "#f9fafb"
                                 border.color: "#d1d5db"
@@ -840,7 +857,9 @@ Page {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    fileInputController.clearFileSelection();
+                                    if (fileInputController) {
+                                        fileInputController.clearFileSelection();
+                                    }
                                 }
                                 cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             }
@@ -867,7 +886,9 @@ Page {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 onClicked: {
-                                    fileInputController.loadFromHistory();
+                                    if (fileInputController) {
+                                        fileInputController.loadFromHistory();
+                                    }
                                 }
                                 cursorShape: parent.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                             }
