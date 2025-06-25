@@ -121,17 +121,17 @@ set(PROJECT_SOURCES
 
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/botAdapter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/apiManager.cpp
-        model/src/db/db_manager.cpp
-        model/src/db/model_db_integration.cpp
-        controller/adapters/view_models/file_model.h
-        controller/adapters/view_models/file_model.cpp
-        controller/adapters/thread_workers/ChatBot.h
-        controller/adapters/thread_workers/ChatBot.cpp
-        model/src/db/db_json_helpers.cpp
-        model/src/db/db_json_helpers.cpp
-        model/src/db/db_schema.cpp
-        model/src/db/db_files.cpp
-        model/src/db/db_course.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/model_db_integration.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/file_model.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/file_model.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ChatBot.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ChatBot.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_schema.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_files.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_course.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
