@@ -1254,7 +1254,7 @@ Page {
                                 case "Lab": return "#abffc6";               // Light green
                                 case "Tutorial": return "#edc8ff";          // Light purple
                                 case "Block": return "#7a7a7a";             // Gray
-                                case "Departmental Session": return "#ffd6a5";  // Light orange
+                                case "Departmental": return "#ffd6a5";  // Light orange
                                 case "Reinforcement": return "#ffaaa5";     // Light red
                                 case "Guidance": return "#a5d6ff";          // Light sky blue
                                 case "Colloquium": return "#8b64ff"; //  purple
