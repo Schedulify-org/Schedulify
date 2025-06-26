@@ -1257,11 +1257,11 @@ Page {
                                 case "Departmental Session": return "#ffd6a5";  // Light orange
                                 case "Reinforcement": return "#ffaaa5";     // Light red
                                 case "Guidance": return "#a5d6ff";          // Light sky blue
-                                case "Optional Colloquium": return "#d4a5ff"; // Light lavender
+                                case "Colloquium": return "#8b64ff"; //  purple
                                 case "Registration": return "#ffa5d4";      // Light pink
                                 case "Thesis": return "#a5ffd4";            // Light mint
                                 case "Project": return "#d4ffa5";           // Light lime
-                                default: return "#e5e7eb";                  // Light gray for unknown types
+                                default: return "#ff0000";                  // red
                             }
                         }
 

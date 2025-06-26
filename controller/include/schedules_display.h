@@ -70,6 +70,8 @@ public:
     // NEW: Methods to be called from CourseSelectionController
     void setSemesterLoading(const QString& semester, bool loading);
     void setSemesterFinished(const QString& semester, bool finished);
+    void clearAllSchedules();
+
 
 signals:
     void schedulesSorted(int totalCount);

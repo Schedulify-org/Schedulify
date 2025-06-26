@@ -104,6 +104,7 @@ private:
     bool validationCompleted = false;
     bool m_validationInProgress = false;
     QStringList m_validationErrors;
+    bool hasNavigatedToSchedules = false;
 
     vector<Course> allCourses;
     vector<Course> filteredCourses;
@@ -132,6 +133,7 @@ private:
     // NEW: Semester-specific helper methods
     void updateSelectedCoursesModel();
     void generateSemesterSchedules(const QString& semester);
+    void checkAndNavigateToSchedules();  // ADD THIS LINE - This is what was missing!
 
     void updateBlockTimesModel();
     Course createSingleBlockTimeCourse();

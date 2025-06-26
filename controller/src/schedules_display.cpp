@@ -363,3 +363,34 @@ QString SchedulesDisplayController::generateFilename(const QString& basePath, in
 
     return QDir(basePath).filePath(filename);
 }
+void SchedulesDisplayController::clearAllSchedules() {
+    // Clear all semester schedule vectors
+    m_schedulesA.clear();
+    m_schedulesB.clear();
+    m_schedulesSummer.clear();
+
+    // Reset all loading and finished states
+    m_semesterLoadingState["A"] = false;
+    m_semesterLoadingState["B"] = false;
+    m_semesterLoadingState["SUMMER"] = false;
+
+    m_semesterFinishedState["A"] = false;
+    m_semesterFinishedState["B"] = false;
+    m_semesterFinishedState["SUMMER"] = false;
+
+    // Clear the current display
+    m_scheduleModel->loadSchedules(std::vector<InformativeSchedule>());
+
+    // Reset to semester A
+    m_currentSemester = "A";
+    m_allSemestersLoaded = false;
+
+    // Emit signals to update UI
+    emit currentSemesterChanged();
+    emit semesterLoadingStateChanged("A");
+    emit semesterLoadingStateChanged("B");
+    emit semesterLoadingStateChanged("SUMMER");
+    emit semesterFinishedStateChanged("A");
+    emit semesterFinishedStateChanged("B");
+    emit semesterFinishedStateChanged("SUMMER");
+}

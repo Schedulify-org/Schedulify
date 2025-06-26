@@ -188,39 +188,101 @@ void CourseSelectionController::generateSchedules() {
         return;
     }
 
-    // NEW: Force reset to Semester A when starting generation
-    // This ensures the schedules display will show Semester A first
+    // Reset navigation flag when starting new generation
+    hasNavigatedToSchedules = false;
+
+    // Get schedule controller
     auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
     if (schedule_controller) {
+        // IMPORTANT: Clear all existing schedules before starting new generation
+        schedule_controller->clearAllSchedules();
+
+        // Reset to Semester A
         schedule_controller->resetToSemesterA();
     }
 
     // Start with Semester A
     generateSemesterSchedules("A");
 }
+void CourseSelectionController::checkAndNavigateToSchedules() {
+    auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+    if (!schedule_controller) return;
+
+    // Check if we haven't navigated yet and if any semester has schedules
+    if (!hasNavigatedToSchedules) {
+        bool hasAnySchedules = false;
+        QString firstSemesterWithSchedules;
+
+        // Check each semester in order
+        if (schedule_controller->hasSchedulesForSemester("A")) {
+            hasAnySchedules = true;
+            firstSemesterWithSchedules = "A";
+        } else if (schedule_controller->hasSchedulesForSemester("B")) {
+            hasAnySchedules = true;
+            firstSemesterWithSchedules = "B";
+        } else if (schedule_controller->hasSchedulesForSemester("SUMMER")) {
+            hasAnySchedules = true;
+            firstSemesterWithSchedules = "SUMMER";
+        }
+
+        if (hasAnySchedules) {
+            // Navigate to schedules display
+            goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+            hasNavigatedToSchedules = true;
+
+            // Switch to the first semester that has schedules
+            schedule_controller->switchToSemester(firstSemesterWithSchedules);
+        } else {
+            // No schedules for any semester
+            emit errorMessage("No valid schedules found for any semester");
+        }
+    }
+
+    // Notify that all processing is done
+    schedule_controller->allSemestersGenerated();
+}// UPDATED: Handle semester-specific course selection
 
 // NEW METHOD: Generate schedules for a specific semester
 void CourseSelectionController::generateSemesterSchedules(const QString& semester) {
     vector<Course> coursesToProcess;
 
+    // Get schedule controller reference
+    auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+
     // Get courses for the specified semester
     if (semester == "A") {
         if (selectedCoursesA.empty()) {
-            // If A is empty, move to B
+            // Mark this semester as finished with no schedules
+            if (schedule_controller) {
+                schedule_controller->setSemesterFinished("A", false);
+                schedule_controller->loadSemesterScheduleData("A", std::vector<InformativeSchedule>());
+            }
+            // Move to B
             generateSemesterSchedules("B");
             return;
         }
         coursesToProcess = selectedCoursesA;
     } else if (semester == "B") {
         if (selectedCoursesB.empty()) {
-            // If B is empty, move to Summer
+            // Mark this semester as finished with no schedules
+            if (schedule_controller) {
+                schedule_controller->setSemesterFinished("B", false);
+                schedule_controller->loadSemesterScheduleData("B", std::vector<InformativeSchedule>());
+            }
+            // Move to Summer
             generateSemesterSchedules("SUMMER");
             return;
         }
         coursesToProcess = selectedCoursesB;
     } else if (semester == "SUMMER") {
         if (selectedCoursesSummer.empty()) {
-            // All semesters complete
+            // Mark this semester as finished with no schedules
+            if (schedule_controller) {
+                schedule_controller->setSemesterFinished("SUMMER", false);
+                schedule_controller->loadSemesterScheduleData("SUMMER", std::vector<InformativeSchedule>());
+            }
+            // All semesters complete - check if we need to navigate
+            checkAndNavigateToSchedules();
             return;
         }
         coursesToProcess = selectedCoursesSummer;
@@ -233,8 +295,7 @@ void CourseSelectionController::generateSemesterSchedules(const QString& semeste
         coursesToProcess.push_back(blockCourse);
     }
 
-    // UPDATED: Set loading state before starting generation
-    auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
+    // Set loading state before starting generation
     if (schedule_controller) {
         schedule_controller->setSemesterLoading(semester, true);
         schedule_controller->setSemesterFinished(semester, false);
@@ -272,8 +333,7 @@ void CourseSelectionController::generateSemesterSchedules(const QString& semeste
             }
         });
     }
-}
-// NEW METHOD: Handle completion of semester schedule generation
+}// NEW METHOD: Handle completion of semester schedule generation
 void CourseSelectionController::onSemesterSchedulesGenerated(const QString& semester, vector<InformativeSchedule>* schedules) {
     // Hide loading overlay
     auto* engine = qobject_cast<QQmlApplicationEngine*>(getEngine());
@@ -286,28 +346,23 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
     // Get schedule controller reference
     auto* schedule_controller = qobject_cast<SchedulesDisplayController*>(findController("schedulesDisplayController"));
 
-    // UPDATED: Always clear loading state, regardless of success/failure
+    // Always clear loading state, regardless of success/failure
     if (schedule_controller) {
         schedule_controller->setSemesterLoading(semester, false);
     }
 
-    // FIXED: Check if schedules were generated successfully
+    // Check if schedules were generated successfully
     if (!schedules || schedules->empty()) {
-        // IMPORTANT: Do NOT mark as finished if no schedules were generated
-        // This prevents the semester button from becoming clickable when there are no schedules
+        // Do NOT mark as finished if no schedules were generated
         if (schedule_controller) {
-            schedule_controller->setSemesterFinished(semester, false); // Changed from true to false
-
-            // Clear any existing schedules for this semester to ensure consistency
+            schedule_controller->setSemesterFinished(semester, false);
             schedule_controller->loadSemesterScheduleData(semester, std::vector<InformativeSchedule>());
         }
 
         // Only show error message if this is the current semester we're trying to view
-        // or if it's the first semester (A) which would be visible
         if (semester == "A" || schedule_controller->getCurrentSemester() == semester) {
             emit errorMessage(QString("No valid schedules found for semester %1").arg(semester));
         } else {
-            // For other semesters, just log the issue
             Logger::get().logWarning("No valid schedules found for semester " + semester.toStdString());
         }
 
@@ -317,10 +372,8 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
         } else if (semester == "B") {
             generateSemesterSchedules("SUMMER");
         } else if (semester == "SUMMER") {
-            // All semesters complete - notify that all processing is done
-            if (schedule_controller) {
-                schedule_controller->allSemestersGenerated();
-            }
+            // All semesters complete - check if we need to navigate
+            checkAndNavigateToSchedules();
         }
 
         workerThread = nullptr;
@@ -328,16 +381,20 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
     }
 
     // SUCCESS CASE: Schedules were generated
-    // Store schedules and emit signal for the schedules display controller
     emit semesterSchedulesGenerated(semester, schedules);
 
     // Load the schedule data - this will automatically set finished state to true
     if (schedule_controller) {
         schedule_controller->loadSemesterScheduleData(semester, *schedules);
 
-        // If this is the first semester (A) being completed, navigate to schedules display
-        if (semester == "A") {
+        // FIXED: Navigate to schedules display if this is the FIRST semester with schedules
+        // Check if we haven't navigated yet
+        if (!hasNavigatedToSchedules) {
             goToScreen(QUrl(QStringLiteral("qrc:/schedules_display.qml")));
+            hasNavigatedToSchedules = true;
+
+            // Also set this semester as the current one to display
+            schedule_controller->switchToSemester(semester);
         }
     }
 
@@ -355,7 +412,8 @@ void CourseSelectionController::onSemesterSchedulesGenerated(const QString& seme
 
     workerThread = nullptr;
 }
-// UPDATED: Handle semester-specific course selection
+
+// Add this new method:
 void CourseSelectionController::toggleCourseSelection(int index) {
     if (index < 0 || index >= static_cast<int>(allCourses.size())) {
         Logger::get().logError("Invalid selected course index");
