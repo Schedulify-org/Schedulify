@@ -331,3 +331,170 @@ void ModelDatabaseIntegration::updateLastAccessMetadata() {
         db.updateMetadata("last_access", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
     }
 }
+
+bool ModelDatabaseIntegration::saveSchedulesToDatabase(const vector<InformativeSchedule>& schedules,
+                                                       const string& setName, const vector<int>& sourceFileIds) {
+    if (!isInitialized()) {
+        Logger::get().logError("Database not initialized for schedule saving");
+        return false;
+    }
+
+    if (schedules.empty()) {
+        Logger::get().logWarning("No schedules provided to save to database");
+        return true;
+    }
+
+    try {
+        auto& db = DatabaseManager::getInstance();
+
+        // Verify database connection before proceeding
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during schedule saving");
+            return false;
+        }
+
+        if (!db.schedules()->insertSchedules(schedules, setName, sourceFileIds)) {
+            Logger::get().logError("Failed to insert schedules into database");
+            return false;
+        }
+
+        // Update metadata
+        db.updateMetadata("schedules_saved_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
+        db.updateMetadata("last_saved_schedule_count", std::to_string(schedules.size()));
+        db.updateMetadata("last_saved_schedule_set", setName);
+
+        updateLastAccessMetadata();
+
+        Logger::get().logInfo("SUCCESS: " + std::to_string(schedules.size()) + " schedules saved to database");
+        Logger::get().logInfo("Schedule set: '" + setName + "'");
+
+        return true;
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception during schedule saving: " + string(e.what()));
+        return false;
+    }
+}
+
+vector<InformativeSchedule> ModelDatabaseIntegration::getSchedulesFromDatabase(int setId) {
+    if (!isInitialized()) {
+        Logger::get().logError("Database not initialized for schedule retrieval");
+        return {};
+    }
+
+    try {
+        auto& db = DatabaseManager::getInstance();
+
+        // Verify database connection
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during schedule retrieval");
+            return {};
+        }
+
+        vector<InformativeSchedule> schedules;
+
+        if (setId > 0) {
+            schedules = db.schedules()->getSchedulesBySetId(setId);
+        } else {
+            schedules = db.schedules()->getAllSchedules();
+        }
+
+        updateLastAccessMetadata();
+
+        Logger::get().logInfo("Retrieved " + std::to_string(schedules.size()) + " schedules from database");
+
+        return schedules;
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception during schedule retrieval: " + string(e.what()));
+        return {};
+    }
+}
+
+vector<ScheduleSetEntity> ModelDatabaseIntegration::getScheduleSets() {
+    if (!isInitialized()) {
+        Logger::get().logError("Database not initialized for schedule set retrieval");
+        return {};
+    }
+
+    try {
+        auto& db = DatabaseManager::getInstance();
+
+        // Verify database connection
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during schedule set retrieval");
+            return {};
+        }
+
+        auto sets = db.schedules()->getAllScheduleSets();
+        updateLastAccessMetadata();
+
+        Logger::get().logInfo("Retrieved " + std::to_string(sets.size()) + " schedule sets from database");
+
+        return sets;
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception during schedule set retrieval: " + string(e.what()));
+        return {};
+    }
+}
+
+bool ModelDatabaseIntegration::deleteScheduleSet(int setId) {
+    if (!isInitialized()) {
+        Logger::get().logError("Database not initialized for schedule set deletion");
+        return false;
+    }
+
+    try {
+        auto& db = DatabaseManager::getInstance();
+
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during schedule set deletion");
+            return false;
+        }
+
+        if (!db.schedules()->deleteScheduleSet(setId)) {
+            Logger::get().logError("Failed to delete schedule set from database");
+            return false;
+        }
+
+        updateLastAccessMetadata();
+        Logger::get().logInfo("Successfully deleted schedule set ID: " + std::to_string(setId));
+        return true;
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception during schedule set deletion: " + string(e.what()));
+        return false;
+    }
+}
+
+vector<InformativeSchedule> ModelDatabaseIntegration::filterSchedulesByMetrics(const ScheduleFilterData& filters) {
+    if (!isInitialized()) {
+        Logger::get().logError("Database not initialized for schedule filtering");
+        return {};
+    }
+
+    try {
+        auto& db = DatabaseManager::getInstance();
+
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost during schedule filtering");
+            return {};
+        }
+
+        auto schedules = db.schedules()->getSchedulesByMetrics(
+                filters.maxDays, filters.maxGaps, filters.maxGapTime,
+                filters.minAvgStart, filters.maxAvgStart, filters.minAvgEnd, filters.maxAvgEnd
+        );
+
+        updateLastAccessMetadata();
+
+        Logger::get().logInfo("Filtered to " + std::to_string(schedules.size()) + " schedules matching criteria");
+
+        return schedules;
+
+    } catch (const exception& e) {
+        Logger::get().logError("Exception during schedule filtering: " + string(e.what()));
+        return {};
+    }
+}

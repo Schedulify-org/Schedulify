@@ -132,6 +132,11 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_schema.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_files.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_course.cpp
+        model/src/db/db_schedules.cpp
+        model/src/db/ScheduleDatabaseWriter.cpp
+        model/src/db/db_utils.cpp
+        model/src/db/db_utils.cpp
+        model/src/db/cleanup_manager.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

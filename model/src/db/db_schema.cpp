@@ -6,13 +6,17 @@ DatabaseSchema::DatabaseSchema(QSqlDatabase& database) : db(database) {
 bool DatabaseSchema::createTables() {
     return createMetadataTable() &&
            createFileTable() &&
-           createCourseTable();
+           createCourseTable() &&
+           createScheduleSetTable() &&
+           createScheduleTable();
 }
 
 bool DatabaseSchema::createIndexes() {
     return createMetadataIndexes() &&
            createFileIndexes() &&
-           createCourseIndexes();
+           createCourseIndexes() &&
+           createScheduleSetIndexes() &&
+           createScheduleIndexes();
 }
 
 bool DatabaseSchema::createMetadataTable() {
@@ -177,6 +181,11 @@ bool DatabaseSchema::upgradeSchema(int fromVersion, int toVersion) {
         return upgradeFromV1ToV2();
     }
 
+    // Add new upgrade path for schedule tables
+    if (fromVersion == 2 && toVersion == 3) {
+        return upgradeFromV2ToV3();
+    }
+
     Logger::get().logError("Unsupported schema upgrade path: " + std::to_string(fromVersion) +
                            " -> " + std::to_string(toVersion));
     return false;
@@ -243,8 +252,26 @@ bool DatabaseSchema::upgradeFromV1ToV2() {
     return true;
 }
 
+bool DatabaseSchema::upgradeFromV2ToV3() {
+    Logger::get().logInfo("Upgrading schema from v2 to v3 (adding schedule tables)");
+
+    // Create schedule tables if they don't exist
+    if (!createScheduleSetTable() || !createScheduleTable()) {
+        Logger::get().logError("Failed to create schedule tables during upgrade");
+        return false;
+    }
+
+    // Create indexes for schedule tables
+    if (!createScheduleSetIndexes() || !createScheduleIndexes()) {
+        Logger::get().logWarning("Some schedule indexes failed to create during upgrade");
+    }
+
+    Logger::get().logInfo("Schema upgrade v2->v3 completed successfully");
+    return true;
+}
+
 bool DatabaseSchema::validateSchema() {
-    QStringList requiredTables = {"metadata", "file", "course"};
+    QStringList requiredTables = {"metadata", "file", "course", "schedule_set", "schedule"};
 
     for (const QString& table : requiredTables) {
         if (!tableExists(table)) {
@@ -253,15 +280,11 @@ bool DatabaseSchema::validateSchema() {
         }
     }
 
-    // Validate course table has required columns including course_file_id
-    if (!validateCourseTableColumns()) {
-        Logger::get().logError("Course table validation failed");
-        return false;
-    }
-
-    // Validate file table has required columns
-    if (!validateFileTableColumns()) {
-        Logger::get().logError("File table validation failed");
+    // Validate all table columns
+    if (!validateCourseTableColumns() ||
+        !validateFileTableColumns() ||
+        !validateScheduleSetTableColumns() ||
+        !validateScheduleTableColumns()) {
         return false;
     }
 
@@ -332,5 +355,155 @@ bool DatabaseSchema::executeQuery(const QString& query) {
         Logger::get().logError("Failed to execute query: " + sqlQuery.lastError().text().toStdString());
         return false;
     }
+    return true;
+}
+
+bool DatabaseSchema::createScheduleSetTable() {
+    const QString query = R"(
+        CREATE TABLE IF NOT EXISTS schedule_set (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            set_name TEXT NOT NULL,
+            source_file_ids_json TEXT DEFAULT '[]',
+            schedule_count INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    )";
+
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create schedule_set table");
+        return false;
+    }
+
+    Logger::get().logInfo("Schedule set table created successfully");
+    return true;
+}
+
+bool DatabaseSchema::createScheduleTable() {
+    const QString query = R"(
+        CREATE TABLE IF NOT EXISTS schedule (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            schedule_set_id INTEGER NOT NULL,
+            schedule_index INTEGER NOT NULL,
+            schedule_name TEXT DEFAULT '',
+            schedule_data_json TEXT NOT NULL,
+            amount_days INTEGER DEFAULT 0,
+            amount_gaps INTEGER DEFAULT 0,
+            gaps_time INTEGER DEFAULT 0,
+            avg_start INTEGER DEFAULT 0,
+            avg_end INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (schedule_set_id) REFERENCES schedule_set(id) ON DELETE CASCADE,
+            UNIQUE(schedule_set_id, schedule_index)
+        )
+    )";
+
+    if (!executeQuery(query)) {
+        Logger::get().logError("Failed to create schedule table");
+        return false;
+    }
+
+    Logger::get().logInfo("Schedule table created successfully");
+    return true;
+}
+
+bool DatabaseSchema::createScheduleSetIndexes() {
+    bool success = true;
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_set_name ON schedule_set(set_name)")) {
+        Logger::get().logWarning("Failed to create schedule_set name index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_set_created_at ON schedule_set(created_at)")) {
+        Logger::get().logWarning("Failed to create schedule_set created_at index");
+        success = false;
+    }
+
+    if (success) {
+        Logger::get().logInfo("Schedule set indexes created successfully");
+    }
+    return success;
+}
+
+bool DatabaseSchema::createScheduleIndexes() {
+    bool success = true;
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_set_id ON schedule(schedule_set_id)")) {
+        Logger::get().logWarning("Failed to create schedule set_id index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_index ON schedule(schedule_index)")) {
+        Logger::get().logWarning("Failed to create schedule index index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_metrics ON schedule(amount_days, amount_gaps, gaps_time)")) {
+        Logger::get().logWarning("Failed to create schedule metrics index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_avg_times ON schedule(avg_start, avg_end)")) {
+        Logger::get().logWarning("Failed to create schedule avg_times index");
+        success = false;
+    }
+
+    if (!executeQuery("CREATE INDEX IF NOT EXISTS idx_schedule_created_at ON schedule(created_at)")) {
+        Logger::get().logWarning("Failed to create schedule created_at index");
+        success = false;
+    }
+
+    if (success) {
+        Logger::get().logInfo("Schedule indexes created successfully");
+    }
+    return success;
+}
+
+bool DatabaseSchema::validateScheduleSetTableColumns() {
+    QSqlQuery query("PRAGMA table_info(schedule_set)", db);
+    QStringList foundColumns;
+
+    while (query.next()) {
+        QString columnName = query.value(1).toString();
+        foundColumns << columnName;
+    }
+
+    QStringList requiredColumns = {"id", "set_name", "source_file_ids_json", "schedule_count",
+                                   "created_at", "updated_at"};
+
+    for (const QString& required : requiredColumns) {
+        if (!foundColumns.contains(required)) {
+            Logger::get().logError("Schedule set table missing required column: " + required.toStdString());
+            return false;
+        }
+    }
+
+    Logger::get().logInfo("Schedule set table column validation passed");
+    return true;
+}
+
+bool DatabaseSchema::validateScheduleTableColumns() {
+    QSqlQuery query("PRAGMA table_info(schedule)", db);
+    QStringList foundColumns;
+
+    while (query.next()) {
+        QString columnName = query.value(1).toString();
+        foundColumns << columnName;
+    }
+
+    QStringList requiredColumns = {"id", "schedule_set_id", "schedule_index", "schedule_name",
+                                   "schedule_data_json", "amount_days", "amount_gaps", "gaps_time",
+                                   "avg_start", "avg_end", "created_at", "updated_at"};
+
+    for (const QString& required : requiredColumns) {
+        if (!foundColumns.contains(required)) {
+            Logger::get().logError("Schedule table missing required column: " + required.toStdString());
+            return false;
+        }
+    }
+
+    Logger::get().logInfo("Schedule table column validation passed");
     return true;
 }

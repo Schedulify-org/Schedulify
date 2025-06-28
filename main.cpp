@@ -1,17 +1,32 @@
-#include <QApplication>
+#include "model_db_integration.h"
 #include <QQmlApplicationEngine>
-#include <QQuickView>
-#include <QUrl>
-#include <QQuickStyle>
-#include <QQmlContext>
 #include "main_controller.h"
+#include "cleanup_manager.h"
+#include <QApplication>
+#include "db_manager.h"
+#include <QQmlContext>
 #include "logger.h"
+#include <QUrl>
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
     Logger::get().logInitiate();
+    Logger::get().logInfo("Application started - Qt initialized");
+
+    // Now that QApplication exists, we can safely initialize database-related components
+    try {
+        // Initialize database integration after Qt is ready
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.initializeDatabase()) {
+            Logger::get().logWarning("Database initialization failed - continuing without persistence");
+        } else {
+            Logger::get().logInfo("Database initialized successfully");
+        }
+    } catch (const std::exception& e) {
+        Logger::get().logWarning("Database initialization exception: " + std::string(e.what()));
+    }
 
     // Create the QQmlApplicationEngine
     QQmlApplicationEngine engine;
@@ -34,5 +49,20 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    return app.exec();
+    // Setup cleanup on application exit - use aboutToQuit for earlier cleanup
+    QObject::connect(&app, &QApplication::aboutToQuit, []() {
+        Logger::get().logInfo("Application about to quit - starting cleanup");
+        CleanupManager::performCleanup();
+
+        // Process any remaining events to ensure cleanup completes
+        QCoreApplication::processEvents();
+
+        Logger::get().logInfo("Cleanup signal processing completed");
+    });
+
+    Logger::get().logInfo("Starting application event loop");
+    int result = app.exec();
+    Logger::get().logInfo("Application event loop finished with code: " + std::to_string(result));
+
+    return result;
 }

@@ -1,28 +1,32 @@
 #ifndef DB_ENTITIES_H
 #define DB_ENTITIES_H
 
+#include "db_json_helpers.h"
+
 #include <QDateTime>
 #include <string>
+#include <utility>
 #include <vector>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QByteArray>
 
 using namespace std;
 
 // Database entity structures representing table schemas
 struct FileEntity {
-    int id = 0;                   // Primary key
-    string file_name;             // Original filename
-    string file_type;             // File extension (txt, xlsx, etc.)
-    QDateTime upload_time;        // When the file was first uploaded
-    QDateTime updated_at;         // Last modification time
+    int id = 0;
+    string file_name;
+    string file_type;
+    QDateTime upload_time;
+    QDateTime updated_at;
 
     // Default constructor
     FileEntity() = default;
 
     // Constructor for easy creation
-    FileEntity(const string& name, const string& type)
-            : file_name(name), file_type(type),
-              upload_time(QDateTime::currentDateTime()),
-              updated_at(QDateTime::currentDateTime()) {}
+    FileEntity(string name, string type) : file_name(std::move(name)), file_type(std::move(type)),
+              upload_time(QDateTime::currentDateTime()), updated_at(QDateTime::currentDateTime()) {}
 };
 
 struct CourseEntity {
@@ -42,31 +46,26 @@ struct CourseEntity {
     CourseEntity() = default;
 
     // Constructor for database insertion
-    CourseEntity(int courseId, const string& rawId, const string& courseName,
-                 const string& teacherName, int fileId)
-            : id(courseId), raw_id(rawId), name(courseName), teacher(teacherName),
-              file_id(fileId), created_at(QDateTime::currentDateTime()),
-              updated_at(QDateTime::currentDateTime()) {}
+    CourseEntity(int courseId, string rawId, string courseName, string teacherName, int fileId) : id(courseId),
+    raw_id(std::move(rawId)), name(std::move(courseName)), teacher(std::move(teacherName)), file_id(fileId),
+    created_at(QDateTime::currentDateTime()), updated_at(QDateTime::currentDateTime()) {}
 };
 
 struct MetadataEntity {
-    int id = 0;                   // Primary key (auto-increment)
-    string key;                   // Metadata key (unique)
-    string value;                 // Metadata value
-    string description;           // Human-readable description of the metadata
-    QDateTime updated_at;         // When this metadata was last updated
+    int id = 0;
+    string key;
+    string value;
+    string description;
+    QDateTime updated_at;
 
     // Default constructor
     MetadataEntity() = default;
 
     // Constructor for database insertion
-    MetadataEntity(const string& metaKey, const string& metaValue,
-                   const string& desc = "")
-            : key(metaKey), value(metaValue), description(desc),
-              updated_at(QDateTime::currentDateTime()) {}
+    MetadataEntity(string metaKey, string metaValue,string desc = "") : key(std::move(metaKey)),
+    value(std::move(metaValue)), description(std::move(desc)), updated_at(QDateTime::currentDateTime()) {}
 };
 
-// Helper structure for database statistics
 struct DatabaseStatistics {
     int total_files = 0;
     int total_courses = 0;
@@ -79,7 +78,6 @@ struct DatabaseStatistics {
     DatabaseStatistics() = default;
 };
 
-// Helper structure for course conflict resolution
 struct CourseConflictInfo {
     int course_id = 0;
     string raw_id;
@@ -92,10 +90,74 @@ struct CourseConflictInfo {
     CourseConflictInfo() = default;
 
     // Constructor for conflict tracking
-    CourseConflictInfo(int courseId, const string& rawId, const string& name,
-                       int fileId, const string& fileName, const QDateTime& uploadTime)
-            : course_id(courseId), raw_id(rawId), course_name(name),
-              file_id(fileId), file_name(fileName), upload_time(uploadTime) {}
+    CourseConflictInfo(int courseId, string rawId, string name, int fileId, string fileName, QDateTime uploadTime) :
+    course_id(courseId), raw_id(std::move(rawId)), course_name(std::move(name)), file_id(fileId),
+    file_name(std::move(fileName)), upload_time(std::move(uploadTime)) {}
+};
+
+struct ScheduleSetEntity {
+    int id = 0;
+    string set_name;
+    string source_file_ids_json;
+    int schedule_count = 0;
+    QDateTime created_at;
+    QDateTime updated_at;
+
+    // Default constructor
+    ScheduleSetEntity() = default;
+
+    // Constructor for database insertion
+    ScheduleSetEntity(string  name, const vector<int>& fileIds) : set_name(std::move(name)),
+    created_at(QDateTime::currentDateTime()), updated_at(QDateTime::currentDateTime()) {
+        QJsonArray jsonArray;
+        for (int idN : fileIds) {
+            jsonArray.append(idN);
+        }
+        QJsonDocument doc(jsonArray);
+        source_file_ids_json = doc.toJson(QJsonDocument::Compact).toStdString();
+    }
+
+    vector<int> getSourceFileIds() const {
+        vector<int> fileIds;
+        QJsonDocument doc = QJsonDocument::fromJson(QByteArray::fromStdString(source_file_ids_json));
+        if (doc.isArray()) {
+            QJsonArray array = doc.array();
+            for (const auto& value : array) {
+                if (value.isDouble()) {
+                    fileIds.push_back(value.toInt());
+                }
+            }
+        }
+        return fileIds;
+    }
+};
+
+struct ScheduleEntity {
+    int id = 0;
+    int schedule_set_id = 0;
+    int schedule_index = 0;
+    string schedule_name;
+    string schedule_data_json;
+    int amount_days = 0;
+    int amount_gaps = 0;
+    int gaps_time = 0;
+    int avg_start = 0;
+    int avg_end = 0;
+    QDateTime created_at;
+    QDateTime updated_at;
+
+    // Default constructor
+    ScheduleEntity() = default;
+
+    // Constructor for database insertion
+    ScheduleEntity(int setId, const InformativeSchedule& schedule, string  name = "")
+            : schedule_set_id(setId), schedule_index(schedule.index), schedule_name(std::move(name)),
+              amount_days(schedule.amount_days), amount_gaps(schedule.amount_gaps),
+              gaps_time(schedule.gaps_time), avg_start(schedule.avg_start),
+              avg_end(schedule.avg_end), created_at(QDateTime::currentDateTime()),
+              updated_at(QDateTime::currentDateTime()) {
+        schedule_data_json = DatabaseJsonHelpers::scheduleToJson(schedule);
+    }
 };
 
 #endif // DB_ENTITIES_H

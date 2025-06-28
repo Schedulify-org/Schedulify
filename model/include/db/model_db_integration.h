@@ -59,6 +59,14 @@ public:
     // Event callbacks for data changes
     void setOnCoursesLoaded(std::function<void(const vector<Course>&)> callback);
 
+    bool saveSchedulesToDatabase(const vector<InformativeSchedule>& schedules, const string& setName = "",
+                                 const vector<int>& sourceFileIds = {});
+    vector<InformativeSchedule> getSchedulesFromDatabase(int setId = -1);
+    vector<ScheduleSetEntity> getScheduleSets();
+    bool deleteScheduleSet(int setId);
+    vector<InformativeSchedule> filterSchedulesByMetrics(const ScheduleFilterData& filters);
+
+
 private:
     ModelDatabaseIntegration() = default;
     ~ModelDatabaseIntegration() = default;

@@ -86,7 +86,42 @@ enum class ModelOperation {
     GET_DATABASE_STATS,
     LOAD_FROM_HISTORY,
     GET_FILE_HISTORY,
-    DELETE_FILE_FROM_HISTORY
+    DELETE_FILE_FROM_HISTORY,
+    SAVE_SCHEDULES_TO_DB,
+    LOAD_SCHEDULES_FROM_DB,
+    GET_SCHEDULE_SETS,
+    DELETE_SCHEDULE_SET,
+    GET_SCHEDULES_BY_SET_ID,
+    FILTER_SCHEDULES_BY_METRICS,
+    GET_SCHEDULE_STATISTICS
+};
+
+struct ScheduleFilterData {
+    int maxDays = -1;
+    int maxGaps = -1;
+    int maxGapTime = -1;
+    int minAvgStart = -1;
+    int maxAvgStart = -1;
+    int minAvgEnd = -1;
+    int maxAvgEnd = -1;
+    int setId = -1;  // Optional: filter by specific set
+
+    ScheduleFilterData() = default;
+
+    ScheduleFilterData(int maxD, int maxG, int maxGT, int minAS, int maxAS, int minAE, int maxAE)
+            : maxDays(maxD), maxGaps(maxG), maxGapTime(maxGT),
+              minAvgStart(minAS), maxAvgStart(maxAS), minAvgEnd(minAE), maxAvgEnd(maxAE) {}
+};
+
+struct ScheduleSaveData {
+    vector<InformativeSchedule> schedules;
+    string setName;
+    vector<int> sourceFileIds;
+
+    ScheduleSaveData() = default;
+
+    ScheduleSaveData(const vector<InformativeSchedule>& scheds, const string& name, const vector<int>& fileIds)
+            : schedules(scheds), setName(name), sourceFileIds(fileIds) {}
 };
 
 class IModel {

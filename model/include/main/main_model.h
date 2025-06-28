@@ -53,11 +53,15 @@ private:
     static void printSchedule(const InformativeSchedule& infoSchedule);
     static vector<string> messageBot(const vector<string>& userInput, const string& data);
     static bool deleteFileFromHistory(int fileId);
+    static bool saveSchedulesToDB(const vector<InformativeSchedule>& schedules, const string& setName, const vector<int>& sourceFileIds);
+    static vector<InformativeSchedule> loadSchedulesFromDB(int setId = -1);
+    static vector<ScheduleSetEntity> getScheduleSetsFromDB();
+    static bool deleteScheduleSetFromDB(int setId);
 
     vector<Course> lastGeneratedCourses;
     vector<string> courseFileErrors;
     vector<InformativeSchedule> lastGeneratedSchedules;
-    string scheduleMetaData;
+    string scheduleMetaData = "";
 };
 
 inline IModel* getModel() {

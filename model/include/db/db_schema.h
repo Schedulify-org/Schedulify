@@ -27,7 +27,7 @@ public:
 
 private:
     QSqlDatabase& db;
-    static const int CURRENT_SCHEMA_VERSION = 2;
+    static const int CURRENT_SCHEMA_VERSION = 3;
 
     // Individual table creation methods
     bool createMetadataTable();
@@ -41,6 +41,7 @@ private:
 
     // Schema upgrade methods
     bool upgradeFromV1ToV2();
+    bool upgradeFromV2ToV3();
 
     // Validation methods
     bool validateFileTableColumns();
@@ -48,6 +49,18 @@ private:
 
     // Utility methods
     bool executeQuery(const QString& query);
+
+    // Schema creation methods
+    bool createScheduleSetTable();
+    bool createScheduleTable();
+
+    // Index creation methods
+    bool createScheduleSetIndexes();
+    bool createScheduleIndexes();
+
+    // Validation methods
+    bool validateScheduleSetTableColumns();
+    bool validateScheduleTableColumns();
 };
 
 #endif // DB_SCHEMA_H

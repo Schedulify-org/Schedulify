@@ -308,8 +308,39 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
     Logger::get().logInfo("Generating schedules for " + std::to_string(userInput.size()) + " courses");
 
+    // For large generations (5+ courses), enable progressive writing
+    bool enableProgressiveWriting = userInput.size() >= 5;
+
     ScheduleBuilder builder;
-    vector<InformativeSchedule> schedules = builder.build(userInput);
+    vector<InformativeSchedule> schedules;
+
+    if (enableProgressiveWriting) {
+        Logger::get().logInfo("Large schedule generation detected - enabling progressive database writing");
+
+        try {
+            auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+            if (!dbIntegration.isInitialized()) {
+                if (!dbIntegration.initializeDatabase()) {
+                    Logger::get().logWarning("Database not available - proceeding without progressive writing");
+                    enableProgressiveWriting = false;
+                }
+            }
+        } catch (const std::exception& e) {
+            Logger::get().logWarning("Database error - proceeding without progressive writing: " + string(e.what()));
+            enableProgressiveWriting = false;
+        }
+    }
+
+    if (enableProgressiveWriting) {
+        // Generate set name
+        string setName = "Generated Schedules - " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss").toStdString();
+
+        vector<int> sourceFileIds;
+
+        schedules = builder.build(userInput, true, setName, sourceFileIds);
+    } else {
+        schedules = builder.build(userInput, false);
+    }
 
     if (schedules.empty()) {
         Logger::get().logError("unable to generate schedules, aborting process");
@@ -318,6 +349,9 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
     Logger::get().logInfo("Generated " + std::to_string(schedules.size()) + " possible schedules");
 
+    if (enableProgressiveWriting) {
+        Logger::get().logInfo("Schedules have been written to database during generation");
+    }
     return schedules;
 }
 
@@ -335,6 +369,77 @@ void Model::printSchedule(const InformativeSchedule& infoSchedule) {
 
 vector<string> Model::messageBot(const vector<string>& userInput, const string& data) {
     return askModel(userInput[0], data);
+}
+
+bool Model::saveSchedulesToDB(const vector<InformativeSchedule>& schedules, const string& setName,
+                              const vector<int>& sourceFileIds) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for schedule saving");
+                return false;
+            }
+        }
+
+        return dbIntegration.saveSchedulesToDatabase(schedules, setName, sourceFileIds);
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception saving schedules to database: " + string(e.what()));
+        return false;
+    }
+}
+
+vector<InformativeSchedule> Model::loadSchedulesFromDB(int setId) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for schedule loading");
+                return {};
+            }
+        }
+
+        return dbIntegration.getSchedulesFromDatabase(setId);
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception loading schedules from database: " + string(e.what()));
+        return {};
+    }
+}
+
+vector<ScheduleSetEntity> Model::getScheduleSetsFromDB() {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for schedule set retrieval");
+                return {};
+            }
+        }
+
+        return dbIntegration.getScheduleSets();
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception getting schedule sets from database: " + string(e.what()));
+        return {};
+    }
+}
+
+bool Model::deleteScheduleSetFromDB(int setId) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logError("Database not initialized for schedule set deletion");
+            return false;
+        }
+
+        return dbIntegration.deleteScheduleSet(setId);
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception deleting schedule set from database: " + string(e.what()));
+        return false;
+    }
 }
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
@@ -392,7 +497,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
                 lastGeneratedSchedules = generateSchedules(*courses);
-                scheduleMetaData = CalculateMetaData(lastGeneratedSchedules);
+
                 return &lastGeneratedSchedules;
             } else {
                 Logger::get().logError("unable to generate schedules, aborting...");
@@ -479,6 +584,107 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 return nullptr;
             } catch (const std::exception& e) {
                 Logger::get().logError("Failed to get database stats: " + string(e.what()));
+                return nullptr;
+            }
+        }
+
+        case ModelOperation::SAVE_SCHEDULES_TO_DB: {
+            if (data) {
+                const auto* saveData = static_cast<const ScheduleSaveData*>(data);
+                bool success = saveSchedulesToDB(saveData->schedules, saveData->setName, saveData->sourceFileIds);
+                bool* result = new bool(success);
+                return result;
+            } else {
+                Logger::get().logError("No schedule save data provided");
+                return nullptr;
+            }
+        }
+
+        case ModelOperation::LOAD_SCHEDULES_FROM_DB: {
+            int setId = -1;
+            if (data) {
+                const int* setIdPtr = static_cast<const int*>(data);
+                setId = *setIdPtr;
+            }
+
+            auto* schedules = new vector<InformativeSchedule>(loadSchedulesFromDB(setId));
+            return schedules;
+        }
+
+        case ModelOperation::GET_SCHEDULE_SETS: {
+            auto* scheduleSets = new vector<ScheduleSetEntity>(getScheduleSetsFromDB());
+            return scheduleSets;
+        }
+
+        case ModelOperation::DELETE_SCHEDULE_SET: {
+            if (data) {
+                const int* setId = static_cast<const int*>(data);
+                bool success = deleteScheduleSetFromDB(*setId);
+                bool* result = new bool(success);
+                return result;
+            } else {
+                Logger::get().logError("No schedule set ID provided for deletion");
+                return nullptr;
+            }
+        }
+
+        case ModelOperation::GET_SCHEDULES_BY_SET_ID: {
+            if (data) {
+                const int* setId = static_cast<const int*>(data);
+                auto* schedules = new vector<InformativeSchedule>(loadSchedulesFromDB(*setId));
+                return schedules;
+            } else {
+                Logger::get().logError("No set ID provided for schedule retrieval");
+                return nullptr;
+            }
+        }
+
+        case ModelOperation::FILTER_SCHEDULES_BY_METRICS: {
+            if (data) {
+                try {
+                    const auto* filters = static_cast<const ScheduleFilterData*>(data);
+                    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+                    if (!dbIntegration.isInitialized()) {
+                        if (!dbIntegration.initializeDatabase()) {
+                            Logger::get().logError("Failed to initialize database for schedule filtering");
+                            return nullptr;
+                        }
+                    }
+
+                    auto* filteredSchedules = new vector<InformativeSchedule>(
+                            dbIntegration.filterSchedulesByMetrics(*filters)
+                    );
+                    return filteredSchedules;
+                } catch (const std::exception& e) {
+                    Logger::get().logError("Exception filtering schedules: " + string(e.what()));
+                    return nullptr;
+                }
+            } else {
+                Logger::get().logError("No filter data provided");
+                return nullptr;
+            }
+        }
+
+        case ModelOperation::GET_SCHEDULE_STATISTICS: {
+            try {
+                auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+                if (!dbIntegration.isInitialized()) {
+                    if (!dbIntegration.initializeDatabase()) {
+                        Logger::get().logError("Failed to initialize database for schedule statistics");
+                        return nullptr;
+                    }
+                }
+
+                auto& db = DatabaseManager::getInstance();
+                if (!db.isConnected()) {
+                    Logger::get().logError("Database not connected for schedule statistics");
+                    return nullptr;
+                }
+
+                auto* stats = new map<string, int>(db.schedules()->getScheduleStatistics());
+                return stats;
+            } catch (const std::exception& e) {
+                Logger::get().logError("Exception getting schedule statistics: " + string(e.what()));
                 return nullptr;
             }
         }

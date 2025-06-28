@@ -19,13 +19,27 @@ bool ScheduleBuilder::hasConflict(const CourseSelection& a, const CourseSelectio
 }
 
 // Recursive backtracking function to build all valid schedules
-void ScheduleBuilder::backtrack(int currentCourse,
-                                const vector<vector<CourseSelection>>& allOptions,
-                                vector<CourseSelection>& currentCombination,
-                                vector<InformativeSchedule>& results) {
+void ScheduleBuilder::backtrack(int currentCourse, const vector<vector<CourseSelection>>& allOptions,
+                                vector<CourseSelection>& currentCombination, vector<InformativeSchedule>& results) {
     try {
         if (currentCourse == allOptions.size()) {
-            results.push_back(convertToInformativeSchedule(currentCombination, results.size()));
+            InformativeSchedule schedule = convertToInformativeSchedule(currentCombination, results.size());
+
+            // Progressive writing to database if enabled
+            if (progressiveWriting) {
+                if (!ScheduleDatabaseWriter::getInstance().writeSchedule(schedule)) {
+                    Logger::get().logWarning("Failed to write schedule " + to_string(schedule.index) + " to database");
+                }
+            }
+
+            results.push_back(schedule);
+            totalSchedulesGenerated++;
+
+            // Log progress for large generations
+            if (totalSchedulesGenerated % 5000 == 0) {
+                Logger::get().logInfo("Generated " + to_string(totalSchedulesGenerated) + " schedules so far...");
+            }
+
             return;
         }
 
@@ -51,12 +65,30 @@ void ScheduleBuilder::backtrack(int currentCourse,
 }
 
 // Public method to build all possible valid schedules from a list of courses
-vector<InformativeSchedule> ScheduleBuilder::build(const vector<Course>& courses) {
+vector<InformativeSchedule> ScheduleBuilder::build(const vector<Course>& courses, bool writeToDatabase,
+                                                   const string& setName, const vector<int>& sourceFileIds) {
     Logger::get().logInfo("Starting schedule generation for " + to_string(courses.size()) + " courses.");
 
     vector<InformativeSchedule> results;
+    progressiveWriting = writeToDatabase;
+    totalSchedulesGenerated = 0;
+
     try {
         buildCourseInfoMap(courses);
+
+        // Initialize progressive writing if enabled
+        if (progressiveWriting) {
+            string actualSetName = setName.empty() ?
+                                   "Generated Schedules " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss").toStdString()
+                                                   : setName;
+
+            if (!ScheduleDatabaseWriter::getInstance().initializeSession(actualSetName, sourceFileIds)) {
+                Logger::get().logError("Failed to initialize database writing session - continuing without DB writing");
+                progressiveWriting = false;
+            } else {
+                Logger::get().logInfo("Progressive database writing enabled for set: " + actualSetName);
+            }
+        }
 
         CourseLegalComb generator;
         vector<vector<CourseSelection>> allOptions;
@@ -65,16 +97,40 @@ vector<InformativeSchedule> ScheduleBuilder::build(const vector<Course>& courses
         for (const auto& course : courses) {
             auto combinations = generator.generate(course);
             Logger::get().logInfo("Generated " + to_string(combinations.size()) + " combinations for course ID " + to_string(course.id));
-            allOptions.push_back(std::move(combinations)); // Store the combinations
+            allOptions.push_back(std::move(combinations));
         }
+
+        // Estimate total possible schedules (for logging)
+        long long estimatedTotal = 1;
+        for (const auto& options : allOptions) {
+            estimatedTotal *= options.size();
+            if (estimatedTotal > 1000000) { // Cap estimation to avoid overflow
+                estimatedTotal = 1000000;
+                break;
+            }
+        }
+        Logger::get().logInfo("Estimated maximum schedules: " + to_string(estimatedTotal));
 
         vector<CourseSelection> current;
         backtrack(0, allOptions, current, results);
 
+        // Finalize progressive writing if enabled
+        if (progressiveWriting) {
+            ScheduleDatabaseWriter::getInstance().finalizeSession();
+            auto stats = ScheduleDatabaseWriter::getInstance().getSessionStats();
+            Logger::get().logInfo("Database writing completed - Written: " + to_string(stats.successfulWrites) +
+                                  ", Failed: " + to_string(stats.failedWrites));
+        }
+
         Logger::get().logInfo("Finished schedule generation. Total valid schedules: " + to_string(results.size()));
+
     } catch (const exception& e) {
-        // Log any exceptions that occur during schedule generation
         Logger::get().logError("Exception in ScheduleBuilder::build: " + string(e.what()));
+
+        // Clean up progressive writing on error
+        if (progressiveWriting) {
+            ScheduleDatabaseWriter::getInstance().finalizeSession();
+        }
     }
 
     return results;
@@ -89,7 +145,7 @@ void ScheduleBuilder::buildCourseInfoMap(const vector<Course>& courses) {
 }
 
 // Converts a vector of CourseSelections to an InformativeSchedule
-InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<CourseSelection>& selections, int index) const {
+InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<CourseSelection>& selections, int index) {
     InformativeSchedule schedule;
     schedule.index = index;
 
@@ -150,10 +206,8 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
 }
 
 // Helper method to process all sessions in a group and add them to the day schedules
-void ScheduleBuilder::processGroupSessions(const CourseSelection& selection,
-                                           const Group* group,
-                                           const string& sessionType,
-                                           map<int, vector<ScheduleItem>>& daySchedules) {
+void ScheduleBuilder::processGroupSessions(const CourseSelection& selection, const Group* group,
+                                           const string& sessionType, map<int, vector<ScheduleItem>>& daySchedules) {
     if (!group) return;
 
     try {

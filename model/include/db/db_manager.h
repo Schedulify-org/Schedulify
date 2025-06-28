@@ -5,19 +5,23 @@
 #include "db_schema.h"
 #include "db_files.h"
 #include "db_courses.h"
+#include "db_schedules.h"
 #include "logger.h"
+#include "db_json_helpers.h"
 
+#include <QCoreApplication>
+#include <QStandardPaths>
 #include <QSqlDatabase>
+#include <QSqlDriver>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QStandardPaths>
-#include <QDir>
-#include <QString>
-#include <QVariant>
 #include <QDateTime>
+#include <QVariant>
+#include <QString>
 #include <vector>
 #include <string>
 #include <memory>
+#include <QDir>
 
 using namespace std;
 
@@ -25,65 +29,63 @@ class DatabaseManager {
 public:
     static DatabaseManager& getInstance();
 
+    void forceCleanup();
+
     // Database lifecycle
     bool initializeDatabase(const QString& dbPath = QString());
     bool isConnected() const;
     void closeDatabase();
 
-    // Manager access - providing delegation to specialized managers
     DatabaseFileManager* files() { return fileManager.get(); }
     DatabaseCourseManager* courses() { return courseManager.get(); }
     DatabaseSchema* schema() { return schemaManager.get(); }
 
-    // Metadata operations (kept in main manager for simplicity)
     bool insertMetadata(const string& key, const string& value, const string& description = "");
     bool updateMetadata(const string& key, const string& value);
     string getMetadata(const string& key, const string& defaultValue = "");
     vector<MetadataEntity> getAllMetadata();
 
-    // Utility operations
     bool clearAllData();
     int getTableRowCount(const string& tableName);
 
-    // Database repair and debugging
     bool repairDatabase();
     void debugDatabaseSchema();
 
-    // Transaction support
     bool beginTransaction();
     bool commitTransaction();
     bool rollbackTransaction();
 
-    // Schema version access
     static int getCurrentSchemaVersion() { return CURRENT_SCHEMA_VERSION; }
+
+    DatabaseScheduleManager* schedules() { return scheduleManager.get(); }
 
 private:
     DatabaseManager() = default;
     ~DatabaseManager();
 
-    // Disable copy/move
+    bool hasActiveConnections();
+    void forceCloseActiveQueries();
+
     DatabaseManager(const DatabaseManager&) = delete;
     DatabaseManager& operator=(const DatabaseManager&) = delete;
     DatabaseManager(DatabaseManager&&) = delete;
     DatabaseManager& operator=(DatabaseManager&&) = delete;
 
-    // Internal methods
     bool executeQuery(const QString& query, const QVariantList& params = QVariantList());
 
-    // Database connection and managers
+    static bool isQtApplicationReady();
+
     QSqlDatabase db;
     bool isInitialized = false;
 
-    // Specialized managers
     std::unique_ptr<DatabaseSchema> schemaManager;
     std::unique_ptr<DatabaseFileManager> fileManager;
     std::unique_ptr<DatabaseCourseManager> courseManager;
 
-    // Database schema version for migrations
     static const int CURRENT_SCHEMA_VERSION = 2;
 
-    // Friend class for repair operations
     friend class DatabaseRepair;
+    std::unique_ptr<DatabaseScheduleManager> scheduleManager;
 };
 
 class DatabaseTransaction {
