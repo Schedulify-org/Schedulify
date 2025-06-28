@@ -1,5 +1,5 @@
-#ifndef COURSELEGALCOMB_H
-#define COURSELEGALCOMB_H
+#ifndef COURSE_LEGAL_COMB_H
+#define COURSE_LEGAL_COMB_H
 
 #include "parseCoursesToVector.h"
 #include "model_interfaces.h"
@@ -13,4 +13,4 @@ public:
 private:
     static bool hasGroupConflict(const Group* group1, const Group* group2) ;
 };
-#endif
+#endif // COURSE_LEGAL_COMB_H

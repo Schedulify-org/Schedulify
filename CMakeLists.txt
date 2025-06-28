@@ -84,15 +84,18 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/CourseValidator.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ScheduleGenerator.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/CourseValidator.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ChatBot.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ChatBot.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters/schedule_filter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters/schedule_filter.h
 
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/course_model.h
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/schedule_model.h
-
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/filters/schedule_filter.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/file_model.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/file_model.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/main_controller.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/controller/src/controller_manager.cpp
@@ -121,22 +124,18 @@ set(PROJECT_SOURCES
 
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/botAdapter.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/apiManager.cpp
+
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/model_db_integration.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/file_model.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/view_models/file_model.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ChatBot.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/controller/adapters/thread_workers/ChatBot.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_schema.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_files.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_course.cpp
-        model/src/db/db_schedules.cpp
-        model/src/db/ScheduleDatabaseWriter.cpp
-        model/src/db/db_utils.cpp
-        model/src/db/db_utils.cpp
-        model/src/db/cleanup_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_schedules.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/ScheduleDatabaseWriter.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/cleanup_manager.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_utils.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)
