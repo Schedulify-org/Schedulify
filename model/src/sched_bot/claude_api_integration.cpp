@@ -16,16 +16,6 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, APIRespon
 
 ClaudeAPIClient::ClaudeAPIClient() {
     curl_global_init(CURL_GLOBAL_DEFAULT);
-
-    // Try to get API key from environment variable
-    m_apiKey = getApiKeyFromEnvironment();
-
-    if (m_apiKey.empty()) {
-        Logger::get().logWarning("ANTHROPIC_API_KEY environment variable not set");
-    } else {
-        Logger::get().logInfo("Claude API key loaded from environment variable");
-    }
-
     Logger::get().logInfo("Claude API client initialized with CURL");
 }
 
@@ -36,22 +26,28 @@ ClaudeAPIClient::~ClaudeAPIClient() {
 BotQueryResponse ClaudeAPIClient::processScheduleQuery(const BotQueryRequest& request) {
     BotQueryResponse response;
 
-    if (m_apiKey.empty()) {
-        Logger::get().logError("Claude API key not configured");
+    const char* apiKey = getenv("ANTHROPIC_API_KEY");
+    if (!apiKey || strlen(apiKey) == 0) {
+        Logger::get().logError("ANTHROPIC_API_KEY environment variable not set");
         response.hasError = true;
-        response.errorMessage = "API key not configured. Please check your settings.";
+        response.errorMessage = "API key not configured";
         return response;
     }
 
-    try {
-        Logger::get().logInfo("Processing schedule query with CURL: " + request.userMessage);
+    // Clean API key (same as your working version)
+    std::string cleanApiKey;
+    for (char c : std::string(apiKey)) {
+        if (c >= 33 && c <= 126) {  // Printable ASCII range excluding space
+            cleanApiKey += c;
+        }
+    }
 
+    try {
         // Create the request payload
         Json::Value requestJson = createRequestPayload(request);
         Json::StreamWriterBuilder builder;
         std::string jsonString = Json::writeString(builder, requestJson);
 
-        // Initialize CURL
         CURL* curl = curl_easy_init();
         if (!curl) {
             response.hasError = true;
@@ -61,38 +57,40 @@ BotQueryResponse ClaudeAPIClient::processScheduleQuery(const BotQueryRequest& re
 
         APIResponse apiResponse;
 
-        // Set CURL options
+        // CRITICAL FIX 1: Use the correct header format from your working version
+        struct curl_slist* headers = nullptr;
+
+        // Your working version uses "x-api-key" instead of "Authorization: Bearer"
+        headers = curl_slist_append(headers, ("x-api-key: " + cleanApiKey).c_str());
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");  // lowercase 'v'
+
+        // Set CURL options (same as working version)
         curl_easy_setopt(curl, CURLOPT_URL, CLAUDE_API_URL.c_str());
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonString.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &apiResponse);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L); // 30 second timeout
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60L);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30L);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
 
-        // Set headers
-        struct curl_slist* headers = nullptr;
-        std::string authHeader = "Authorization: Bearer " + m_apiKey;
-        std::string contentType = "Content-Type: application/json";
-        std::string anthropicVersion = "Anthropic-Version: 2023-06-01";
-        std::string userAgent = "User-Agent: Schedulify/1.0";
+        Logger::get().logInfo("Sending request to Claude API...");
 
-        headers = curl_slist_append(headers, authHeader.c_str());
-        headers = curl_slist_append(headers, contentType.c_str());
-        headers = curl_slist_append(headers, anthropicVersion.c_str());
-        headers = curl_slist_append(headers, userAgent.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-        // Perform the request
         CURLcode res = curl_easy_perform(curl);
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &apiResponse.response_code);
 
-        // Cleanup
         curl_slist_free_all(headers);
         curl_easy_cleanup(curl);
 
+        Logger::get().logInfo("CURL result: " + std::to_string(res));
+        Logger::get().logInfo("Response code: " + std::to_string(apiResponse.response_code));
+
         if (res != CURLE_OK) {
-            Logger::get().logError("CURL request failed: " + std::string(curl_easy_strerror(res)));
             response.hasError = true;
-            response.errorMessage = "Network request failed. Please check your connection.";
+            response.errorMessage = "Network error: " + std::string(curl_easy_strerror(res));
             return response;
         }
 
@@ -100,38 +98,28 @@ BotQueryResponse ClaudeAPIClient::processScheduleQuery(const BotQueryRequest& re
             Logger::get().logError("Claude API returned HTTP " + std::to_string(apiResponse.response_code));
             Logger::get().logError("Response: " + apiResponse.data);
             response.hasError = true;
-            response.errorMessage = "Claude API request failed. Please try again.";
+            response.errorMessage = "Claude API request failed with HTTP " + std::to_string(apiResponse.response_code);
             return response;
         }
 
-        // Parse the response
+        if (apiResponse.data.empty()) {
+            Logger::get().logError("Empty response from Claude API");
+            response.hasError = true;
+            response.errorMessage = "Empty response from Claude API";
+            return response;
+        }
+
+        // Parse the response (same parsing logic)
         response = parseClaudeResponse(apiResponse.data);
         Logger::get().logInfo("Claude API request completed successfully");
 
     } catch (const std::exception& e) {
         Logger::get().logError("Exception in Claude API request: " + std::string(e.what()));
         response.hasError = true;
-        response.errorMessage = "An error occurred while processing your request.";
+        response.errorMessage = "Request processing error: " + std::string(e.what());
     }
 
     return response;
-}
-
-void ClaudeAPIClient::setApiKey(const std::string& apiKey) {
-    m_apiKey = apiKey;
-    Logger::get().logInfo("Claude API key configured manually");
-}
-
-bool ClaudeAPIClient::isApiKeyConfigured() const {
-    return !m_apiKey.empty() && m_apiKey.length() > 10; // Basic validation
-}
-
-std::string ClaudeAPIClient::getApiKeyFromEnvironment() const {
-    const char* envApiKey = std::getenv("ANTHROPIC_API_KEY");
-    if (envApiKey != nullptr) {
-        return std::string(envApiKey);
-    }
-    return "";
 }
 
 Json::Value ClaudeAPIClient::createRequestPayload(const BotQueryRequest& request) {
@@ -214,72 +202,161 @@ Be conversational and helpful while being precise with your SQL queries.
 BotQueryResponse ClaudeAPIClient::parseClaudeResponse(const std::string& responseData) {
     BotQueryResponse botResponse;
 
+    Logger::get().logInfo("=== PARSING CLAUDE RESPONSE ===");
+    Logger::get().logInfo("Response data length: " + std::to_string(responseData.length()));
+
+    if (responseData.empty()) {
+        Logger::get().logError("Empty response data provided to parser");
+        botResponse.hasError = true;
+        botResponse.errorMessage = "Empty response from Claude API";
+        return botResponse;
+    }
+
     try {
         // Parse JSON response
         Json::Reader reader;
         Json::Value root;
 
+        Logger::get().logInfo("Attempting to parse JSON...");
+
         if (!reader.parse(responseData, root)) {
             Logger::get().logError("Failed to parse Claude API JSON response");
+            Logger::get().logError("JSON parse errors: " + reader.getFormattedErrorMessages());
+            Logger::get().logError("Raw response: " + responseData.substr(0, 1000)); // Log first 1000 chars
             botResponse.hasError = true;
-            botResponse.errorMessage = "Invalid response from Claude API";
+            botResponse.errorMessage = "Invalid JSON response from Claude API";
+            return botResponse;
+        }
+
+        Logger::get().logInfo("JSON parsed successfully");
+
+        // Log the structure of the response for debugging
+        Json::StreamWriterBuilder builder;
+        builder["indentation"] = "  ";
+        std::string prettyJson = Json::writeString(builder, root);
+        Logger::get().logInfo("Parsed JSON structure: " + prettyJson.substr(0, 1000)); // First 1000 chars
+
+        // Check for error in response
+        if (root.isMember("error")) {
+            Logger::get().logError("Error found in Claude response");
+            Json::Value error = root["error"];
+            std::string errorMessage = "Unknown error";
+            std::string errorType = "unknown";
+
+            if (error.isMember("message")) {
+                errorMessage = error["message"].asString();
+            }
+            if (error.isMember("type")) {
+                errorType = error["type"].asString();
+            }
+
+            Logger::get().logError("Error type: " + errorType + ", message: " + errorMessage);
+            botResponse.hasError = true;
+            botResponse.errorMessage = errorMessage;
             return botResponse;
         }
 
         // Extract content
-        if (!root.isMember("content") || !root["content"].isArray() || root["content"].empty()) {
-            Logger::get().logError("No content in Claude API response");
+        if (!root.isMember("content")) {
+            Logger::get().logError("No 'content' field in Claude API response");
+            Logger::get().logError("Available fields: ");
+            for (const auto& key : root.getMemberNames()) {
+                Logger::get().logError("  - " + key);
+            }
             botResponse.hasError = true;
-            botResponse.errorMessage = "Empty response from Claude API";
+            botResponse.errorMessage = "Invalid response format from Claude API - missing content";
             return botResponse;
         }
 
-        Json::Value firstContent = root["content"][0];
+        Json::Value content = root["content"];
+        if (!content.isArray()) {
+            Logger::get().logError("Content field is not an array");
+            botResponse.hasError = true;
+            botResponse.errorMessage = "Invalid response format from Claude API - content not array";
+            return botResponse;
+        }
+
+        if (content.empty()) {
+            Logger::get().logError("Content array is empty");
+            botResponse.hasError = true;
+            botResponse.errorMessage = "Empty content in Claude API response";
+            return botResponse;
+        }
+
+        Json::Value firstContent = content[0];
         if (!firstContent.isMember("text")) {
-            Logger::get().logError("No text content in Claude response");
+            Logger::get().logError("No text content in first content item");
+            Logger::get().logError("First content item fields:");
+            for (const auto& key : firstContent.getMemberNames()) {
+                Logger::get().logError("  - " + key);
+            }
             botResponse.hasError = true;
-            botResponse.errorMessage = "Invalid response format from Claude API";
+            botResponse.errorMessage = "Invalid response format from Claude API - no text in content";
             return botResponse;
         }
 
-        std::string content = firstContent["text"].asString();
-        Logger::get().logInfo("Claude response content: " + content);
+        std::string contentText = firstContent["text"].asString();
+        Logger::get().logInfo("Extracted content text (length: " + std::to_string(contentText.length()) + ")");
+        Logger::get().logInfo("Content preview: " + contentText.substr(0, 300) + "...");
+
+        if (contentText.empty()) {
+            Logger::get().logError("Text content is empty");
+            botResponse.hasError = true;
+            botResponse.errorMessage = "Empty text content from Claude API";
+            return botResponse;
+        }
 
         // Parse the structured response
         std::string sqlQuery;
         std::vector<std::string> parameters;
 
-        if (extractSQLQuery(content, sqlQuery, parameters)) {
+        Logger::get().logInfo("Attempting to extract SQL query...");
+        if (extractSQLQuery(contentText, sqlQuery, parameters)) {
+            Logger::get().logInfo("SQL query extracted successfully");
+            Logger::get().logInfo("SQL: " + sqlQuery);
+            Logger::get().logInfo("Parameters count: " + std::to_string(parameters.size()));
             // This is a filter request
             botResponse.isFilterQuery = true;
             botResponse.sqlQuery = sqlQuery;
             botResponse.queryParameters = parameters;
         } else {
+            Logger::get().logInfo("No SQL query found - treating as general response");
             // This is a general response
             botResponse.isFilterQuery = false;
         }
 
         // Extract the user message part
-        std::regex responseRegex(R"(RESPONSE:\s*(.+?)(?:\nSQL:|$))", std::regex_constants::icase);
+        Logger::get().logInfo("Extracting user message...");
+        std::regex responseRegex(R"(RESPONSE:\s*([\s\S]+?)(?:\nSQL:|$))", std::regex_constants::icase);
         std::smatch responseMatch;
 
-        if (std::regex_search(content, responseMatch, responseRegex)) {
+        if (std::regex_search(contentText, responseMatch, responseRegex)) {
             botResponse.userMessage = responseMatch[1].str();
             // Trim whitespace
             botResponse.userMessage.erase(0, botResponse.userMessage.find_first_not_of(" \t\n\r"));
             botResponse.userMessage.erase(botResponse.userMessage.find_last_not_of(" \t\n\r") + 1);
+            Logger::get().logInfo("Extracted structured response message: " + botResponse.userMessage);
         } else {
+            Logger::get().logInfo("No structured response format found, using entire content");
             // Fallback: use the entire content if no structured format
-            botResponse.userMessage = content;
+            botResponse.userMessage = contentText;
         }
 
-        Logger::get().logInfo("Parsed bot response - isFilter: " + std::to_string(botResponse.isFilterQuery) +
-                              ", message: " + botResponse.userMessage);
+        if (botResponse.userMessage.empty()) {
+            Logger::get().logError("Extracted user message is empty");
+            botResponse.hasError = true;
+            botResponse.errorMessage = "Empty message extracted from Claude response";
+            return botResponse;
+        }
+
+        Logger::get().logInfo("=== PARSING COMPLETED SUCCESSFULLY ===");
+        Logger::get().logInfo("Final response - isFilter: " + std::to_string(botResponse.isFilterQuery) +
+                              ", message length: " + std::to_string(botResponse.userMessage.length()));
 
     } catch (const std::exception& e) {
         Logger::get().logError("Exception parsing Claude response: " + std::string(e.what()));
         botResponse.hasError = true;
-        botResponse.errorMessage = "Failed to parse Claude response";
+        botResponse.errorMessage = "Failed to parse Claude response: " + std::string(e.what());
     }
 
     return botResponse;
@@ -337,4 +414,55 @@ bool ClaudeAPIClient::extractSQLQuery(const std::string& content, std::string& s
     Logger::get().logInfo("Extracted parameters: " + std::to_string(parameters.size()));
 
     return true;
+}
+
+void ClaudeAPIClient::validateApiKeyEnvironment() {
+    const char* apiKey = getenv("ANTHROPIC_API_KEY");
+
+    Logger::get().logInfo("=== API KEY ENVIRONMENT VALIDATION ===");
+
+    if (!apiKey) {
+        Logger::get().logError("ANTHROPIC_API_KEY environment variable is not set");
+        return;
+    }
+
+    std::string rawKey = std::string(apiKey);
+    Logger::get().logInfo("Raw API key length: " + std::to_string(rawKey.length()));
+
+    // Check for problematic characters
+    bool hasProblems = false;
+    for (size_t i = 0; i < rawKey.length(); i++) {
+        char c = rawKey[i];
+        if (c == '\n') {
+            Logger::get().logWarning("API key contains newline at position " + std::to_string(i));
+            hasProblems = true;
+        }
+        if (c == '\r') {
+            Logger::get().logWarning("API key contains carriage return at position " + std::to_string(i));
+            hasProblems = true;
+        }
+        if (c == '\t') {
+            Logger::get().logWarning("API key contains tab at position " + std::to_string(i));
+            hasProblems = true;
+        }
+        if (c == ' ') {
+            Logger::get().logWarning("API key contains space at position " + std::to_string(i));
+            hasProblems = true;
+        }
+        if (c < 32 || c > 126) {
+            Logger::get().logWarning("API key contains non-printable character (ASCII " +
+                                     std::to_string((int)c) + ") at position " + std::to_string(i));
+            hasProblems = true;
+        }
+    }
+
+    if (!hasProblems) {
+        Logger::get().logInfo("API key format appears clean");
+    }
+
+    // Show first and last few characters for verification
+    if (rawKey.length() > 20) {
+        Logger::get().logInfo("API key starts with: '" + rawKey.substr(0, 15) + "'");
+        Logger::get().logInfo("API key ends with: '" + rawKey.substr(rawKey.length() - 10) + "'");
+    }
 }

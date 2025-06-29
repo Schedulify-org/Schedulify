@@ -16,6 +16,7 @@
 #include "model_db_integration.h"
 #include "db_manager.h"
 #include "sql_validator.h"
+#include "claude_api_integration.h"
 
 #include <algorithm>
 #include <cctype>
@@ -43,24 +44,21 @@ public:
     Model(const Model&) = delete;
     Model& operator=(const Model&) = delete;
 
-    // API Key management
-    static std::string getClaudeAPIKey();
-    static void setClaudeAPIKey(const std::string& apiKey);
-
     // Structure for bot filter results
     struct BotFilterResult {
         std::vector<int> filteredScheduleIds;
         std::string responseMessage;
         bool hasError;
         std::string errorMessage;
+        bool isFilterQuery;
 
-        BotFilterResult() : hasError(false) {}
+        BotFilterResult() : hasError(false), isFilterQuery(false) {}
     };
 
 private:
     Model() {}
 
-    // Existing methods
+    // Core business logic methods - these belong in main model
     static vector<Course> generateCourses(const string& path);
     static vector<Course> loadCoursesFromDB();
     static vector<Course> loadCoursesFromHistory(const vector<int>& fileIds);
@@ -75,10 +73,8 @@ private:
     static vector<ScheduleSetEntity> getScheduleSetsFromDB();
     static bool deleteScheduleSetFromDB(int setId);
 
-    // New bot-related methods for complete workflow
-    static BotFilterResult processBotMessageWithFiltering(const std::string& userMessage, const std::vector<int>& availableScheduleIds);
-    static std::string generateScheduleTableMetadata();
-    static std::vector<int> executeScheduleQuery(const std::string& sqlQuery, const std::vector<std::string>& parameters);
+    // Bot query processing - main coordination method
+    static BotFilterResult processBotQuery(const BotQueryRequest& request);
 
     // Static member to store last filtered IDs
     static std::vector<int> lastFilteredScheduleIds;

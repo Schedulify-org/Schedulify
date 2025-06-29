@@ -22,7 +22,8 @@ Page {
     property int numberOfTimeSlots: 13
     property real headerHeight: 40
 
-    // Updated to account for chatbot width when open
+    // Updated to account for chatbot width when open with animation
+    property real chatBotOffset: chatBot.isOpen ? chatBot.width : 0
     property real availableTableWidth: mainContent.width - 28
     property real availableTableHeight: mainContent.height - 41
 
@@ -33,6 +34,14 @@ Page {
     property real baseTextSize: 12
 
     property var logWindow: null
+
+    // Animate the chatbot offset change
+    Behavior on chatBotOffset {
+        NumberAnimation {
+            duration: 400
+            easing.type: Easing.OutCubic
+        }
+    }
 
     MouseArea {
         id: outsideClickArea
@@ -768,7 +777,7 @@ Page {
         }
     }
 
-    // Main content
+    // Main content with animated resizing
     Rectangle{
         id: mainContent
         anchors {
@@ -776,7 +785,15 @@ Page {
             left: parent.left
             right: parent.right
             bottom: footer.top
-            rightMargin: chatBot.isOpen ? chatBot.width : 0
+            rightMargin: chatBotOffset  // Use animated offset instead of direct chatBot.width
+        }
+
+        // Animate width changes when chatbot opens/closes
+        Behavior on width {
+            NumberAnimation {
+                duration: 400
+                easing.type: Easing.OutCubic
+            }
         }
 
         // Trim text based on stages (full, mid, min)
@@ -888,7 +905,20 @@ Page {
                 visible: totalSchedules > 0
                 spacing: 1
 
-                // Header row
+                // Animate the entire table content width when chatbot opens/closes
+                width: parent.width
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 400
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                // Recalculate column widths based on current table content width
+                property real contentTimeColumnWidth: (width - 28) * 0.12
+                property real contentDayColumnWidth: ((width - 28) - contentTimeColumnWidth) / numDays
+
+                // Header row - uses tableContent's calculated widths
                 Row {
                     id: dayHeaderRow
                     height: headerHeight
@@ -896,7 +926,7 @@ Page {
                     width: parent.width
 
                     Rectangle {
-                        width: timeColumnWidth
+                        width: tableContent.contentTimeColumnWidth
                         height: headerHeight
                         color: "#e5e7eb"
                         border.color: "#d1d5db"
@@ -915,7 +945,7 @@ Page {
                         model: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
                         Rectangle {
-                            width: dayColumnWidth
+                            width: tableContent.contentDayColumnWidth
                             height: headerHeight
                             color: "#e5e7eb"
                             border.color: "#d1d5db"
@@ -934,7 +964,7 @@ Page {
                     }
                 }
 
-                // Schedule table
+                // Schedule table - uses tableContent's calculated widths
                 TableView {
                     id: scheduleTable
                     width: parent.width
@@ -952,11 +982,22 @@ Page {
                     ]
 
                     columnWidthProvider: function(col) {
-                        return col === 0 ? timeColumnWidth : dayColumnWidth;
+                        return col === 0 ? tableContent.contentTimeColumnWidth : tableContent.contentDayColumnWidth;
                     }
 
                     rowHeightProvider: function(row) {
                         return uniformRowHeight;
+                    }
+
+                    // Update layout when tableContent width changes
+                    Connections {
+                        target: tableContent
+                        function onContentTimeColumnWidthChanged() {
+                            Qt.callLater(scheduleTable.forceLayout)
+                        }
+                        function onContentDayColumnWidthChanged() {
+                            Qt.callLater(scheduleTable.forceLayout)
+                        }
                     }
 
                     model: TableModel {
@@ -1036,7 +1077,7 @@ Page {
 
                     delegate: Rectangle {
                         implicitHeight: uniformRowHeight
-                        implicitWidth: model.column === 0 ? timeColumnWidth : dayColumnWidth
+                        implicitWidth: model.column === 0 ? tableContent.contentTimeColumnWidth : tableContent.contentDayColumnWidth
                         border.width: 1
                         border.color: "#e0e0e0"
                         radius: 4

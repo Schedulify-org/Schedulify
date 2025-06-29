@@ -24,21 +24,14 @@ public:
     // Main API method
     BotQueryResponse processScheduleQuery(const BotQueryRequest& request);
 
-    // Configuration
-    void setApiKey(const std::string& apiKey);
-    bool isApiKeyConfigured() const;
-
 private:
-    std::string m_apiKey;
-
-    string getApiKeyFromEnvironment() const;
-
     // API interaction methods
     Json::Value createRequestPayload(const BotQueryRequest& request);
-    std::string createSystemPrompt(const std::string& scheduleMetadata);
+    static std::string createSystemPrompt(const std::string& scheduleMetadata);
 
-    BotQueryResponse parseClaudeResponse(const std::string& responseData);
-    bool extractSQLQuery(const std::string& content, std::string& sqlQuery, std::vector<std::string>& parameters);
+    static BotQueryResponse parseClaudeResponse(const std::string& responseData);
+    static bool extractSQLQuery(const std::string& content, std::string& sqlQuery, std::vector<std::string>& parameters);
+    static void validateApiKeyEnvironment();
 
     const std::string CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
     const std::string CLAUDE_MODEL = "claude-3-5-sonnet-20241022";

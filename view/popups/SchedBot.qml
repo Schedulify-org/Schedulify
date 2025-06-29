@@ -11,7 +11,7 @@ Rectangle {
     border.color: "#e5e7eb"
     border.width: 1
 
-    // Expose isOpen property to parent
+    // Expose isOpen property to parent - ensure it starts as false
     property bool isOpen: false
     property alias messagesModel: messagesListModel
     property bool isProcessing: false
@@ -32,17 +32,37 @@ Rectangle {
         "Almost done..."
     ]
 
-    // Hide completely when closed
+    // Hide completely when closed - like the original
     visible: isOpen
 
-    // Animation for sliding in/out - only animate x position when visible
+    // Position for sliding animation
     x: parent.width - width
 
-    Behavior on visible {
-        NumberAnimation {
-            duration: 300
-            easing.type: Easing.OutCubic
+    // Slide animation using transform instead of x position
+    transform: Translate {
+        id: slideTransform
+        x: isOpen ? 0 : width  // Slide by the chatbot's width
+
+        Behavior on x {
+            NumberAnimation {
+                duration: 400
+                easing.type: Easing.OutCubic
+            }
         }
+    }
+
+    // Keep fully opaque
+    opacity: 1.0
+
+    // Add subtle shadow effect when open - simplified without animations for now
+    Rectangle {
+        anchors.fill: parent
+        anchors.leftMargin: -5
+        color: "transparent"
+        border.color: isOpen ? "#00000020" : "transparent"
+        border.width: isOpen ? 5 : 0
+        radius: 8
+        z: -1
     }
 
     // Loading message timer
@@ -142,7 +162,7 @@ Rectangle {
                 }
             }
 
-            // Close button
+            // Close button with enhanced animation
             Button {
                 Layout.preferredWidth: 32
                 Layout.preferredHeight: 32
@@ -150,6 +170,13 @@ Rectangle {
                 background: Rectangle {
                     color: closeMouseArea.containsMouse ? "#f3f4f6" : "transparent"
                     radius: 6
+
+                    // Smooth color transition
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 200
+                        }
+                    }
                 }
 
                 contentItem: Text {
@@ -158,6 +185,16 @@ Rectangle {
                     color: "#6b7280"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+
+                    // Scale animation on hover
+                    scale: closeMouseArea.containsMouse ? 1.1 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: 150
+                            easing.type: Easing.OutQuad
+                        }
+                    }
                 }
 
                 MouseArea {
@@ -281,8 +318,8 @@ Rectangle {
                             z: -1
                         }
 
-                        // Simple loading text - no animations
-                        Text {
+                        // Simple loading text - selectable
+                        TextEdit {
                             id: loadingText
                             anchors {
                                 left: parent.left
@@ -296,13 +333,16 @@ Rectangle {
                             text: model.message
                             font.pixelSize: 14
                             color: "#6b7280"
-                            wrapMode: Text.WordWrap
-                            verticalAlignment: Text.AlignTop
+                            wrapMode: TextEdit.WordWrap
+                            verticalAlignment: TextEdit.AlignTop
                             visible: model.isTyping === true
                             font.italic: true
+                            readOnly: true
+                            selectByMouse: true
+                            selectByKeyboard: true
                         }
 
-                        Text {
+                        TextEdit {
                             id: messageText
                             anchors {
                                 left: parent.left
@@ -317,23 +357,40 @@ Rectangle {
                             text: model.message
                             font.pixelSize: 14
                             color: model.isBot ? "#1f2937" : "#ffffff"
-                            wrapMode: Text.WordWrap
-                            verticalAlignment: Text.AlignTop
+                            wrapMode: TextEdit.WordWrap
+                            verticalAlignment: TextEdit.AlignTop
                             visible: model.isTyping !== true
+                            readOnly: true
+                            selectByMouse: true
+                            selectByKeyboard: true
 
-                            // Slide in animation for new messages
+                            // Enhanced slide in animation for new messages
                             opacity: 0
+                            x: model.isBot ? -20 : 20
+
                             Component.onCompleted: {
                                 slideInAnimation.start()
                             }
 
-                            OpacityAnimator {
+                            ParallelAnimation {
                                 id: slideInAnimation
-                                target: messageText
-                                from: 0
-                                to: 1
-                                duration: 300
-                                easing.type: Easing.OutQuad
+
+                                OpacityAnimator {
+                                    target: messageText
+                                    from: 0
+                                    to: 1
+                                    duration: 400
+                                    easing.type: Easing.OutQuad
+                                }
+
+                                NumberAnimation {
+                                    target: messageText
+                                    property: "x"
+                                    from: model.isBot ? -20 : 20
+                                    to: 0
+                                    duration: 400
+                                    easing.type: Easing.OutCubic
+                                }
                             }
                         }
 
@@ -431,6 +488,16 @@ Rectangle {
                         return sendMouseArea.containsMouse ? "#2563eb" : "#3b82f6"
                     }
                     radius: 8
+
+                    // Enhanced scale animation on hover
+                    scale: sendMouseArea.containsMouse && parent.enabled ? 1.05 : 1.0
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: 150
+                            easing.type: Easing.OutQuad
+                        }
+                    }
                 }
 
                 contentItem: Item {
@@ -541,6 +608,20 @@ Rectangle {
 
         // Send message to model through controller
         if (controller) {
+            // Add a timeout for the request
+            var timeoutTimer = Qt.createQmlObject('import QtQuick 2.15; Timer {}', chatBot)
+            timeoutTimer.interval = 30000 // 30 seconds timeout
+            timeoutTimer.repeat = false
+            timeoutTimer.triggered.connect(function() {
+                if (isProcessing) {
+                    hideTypingIndicator()
+                    addBotResponse("⏱️ Request timed out. Please try again with a simpler query.", false)
+                    isProcessing = false
+                }
+                timeoutTimer.destroy()
+            })
+            timeoutTimer.start()
+
             controller.processBotMessage(messageText)
         } else {
             // Fallback if controller is not available

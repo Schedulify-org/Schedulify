@@ -1,6 +1,4 @@
 #include "main_model.h"
-#include "claude_api_integration.h"
-#include "sql_validator.h"
 
 std::vector<int> Model::lastFilteredScheduleIds;
 
@@ -12,602 +10,6 @@ std::string getFileExtension(const std::string& filename) {
     std::string ext = filename.substr(dot + 1);
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
     return ext;
-}
-
-vector<Course> Model::generateCourses(const string& path) {
-    vector<Course> courses;
-
-    // Start collecting logger messages for parsing
-    Logger::get().startCollecting();
-
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database - proceeding without persistence");
-            } else {
-                Logger::get().logInfo("Database initialized successfully");
-            }
-        }
-
-        std::string extension = getFileExtension(path);
-
-        if (extension == "xlsx") {
-            Logger::get().logInfo("Parsing Excel file: " + path);
-            ExcelCourseParser excelParser;
-            courses = excelParser.parseExcelFile(path);
-        }
-        else if (extension == "txt") {
-            Logger::get().logInfo("Parsing text file: " + path);
-            courses = parseCourseDB(path);
-        }
-        else {
-            Logger::get().logError("Unsupported file format: " + extension + ". Supported formats: .txt, .xlsx");
-            Logger::get().stopCollecting();
-            return courses; // Return empty vector
-        }
-
-        if (courses.empty()) {
-            Logger::get().logError("Error while parsing input data from file: " + path + ". No courses found.");
-        } else {
-            Logger::get().logInfo("Successfully parsed " + std::to_string(courses.size()) + " courses from " + path);
-
-            // Extract file information from path
-            size_t lastSlash = path.find_last_of("/\\");
-            string fileName = (lastSlash != string::npos) ? path.substr(lastSlash + 1) : path;
-            string fileType = extension;
-
-            if (dbIntegration.isInitialized()) {
-                try {
-                    if (dbIntegration.loadCoursesToDatabase(courses, fileName, fileType)) {
-                        Logger::get().logInfo("SUCCESS: Courses and file metadata saved to database");
-                        Logger::get().logInfo("- File: " + fileName + " (type: " + fileType + ")");
-                        Logger::get().logInfo("- Courses: " + std::to_string(courses.size()) + " courses linked to file");
-                    } else {
-                        Logger::get().logWarning("Failed to load courses into database, continuing without persistence");
-                    }
-                } catch (const std::exception& e) {
-                    Logger::get().logWarning("Database error while loading courses: " + string(e.what()));
-                    Logger::get().logWarning("Continuing without database persistence");
-                }
-            } else {
-                Logger::get().logWarning("Database not initialized - continuing without persistence");
-            }
-        }
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception during parsing: " + string(e.what()));
-    }
-
-    Logger::get().logInfo(std::to_string(courses.size()) + " courses loaded");
-
-    // Keep collecting enabled for validation phase
-    return courses;
-}
-
-vector<Course> Model::loadCoursesFromDB() {
-    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-    if (!dbIntegration.isInitialized()) {
-        dbIntegration.initializeDatabase();
-    }
-    return dbIntegration.getCoursesFromDatabase();
-}
-
-vector<Course> Model::loadCoursesFromHistory(const vector<int>& fileIds) {
-    vector<Course> courses;
-    vector<string> warnings;
-
-    Logger::get().startCollecting();
-
-    try {
-        if (fileIds.empty()) {
-            Logger::get().logError("No file IDs provided for loading from history");
-            Logger::get().stopCollecting();
-            return courses;
-        }
-
-        Logger::get().logInfo("=== LOADING COURSES FROM HISTORY ===");
-        Logger::get().logInfo("Requested " + std::to_string(fileIds.size()) + " file(s)");
-
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            Logger::get().logInfo("Initializing database for history loading");
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database for history loading");
-                Logger::get().stopCollecting();
-                return courses;
-            }
-        }
-
-        // Log file IDs being requested
-        string fileIdsList;
-        for (size_t i = 0; i < fileIds.size(); ++i) {
-            if (i > 0) fileIdsList += ", ";
-            fileIdsList += std::to_string(fileIds[i]);
-        }
-        Logger::get().logInfo("Requested file IDs: [" + fileIdsList + "]");
-
-        // Get courses by file IDs with conflict resolution
-        courses = dbIntegration.getCoursesByFileIds(fileIds, warnings);
-
-        Logger::get().logInfo("=== HISTORY LOADING RESULTS ===");
-        Logger::get().logInfo("File IDs requested: [" + fileIdsList + "]");
-        Logger::get().logInfo("Courses loaded: " + std::to_string(courses.size()));
-        Logger::get().logInfo("Conflicts resolved: " + std::to_string(warnings.size()));
-
-        // Log conflict resolution warnings
-        if (!warnings.empty()) {
-            Logger::get().logWarning("=== CONFLICT RESOLUTION ===");
-            for (const string& warning : warnings) {
-                Logger::get().logWarning(warning);
-            }
-        }
-
-        // Log first few loaded courses for debugging
-        if (!courses.empty()) {
-            Logger::get().logInfo("=== LOADED COURSES DEBUG ===");
-            for (size_t i = 0; i < std::min(courses.size(), size_t(5)); ++i) {
-                Logger::get().logInfo("Course " + std::to_string(i) + ": ID=" + std::to_string(courses[i].id) +
-                                      ", Raw ID=" + courses[i].raw_id + ", Name=" + courses[i].name);
-            }
-        }
-
-        // Enhanced debugging for empty results
-        if (courses.empty()) {
-            Logger::get().logWarning("=== NO COURSES FOUND - DEBUGGING ===");
-
-            // Check database connection
-            auto& db = DatabaseManager::getInstance();
-            if (!db.isConnected()) {
-                Logger::get().logError("Database is not connected!");
-                return courses;
-            }
-
-            // Check if files exist in database
-            for (int fileId : fileIds) {
-                FileEntity file = db.files()->getFileById(fileId);
-                if (file.id != 0) {
-                    Logger::get().logInfo("File ID " + std::to_string(fileId) + " exists: '" + file.file_name + "'");
-
-                    // Check courses for this file
-                    vector<Course> fileCourses = db.courses()->getCoursesByFileId(fileId);
-                    Logger::get().logInfo("File " + std::to_string(fileId) + " has " + std::to_string(fileCourses.size()) + " courses");
-
-                    if (fileCourses.empty()) {
-                        Logger::get().logWarning("File exists but has no associated courses - possible data corruption");
-                    }
-                } else {
-                    Logger::get().logError("File ID " + std::to_string(fileId) + " not found in database");
-                }
-            }
-        }
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception during loading from history: " + string(e.what()));
-        courses.clear();
-    }
-
-    return courses;
-}
-
-vector<FileEntity> Model::getFileHistory() {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            Logger::get().logInfo("Initializing database for file history");
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database for file history");
-                return {};
-            }
-        }
-
-        // Check database connection
-        auto& db = DatabaseManager::getInstance();
-        if (!db.isConnected()) {
-            Logger::get().logError("Database connection lost - cannot retrieve file history");
-            return {};
-        }
-
-        auto files = dbIntegration.getAllFiles();
-        Logger::get().logInfo("Retrieved " + std::to_string(files.size()) + " files from history");
-
-        // Log file history for debugging
-        if (!files.empty()) {
-            return files;
-        } else {
-            Logger::get().logInfo("No files found in database - this is normal for first use");
-            return {};
-        }
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception during file history retrieval: " + string(e.what()));
-        return {};
-    }
-}
-
-bool Model::deleteFileFromHistory(int fileId) {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            Logger::get().logInfo("Initializing database for file deletion");
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database for file deletion");
-                return false;
-            }
-        }
-
-        auto& db = DatabaseManager::getInstance();
-        if (!db.isConnected()) {
-            Logger::get().logError("Database not connected for file deletion");
-            return false;
-        }
-
-        // Get file details before deletion for logging
-        FileEntity file = db.files()->getFileById(fileId);
-        if (file.id != 0) {
-            // Get count of courses
-            int courseCount = db.courses()->getCourseCountByFileId(fileId);
-
-            DatabaseTransaction transaction(db);
-
-            // Delete courses first
-            if (!db.courses()->deleteCoursesByFileId(fileId)) {
-                Logger::get().logError("Failed to delete courses for file ID: " + std::to_string(fileId));
-                return false;
-            }
-
-            // Delete the file record
-            if (!db.files()->deleteFile(fileId)) {
-                Logger::get().logError("Failed to delete file record for ID: " + std::to_string(fileId));
-                return false;
-            }
-
-            // Commit the transaction
-            if (!transaction.commit()) {
-                Logger::get().logError("Failed to commit file deletion transaction");
-                return false;
-            }
-
-            Logger::get().logInfo("Successfully deleted file '" + file.file_name + "' and " +
-                                  std::to_string(courseCount) + " associated courses");
-            return true;
-        } else {
-            Logger::get().logError("File with ID " + std::to_string(fileId) + " not found");
-            return false;
-        }
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception during file deletion: " + string(e.what()));
-        return false;
-    }
-}
-
-vector<string> Model::validateCourses(const vector<Course>& courses) {
-    if (courses.empty()) {
-        Logger::get().logError("No courses were found to validate");
-        Logger::get().stopCollecting();
-        return {}; // Return empty vector
-    }
-
-    Logger::get().logInfo("Validating " + std::to_string(courses.size()) + " courses");
-
-    vector<string> validationErrors = validate_courses(courses);
-
-    vector<string> allCollectedMessages = Logger::get().getAllCollectedMessages();
-
-    for (const auto& error : validationErrors) {
-        allCollectedMessages.push_back("[Validation] " + error);
-    }
-
-    Logger::get().stopCollecting();
-    Logger::get().clearCollected();
-
-    return allCollectedMessages;
-}
-
-vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userInput) {
-    if (userInput.empty() || userInput.size() > 8) {
-        Logger::get().logError("invalid amount of courses (" + std::to_string(userInput.size()) + "), aborting...");
-        return {};
-    }
-
-    Logger::get().logInfo("Generating schedules for " + std::to_string(userInput.size()) + " courses");
-
-    // For large generations (5+ courses), enable progressive writing
-    bool enableProgressiveWriting = userInput.size() >= 5;
-
-    ScheduleBuilder builder;
-    vector<InformativeSchedule> schedules;
-
-    if (enableProgressiveWriting) {
-        Logger::get().logInfo("Large schedule generation detected - enabling progressive database writing");
-
-        try {
-            auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-            if (!dbIntegration.isInitialized()) {
-                if (!dbIntegration.initializeDatabase()) {
-                    Logger::get().logWarning("Database not available - proceeding without progressive writing");
-                    enableProgressiveWriting = false;
-                }
-            }
-        } catch (const std::exception& e) {
-            Logger::get().logWarning("Database error - proceeding without progressive writing: " + string(e.what()));
-            enableProgressiveWriting = false;
-        }
-    }
-
-    if (enableProgressiveWriting) {
-        // Generate set name
-        string setName = "Generated Schedules - " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss").toStdString();
-
-        vector<int> sourceFileIds;
-
-        schedules = builder.build(userInput, true, setName, sourceFileIds);
-    } else {
-        schedules = builder.build(userInput, false);
-    }
-
-    if (schedules.empty()) {
-        Logger::get().logError("unable to generate schedules, aborting process");
-        return schedules;
-    }
-
-    Logger::get().logInfo("Generated " + std::to_string(schedules.size()) + " possible schedules");
-
-    if (enableProgressiveWriting) {
-        Logger::get().logInfo("Schedules have been written to database during generation");
-    }
-    return schedules;
-}
-
-void Model::saveSchedule(const InformativeSchedule& infoSchedule, const string& path) {
-    bool status = saveScheduleToCsv(path, infoSchedule);
-    string message = status ? "Schedule saved to CSV: " + path : "An error has occurred, unable to save schedule as csv";
-    Logger::get().logInfo(message);
-}
-
-void Model::printSchedule(const InformativeSchedule& infoSchedule) {
-    bool status = printSelectedSchedule(infoSchedule);
-    string message = status ? "Schedule sent to printer" : "An error has occurred, unable to print schedule";
-    Logger::get().logInfo(message);
-}
-
-bool Model::saveSchedulesToDB(const vector<InformativeSchedule>& schedules, const string& setName,
-                              const vector<int>& sourceFileIds) {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database for schedule saving");
-                return false;
-            }
-        }
-
-        return dbIntegration.saveSchedulesToDatabase(schedules, setName, sourceFileIds);
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception saving schedules to database: " + string(e.what()));
-        return false;
-    }
-}
-
-vector<InformativeSchedule> Model::loadSchedulesFromDB(int setId) {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database for schedule loading");
-                return {};
-            }
-        }
-
-        return dbIntegration.getSchedulesFromDatabase(setId);
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception loading schedules from database: " + string(e.what()));
-        return {};
-    }
-}
-
-vector<ScheduleSetEntity> Model::getScheduleSetsFromDB() {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            if (!dbIntegration.initializeDatabase()) {
-                Logger::get().logError("Failed to initialize database for schedule set retrieval");
-                return {};
-            }
-        }
-
-        return dbIntegration.getScheduleSets();
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception getting schedule sets from database: " + string(e.what()));
-        return {};
-    }
-}
-
-bool Model::deleteScheduleSetFromDB(int setId) {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            Logger::get().logError("Database not initialized for schedule set deletion");
-            return false;
-        }
-
-        return dbIntegration.deleteScheduleSet(setId);
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception deleting schedule set from database: " + string(e.what()));
-        return false;
-    }
-}
-
-Model::BotFilterResult Model::processBotMessageWithFiltering(const std::string& userMessage, const std::vector<int>& availableScheduleIds) {
-    BotFilterResult result;
-
-    try {
-        Logger::get().logInfo("=== BOT MESSAGE PROCESSING WORKFLOW ===");
-        Logger::get().logInfo("Step 1: Received user message: " + userMessage);
-
-        // Step 2: Get schedule table schema and metadata
-        std::string scheduleMetadata = generateScheduleTableMetadata();
-        Logger::get().logInfo("Step 2: Generated schedule metadata for Claude");
-
-        // Create request for Claude
-        BotQueryRequest claudeRequest;
-        claudeRequest.userMessage = userMessage;
-        claudeRequest.scheduleMetadata = scheduleMetadata;
-        claudeRequest.availableScheduleIds = availableScheduleIds;
-
-        // Step 3: Send to Claude API
-        Logger::get().logInfo("Step 3: Sending request to Claude API");
-
-        ClaudeAPIClient claudeClient; // Constructor will automatically load API key from environment
-
-        // Check if API key is configured (either from env var or database)
-        if (!claudeClient.isApiKeyConfigured()) {
-            // Try to get from database as fallback
-            std::string dbApiKey = getClaudeAPIKey();
-            if (!dbApiKey.empty()) {
-                claudeClient.setApiKey(dbApiKey);
-                Logger::get().logInfo("Using API key from database as fallback");
-            } else {
-                result.hasError = true;
-                result.errorMessage = "Claude API key not configured. Please set the ANTHROPIC_API_KEY environment variable or configure it in the application settings.";
-                return result;
-            }
-        }
-
-        BotQueryResponse claudeResponse = claudeClient.processScheduleQuery(claudeRequest);
-
-        if (claudeResponse.hasError) {
-            result.hasError = true;
-            result.errorMessage = claudeResponse.errorMessage;
-            return result;
-        }
-
-        Logger::get().logInfo("Step 3 Complete: Received response from Claude");
-        Logger::get().logInfo("Claude message: " + claudeResponse.userMessage);
-        Logger::get().logInfo("Is filter query: " + std::to_string(claudeResponse.isFilterQuery));
-
-        // Set the response message
-        result.responseMessage = claudeResponse.userMessage;
-
-        // Step 4: Apply SQL query if this is a filter request
-        if (claudeResponse.isFilterQuery && !claudeResponse.sqlQuery.empty()) {
-            Logger::get().logInfo("Step 4: Applying SQL filter query");
-            Logger::get().logInfo("SQL Query: " + claudeResponse.sqlQuery);
-
-            // Validate the SQL query
-            auto validationResult = SQLValidator::validateScheduleQuery(claudeResponse.sqlQuery);
-            if (!validationResult.isValid) {
-                Logger::get().logError("SQL validation failed: " + validationResult.errorMessage);
-                result.hasError = true;
-                result.errorMessage = "Invalid filter query generated. Please try rephrasing your request.";
-                return result;
-            }
-
-            // Execute the SQL query on the schedule database
-            std::vector<int> allMatchingIds = executeScheduleQuery(claudeResponse.sqlQuery, claudeResponse.queryParameters);
-
-            // Step 5: Filter to only include available schedule IDs
-            Logger::get().logInfo("Step 5: Filtering results to available schedules");
-            std::set<int> availableSet(availableScheduleIds.begin(), availableScheduleIds.end());
-
-            for (int scheduleId : allMatchingIds) {
-                if (availableSet.find(scheduleId) != availableSet.end()) {
-                    result.filteredScheduleIds.push_back(scheduleId);
-                }
-            }
-
-            Logger::get().logInfo("Step 5 Complete: Found " + std::to_string(result.filteredScheduleIds.size()) +
-                                  " matching schedules out of " + std::to_string(availableScheduleIds.size()) + " available");
-
-        } else {
-            Logger::get().logInfo("Step 4-5: No filtering needed - general response only");
-            // No filtering needed, return all available IDs
-            result.filteredScheduleIds = availableScheduleIds;
-        }
-
-        Logger::get().logInfo("=== BOT WORKFLOW COMPLETED SUCCESSFULLY ===");
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception in bot message processing: " + std::string(e.what()));
-        result.hasError = true;
-        result.errorMessage = "An error occurred while processing your request. Please try again.";
-    }
-
-    return result;
-}
-
-std::string Model::generateScheduleTableMetadata() {
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            if (!dbIntegration.initializeDatabase()) {
-                return "Database not available";
-            }
-        }
-
-        auto& db = DatabaseManager::getInstance();
-        if (!db.isConnected()) {
-            return "Database not connected";
-        }
-
-        // Use the existing method from schedule manager
-        return db.schedules()->getSchedulesMetadataForBot();
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Failed to generate schedule metadata: " + std::string(e.what()));
-        return "Error generating schedule metadata";
-    }
-}
-
-std::vector<int> Model::executeScheduleQuery(const std::string& sqlQuery, const std::vector<std::string>& parameters) {
-    std::vector<int> scheduleIds;
-
-    try {
-        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-        if (!dbIntegration.isInitialized()) {
-            Logger::get().logError("Database not initialized for query execution");
-            return scheduleIds;
-        }
-
-        auto& db = DatabaseManager::getInstance();
-        if (!db.isConnected()) {
-            Logger::get().logError("Database not connected for query execution");
-            return scheduleIds;
-        }
-
-        // Execute the custom query using the schedule manager
-        scheduleIds = db.schedules()->executeCustomQuery(sqlQuery, parameters);
-
-        Logger::get().logInfo("SQL query executed successfully, returned " + std::to_string(scheduleIds.size()) + " schedule IDs");
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception executing schedule query: " + std::string(e.what()));
-    }
-
-    return scheduleIds;
-}
-
-std::string Model::getClaudeAPIKey() {
-    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-    const char* key = getenv("ANTHROPIC_API_KEY");
-    if (dbIntegration.isInitialized()) {
-        auto& db = DatabaseManager::getInstance();
-        return db.getMetadata("claude_api_key", key);
-    }
-    return key;
-}
-
-void Model::setClaudeAPIKey(const std::string& apiKey) {
-    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-    if (dbIntegration.isInitialized()) {
-        auto& db = DatabaseManager::getInstance();
-        db.updateMetadata("claude_api_key", apiKey);
-        Logger::get().logInfo("Claude API key updated");
-    }
 }
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
@@ -665,7 +67,6 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             if (data) {
                 const auto* courses = static_cast<const vector<Course>*>(data);
                 lastGeneratedSchedules = generateSchedules(*courses);
-
                 return &lastGeneratedSchedules;
             } else {
                 Logger::get().logError("unable to generate schedules, aborting...");
@@ -724,22 +125,18 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         case ModelOperation::BOT_QUERY_SCHEDULES: {
             if (data) {
                 const auto* queryRequest = static_cast<const BotQueryRequest*>(data);
-
-                // Use the new complete workflow
-                BotFilterResult botResult = processBotMessageWithFiltering(
-                        queryRequest->userMessage,
-                        queryRequest->availableScheduleIds
-                );
-
-                // Convert to the expected response format
                 auto* response = new BotQueryResponse();
+
+                // Process the bot query and get filtered schedule IDs
+                auto botResult = processBotQuery(*queryRequest);
+
+                // Set response fields
                 response->userMessage = botResult.responseMessage;
                 response->hasError = botResult.hasError;
                 response->errorMessage = botResult.errorMessage;
-                response->isFilterQuery = !botResult.filteredScheduleIds.empty() &&
-                                          botResult.filteredScheduleIds.size() != queryRequest->availableScheduleIds.size();
+                response->isFilterQuery = botResult.isFilterQuery;
 
-                // Store the filtered IDs for retrieval
+                // Store filtered IDs for later retrieval
                 lastFilteredScheduleIds = botResult.filteredScheduleIds;
 
                 return response;
@@ -750,7 +147,6 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         }
 
         case ModelOperation::GET_LAST_FILTERED_IDS: {
-            // New operation to get the last filtered schedule IDs
             auto* result = new std::vector<int>(lastFilteredScheduleIds);
             return result;
         }
@@ -797,7 +193,6 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 const int* setIdPtr = static_cast<const int*>(data);
                 setId = *setIdPtr;
             }
-
             auto* schedules = new vector<InformativeSchedule>(loadSchedulesFromDB(setId));
             return schedules;
         }
@@ -841,7 +236,6 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                             return nullptr;
                         }
                     }
-
                     auto* filteredSchedules = new vector<InformativeSchedule>(
                             dbIntegration.filterSchedulesByMetrics(*filters)
                     );
@@ -865,13 +259,11 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                         return nullptr;
                     }
                 }
-
                 auto& db = DatabaseManager::getInstance();
                 if (!db.isConnected()) {
                     Logger::get().logError("Database not connected for schedule statistics");
                     return nullptr;
                 }
-
                 auto* stats = new map<string, int>(db.schedules()->getScheduleStatistics());
                 return stats;
             } catch (const std::exception& e) {
@@ -881,4 +273,468 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         }
     }
     return nullptr;
+}
+
+vector<Course> Model::generateCourses(const string& path) {
+    vector<Course> courses;
+
+    Logger::get().startCollecting();
+
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database - proceeding without persistence");
+            } else {
+                Logger::get().logInfo("Database initialized successfully");
+            }
+        }
+
+        std::string extension = getFileExtension(path);
+
+        if (extension == "xlsx") {
+            Logger::get().logInfo("Parsing Excel file: " + path);
+            ExcelCourseParser excelParser;
+            courses = excelParser.parseExcelFile(path);
+        }
+        else if (extension == "txt") {
+            Logger::get().logInfo("Parsing text file: " + path);
+            courses = parseCourseDB(path);
+        }
+        else {
+            Logger::get().logError("Unsupported file format: " + extension + ". Supported formats: .txt, .xlsx");
+            Logger::get().stopCollecting();
+            return courses;
+        }
+
+        if (courses.empty()) {
+            Logger::get().logError("Error while parsing input data from file: " + path + ". No courses found.");
+        } else {
+            Logger::get().logInfo("Successfully parsed " + std::to_string(courses.size()) + " courses from " + path);
+
+            size_t lastSlash = path.find_last_of("/\\");
+            string fileName = (lastSlash != string::npos) ? path.substr(lastSlash + 1) : path;
+            string fileType = extension;
+
+            if (dbIntegration.isInitialized()) {
+                try {
+                    if (dbIntegration.loadCoursesToDatabase(courses, fileName, fileType)) {
+                        Logger::get().logInfo("SUCCESS: Courses and file metadata saved to database");
+                        Logger::get().logInfo("- File: " + fileName + " (type: " + fileType + ")");
+                        Logger::get().logInfo("- Courses: " + std::to_string(courses.size()) + " courses linked to file");
+                    } else {
+                        Logger::get().logWarning("Failed to load courses into database, continuing without persistence");
+                    }
+                } catch (const std::exception& e) {
+                    Logger::get().logWarning("Database error while loading courses: " + string(e.what()));
+                    Logger::get().logWarning("Continuing without database persistence");
+                }
+            } else {
+                Logger::get().logWarning("Database not initialized - continuing without persistence");
+            }
+        }
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during parsing: " + string(e.what()));
+    }
+
+    Logger::get().logInfo(std::to_string(courses.size()) + " courses loaded");
+    return courses;
+}
+
+vector<Course> Model::loadCoursesFromDB() {
+    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+    if (!dbIntegration.isInitialized()) {
+        dbIntegration.initializeDatabase();
+    }
+    return dbIntegration.getCoursesFromDatabase();
+}
+
+vector<Course> Model::loadCoursesFromHistory(const vector<int>& fileIds) {
+    vector<Course> courses;
+    vector<string> warnings;
+
+    Logger::get().startCollecting();
+
+    try {
+        if (fileIds.empty()) {
+            Logger::get().logError("No file IDs provided for loading from history");
+            Logger::get().stopCollecting();
+            return courses;
+        }
+
+        Logger::get().logInfo("=== LOADING COURSES FROM HISTORY ===");
+        Logger::get().logInfo("Requested " + std::to_string(fileIds.size()) + " file(s)");
+
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logInfo("Initializing database for history loading");
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for history loading");
+                Logger::get().stopCollecting();
+                return courses;
+            }
+        }
+
+        string fileIdsList;
+        for (size_t i = 0; i < fileIds.size(); ++i) {
+            if (i > 0) fileIdsList += ", ";
+            fileIdsList += std::to_string(fileIds[i]);
+        }
+        Logger::get().logInfo("Requested file IDs: [" + fileIdsList + "]");
+
+        courses = dbIntegration.getCoursesByFileIds(fileIds, warnings);
+
+        Logger::get().logInfo("=== HISTORY LOADING RESULTS ===");
+        Logger::get().logInfo("File IDs requested: [" + fileIdsList + "]");
+        Logger::get().logInfo("Courses loaded: " + std::to_string(courses.size()));
+        Logger::get().logInfo("Conflicts resolved: " + std::to_string(warnings.size()));
+
+        if (!warnings.empty()) {
+            Logger::get().logWarning("=== CONFLICT RESOLUTION ===");
+            for (const string& warning : warnings) {
+                Logger::get().logWarning(warning);
+            }
+        }
+
+        if (!courses.empty()) {
+            Logger::get().logInfo("=== LOADED COURSES DEBUG ===");
+            for (size_t i = 0; i < std::min(courses.size(), size_t(5)); ++i) {
+                Logger::get().logInfo("Course " + std::to_string(i) + ": ID=" + std::to_string(courses[i].id) +
+                                      ", Raw ID=" + courses[i].raw_id + ", Name=" + courses[i].name);
+            }
+        }
+
+        if (courses.empty()) {
+            Logger::get().logWarning("=== NO COURSES FOUND - DEBUGGING ===");
+            auto& db = DatabaseManager::getInstance();
+            if (!db.isConnected()) {
+                Logger::get().logError("Database is not connected!");
+                return courses;
+            }
+
+            for (int fileId : fileIds) {
+                FileEntity file = db.files()->getFileById(fileId);
+                if (file.id != 0) {
+                    Logger::get().logInfo("File ID " + std::to_string(fileId) + " exists: '" + file.file_name + "'");
+                    vector<Course> fileCourses = db.courses()->getCoursesByFileId(fileId);
+                    Logger::get().logInfo("File " + std::to_string(fileId) + " has " + std::to_string(fileCourses.size()) + " courses");
+
+                    if (fileCourses.empty()) {
+                        Logger::get().logWarning("File exists but has no associated courses - possible data corruption");
+                    }
+                } else {
+                    Logger::get().logError("File ID " + std::to_string(fileId) + " not found in database");
+                }
+            }
+        }
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during loading from history: " + string(e.what()));
+        courses.clear();
+    }
+
+    return courses;
+}
+
+vector<FileEntity> Model::getFileHistory() {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logInfo("Initializing database for file history");
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for file history");
+                return {};
+            }
+        }
+
+        auto& db = DatabaseManager::getInstance();
+        if (!db.isConnected()) {
+            Logger::get().logError("Database connection lost - cannot retrieve file history");
+            return {};
+        }
+
+        auto files = dbIntegration.getAllFiles();
+        Logger::get().logInfo("Retrieved " + std::to_string(files.size()) + " files from history");
+
+        if (files.empty()) {
+            Logger::get().logInfo("No files found in database - this is normal for first use");
+        }
+        return files;
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during file history retrieval: " + string(e.what()));
+        return {};
+    }
+}
+
+bool Model::deleteFileFromHistory(int fileId) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logInfo("Initializing database for file deletion");
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for file deletion");
+                return false;
+            }
+        }
+
+        auto& db = DatabaseManager::getInstance();
+        if (!db.isConnected()) {
+            Logger::get().logError("Database not connected for file deletion");
+            return false;
+        }
+
+        FileEntity file = db.files()->getFileById(fileId);
+        if (file.id != 0) {
+            int courseCount = db.courses()->getCourseCountByFileId(fileId);
+
+            DatabaseTransaction transaction(db);
+
+            if (!db.courses()->deleteCoursesByFileId(fileId)) {
+                Logger::get().logError("Failed to delete courses for file ID: " + std::to_string(fileId));
+                return false;
+            }
+
+            if (!db.files()->deleteFile(fileId)) {
+                Logger::get().logError("Failed to delete file record for ID: " + std::to_string(fileId));
+                return false;
+            }
+
+            if (!transaction.commit()) {
+                Logger::get().logError("Failed to commit file deletion transaction");
+                return false;
+            }
+
+            Logger::get().logInfo("Successfully deleted file '" + file.file_name + "' and " +
+                                  std::to_string(courseCount) + " associated courses");
+            return true;
+        } else {
+            Logger::get().logError("File with ID " + std::to_string(fileId) + " not found");
+            return false;
+        }
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during file deletion: " + string(e.what()));
+        return false;
+    }
+}
+
+vector<string> Model::validateCourses(const vector<Course>& courses) {
+    if (courses.empty()) {
+        Logger::get().logError("No courses were found to validate");
+        Logger::get().stopCollecting();
+        return {};
+    }
+
+    Logger::get().logInfo("Validating " + std::to_string(courses.size()) + " courses");
+
+    vector<string> validationErrors = validate_courses(courses);
+    vector<string> allCollectedMessages = Logger::get().getAllCollectedMessages();
+
+    for (const auto& error : validationErrors) {
+        allCollectedMessages.push_back("[Validation] " + error);
+    }
+
+    Logger::get().stopCollecting();
+    Logger::get().clearCollected();
+
+    return allCollectedMessages;
+}
+
+vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userInput) {
+    if (userInput.empty() || userInput.size() > 8) {
+        Logger::get().logError("invalid amount of courses (" + std::to_string(userInput.size()) + "), aborting...");
+        return {};
+    }
+
+    Logger::get().logInfo("Generating schedules for " + std::to_string(userInput.size()) + " courses");
+
+    bool enableProgressiveWriting = userInput.size() >= 5;
+
+    ScheduleBuilder builder;
+    vector<InformativeSchedule> schedules;
+
+    if (enableProgressiveWriting) {
+        Logger::get().logInfo("Large schedule generation detected - enabling progressive database writing");
+
+        try {
+            auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+            if (!dbIntegration.isInitialized()) {
+                if (!dbIntegration.initializeDatabase()) {
+                    Logger::get().logWarning("Database not available - proceeding without progressive writing");
+                    enableProgressiveWriting = false;
+                }
+            }
+        } catch (const std::exception& e) {
+            Logger::get().logWarning("Database error - proceeding without progressive writing: " + string(e.what()));
+            enableProgressiveWriting = false;
+        }
+    }
+
+    if (enableProgressiveWriting) {
+        string setName = "Generated Schedules - " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss").toStdString();
+        vector<int> sourceFileIds;
+        schedules = builder.build(userInput, true, setName, sourceFileIds);
+    } else {
+        schedules = builder.build(userInput, false);
+    }
+
+    if (schedules.empty()) {
+        Logger::get().logError("unable to generate schedules, aborting process");
+        return schedules;
+    }
+
+    Logger::get().logInfo("Generated " + std::to_string(schedules.size()) + " possible schedules");
+
+    if (enableProgressiveWriting) {
+        Logger::get().logInfo("Schedules have been written to database during generation");
+    }
+    return schedules;
+}
+
+void Model::saveSchedule(const InformativeSchedule& infoSchedule, const string& path) {
+    bool status = saveScheduleToCsv(path, infoSchedule);
+    string message = status ? "Schedule saved to CSV: " + path : "An error has occurred, unable to save schedule as csv";
+    Logger::get().logInfo(message);
+}
+
+void Model::printSchedule(const InformativeSchedule& infoSchedule) {
+    bool status = printSelectedSchedule(infoSchedule);
+    string message = status ? "Schedule sent to printer" : "An error has occurred, unable to print schedule";
+    Logger::get().logInfo(message);
+}
+
+bool Model::saveSchedulesToDB(const vector<InformativeSchedule>& schedules, const string& setName,
+                              const vector<int>& sourceFileIds) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for schedule saving");
+                return false;
+            }
+        }
+        return dbIntegration.saveSchedulesToDatabase(schedules, setName, sourceFileIds);
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception saving schedules to database: " + string(e.what()));
+        return false;
+    }
+}
+
+vector<InformativeSchedule> Model::loadSchedulesFromDB(int setId) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for schedule loading");
+                return {};
+            }
+        }
+        return dbIntegration.getSchedulesFromDatabase(setId);
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception loading schedules from database: " + string(e.what()));
+        return {};
+    }
+}
+
+vector<ScheduleSetEntity> Model::getScheduleSetsFromDB() {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Failed to initialize database for schedule set retrieval");
+                return {};
+            }
+        }
+        return dbIntegration.getScheduleSets();
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception getting schedule sets from database: " + string(e.what()));
+        return {};
+    }
+}
+
+bool Model::deleteScheduleSetFromDB(int setId) {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logError("Database not initialized for schedule set deletion");
+            return false;
+        }
+        return dbIntegration.deleteScheduleSet(setId);
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception deleting schedule set from database: " + string(e.what()));
+        return false;
+    }
+}
+
+Model::BotFilterResult Model::processBotQuery(const BotQueryRequest& request) {
+    BotFilterResult result;
+
+    try {
+        Logger::get().logInfo("=== BOT QUERY PROCESSING ===");
+        Logger::get().logInfo("User message: " + request.userMessage);
+        Logger::get().logInfo("Available schedule IDs: " + std::to_string(request.availableScheduleIds.size()));
+
+        // Use the Claude API integration to process the query
+        ClaudeAPIClient claudeClient;
+        BotQueryResponse claudeResponse = claudeClient.processScheduleQuery(request);
+
+        if (claudeResponse.hasError) {
+            result.hasError = true;
+            result.errorMessage = claudeResponse.errorMessage;
+            return result;
+        }
+
+        result.responseMessage = claudeResponse.userMessage;
+        result.isFilterQuery = claudeResponse.isFilterQuery;
+
+        // If this is a filter query, execute the SQL and filter results
+        if (claudeResponse.isFilterQuery && !claudeResponse.sqlQuery.empty()) {
+            Logger::get().logInfo("Executing filter query: " + claudeResponse.sqlQuery);
+
+            auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+            if (!dbIntegration.isInitialized()) {
+                if (!dbIntegration.initializeDatabase()) {
+                    result.hasError = true;
+                    result.errorMessage = "Database not available for filtering";
+                    return result;
+                }
+            }
+
+            auto& db = DatabaseManager::getInstance();
+            if (!db.isConnected()) {
+                result.hasError = true;
+                result.errorMessage = "Database connection failed";
+                return result;
+            }
+
+            // Execute the SQL query to get matching schedule IDs
+            std::vector<int> allMatchingIds = db.schedules()->executeCustomQuery(
+                    claudeResponse.sqlQuery, claudeResponse.queryParameters);
+
+            // Filter to only include available schedule IDs
+            std::set<int> availableSet(request.availableScheduleIds.begin(), request.availableScheduleIds.end());
+            for (int scheduleId : allMatchingIds) {
+                if (availableSet.find(scheduleId) != availableSet.end()) {
+                    result.filteredScheduleIds.push_back(scheduleId);
+                }
+            }
+
+            Logger::get().logInfo("Filter complete: " + std::to_string(result.filteredScheduleIds.size()) +
+                                  " schedules match criteria");
+        } else {
+            // No filtering needed, return all available IDs
+            result.filteredScheduleIds = request.availableScheduleIds;
+        }
+
+        Logger::get().logInfo("=== BOT QUERY COMPLETED ===");
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception in bot query processing: " + std::string(e.what()));
+        result.hasError = true;
+        result.errorMessage = "An error occurred while processing your request";
+    }
+
+    return result;
 }
