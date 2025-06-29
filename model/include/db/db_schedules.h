@@ -32,15 +32,20 @@ public:
     bool deleteSchedulesBySetId(int setId);
 
     // Schedule retrieval operations
-    vector<InformativeSchedule> getAllSchedules();
+    static vector<InformativeSchedule> getAllSchedules();
     InformativeSchedule getScheduleById(int id);
     vector<InformativeSchedule> getSchedulesByName(const string& name);
     vector<InformativeSchedule> getSchedulesBySetId(int setId);
 
     // Schedule filtering operations
-    vector<InformativeSchedule> getSchedulesByMetrics(int maxDays = -1, int maxGaps = -1, int maxGapTime = -1,
+    static vector<InformativeSchedule> getSchedulesByMetrics(int maxDays = -1, int maxGaps = -1, int maxGapTime = -1,
                                                       int minAvgStart = -1,int maxAvgStart = -1, int minAvgEnd = -1,
                                                       int maxAvgEnd = -1);
+
+    // NEW: SQL-based filtering operations for bot functionality
+    vector<int> executeCustomQuery(const string& sqlQuery, const vector<string>& parameters);
+    vector<InformativeSchedule> getSchedulesByIds(const vector<int>& scheduleIds);
+    string getSchedulesMetadataForBot();
 
     // Schedule set operations
     int createScheduleSet(const string& setName, const vector<int>& sourceFileIds = {});
@@ -71,6 +76,9 @@ private:
     static InformativeSchedule createScheduleFromQuery(QSqlQuery& query);
     static ScheduleSetEntity createScheduleSetFromQuery(QSqlQuery& query);
     bool updateScheduleSetCount(int setId);
+    static bool isValidScheduleQuery(const string& sqlQuery);
+    vector<string> getWhitelistedTables();
+    static vector<string> getWhitelistedColumns();
 };
 
 #endif // DB_SCHEDULES_H

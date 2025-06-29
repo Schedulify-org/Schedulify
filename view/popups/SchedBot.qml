@@ -22,13 +22,13 @@ Rectangle {
     // Loading animation properties
     property int currentLoadingMessageIndex: 0
     property var loadingMessages: [
-        "Scanning schedules now...",
-        "Searching for the best result...",
-        "Thinking about your question...",
-        "Analyzing course patterns...",
-        "Processing your request...",
+        "Analyzing your request...",
+        "Checking schedule database...",
+        "Building filter criteria...",
+        "Searching for matching schedules...",
+        "Processing schedule patterns...",
         "Finding optimal matches...",
-        "Reviewing schedule conflicts...",
+        "Applying intelligent filters...",
         "Almost done..."
     ]
 
@@ -48,7 +48,7 @@ Rectangle {
     // Loading message timer
     Timer {
         id: loadingMessageTimer
-        interval: 1500  // Change message every 1.5 seconds
+        interval: 1800  // Change message every 1.8 seconds
         repeat: true
         running: false
         onTriggered: {
@@ -125,7 +125,7 @@ Rectangle {
 
                 Text {
                     id: statusText
-                    text: isProcessing ? "Thinking..." : "Online"
+                    text: isProcessing ? "Processing..." : "Ready to filter"
                     font.pixelSize: 10
                     color: isProcessing ? "#f59e0b" : "#10b981"
                     visible: true
@@ -194,12 +194,13 @@ Rectangle {
                     id: messagesListModel
 
                     Component.onCompleted: {
-                        // Add initial bot message
+                        // Add initial bot message with updated functionality
                         append({
                             "isBot": true,
-                            "message": "Hello! I'm here to help you with your schedule. I can help you find the perfect course conflicts, time preferences, or any scheduling questions.",
+                            "message": "Hello! I'm your schedule assistant. I can help you filter schedules based on your preferences. Try asking me things like:\n\n• 'Show me schedules with no gaps'\n• 'Find schedules that start after 9 AM'\n• 'I want schedules with maximum 4 study days'\n• 'Show schedules ending before 5 PM'",
                             "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
-                            "isTyping": false
+                            "isTyping": false,
+                            "isFilterResponse": false
                         })
                     }
                 }
@@ -222,10 +223,54 @@ Rectangle {
                             rightMargin: model.isBot ? 0 : 16
                         }
 
-                        color: model.isBot ? "#f8fafc" : "#3b82f6"
+                        color: {
+                            if (model.isBot) {
+                                return model.isFilterResponse ? "#f0f9ff" : "#f8fafc"
+                            }
+                            return "#3b82f6"
+                        }
+
                         radius: 16
-                        border.color: model.isBot ? "#e2e8f0" : "transparent"
-                        border.width: 1
+                        border.color: {
+                            if (model.isBot) {
+                                return model.isFilterResponse ? "#0ea5e9" : "#e2e8f0"
+                            }
+                            return "transparent"
+                        }
+                        border.width: model.isBot && model.isFilterResponse ? 1 : 1
+
+                        // Filter response indicator
+                        Rectangle {
+                            visible: model.isBot && model.isFilterResponse
+                            anchors {
+                                top: parent.top
+                                right: parent.right
+                                margins: 8
+                            }
+                            width: 20
+                            height: 20
+                            color: "#0ea5e9"
+                            radius: 10
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: "🔍"
+                                font.pixelSize: 10
+                                color: "white"
+                            }
+
+                            ToolTip {
+                                visible: filterIndicatorMouseArea.containsMouse
+                                text: "Filter applied to schedules"
+                                delay: 500
+                            }
+
+                            MouseArea {
+                                id: filterIndicatorMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                            }
+                        }
 
                         // Add subtle shadow effect
                         Rectangle {
@@ -266,6 +311,7 @@ Rectangle {
                                 bottom: parent.bottom
                                 margins: 16
                                 bottomMargin: 28
+                                rightMargin: model.isBot && model.isFilterResponse ? 36 : 16
                             }
 
                             text: model.message
@@ -344,7 +390,7 @@ Rectangle {
 
                 TextArea {
                     id: inputField
-                    placeholderText: "Ask about your schedule..."
+                    placeholderText: "Ask me to filter schedules..."
                     placeholderTextColor: "#9ca3af"
                     font.pixelSize: 14
                     color: "#1f2937"
@@ -393,9 +439,8 @@ Rectangle {
                     // Regular send arrow
                     Text {
                         anchors.centerIn: parent
-                        text: "→"
+                        text: "🔍"  // Filter emoji to indicate filtering capability
                         font.pixelSize: 16
-                        font.bold: true
                         color: parent.parent.enabled ? "#ffffff" : "#9ca3af"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
@@ -446,6 +491,12 @@ Rectangle {
                         }
                     }
                 }
+
+                ToolTip {
+                    visible: sendMouseArea.containsMouse && parent.enabled
+                    text: "Send filter request"
+                    delay: 500
+                }
             }
         }
     }
@@ -454,7 +505,14 @@ Rectangle {
     Connections {
         target: controller
         function onBotResponseReceived(response) {
-            addBotResponse(response)
+            addBotResponse(response, false)  // Most responses are not filter responses
+        }
+
+        function onSchedulesFiltered(filteredCount, totalCount) {
+            // Add a system message when filters are applied
+            if (filteredCount !== totalCount) {
+                addBotResponse(`✅ Filter applied! Showing ${filteredCount} of ${totalCount} schedules that match your criteria.`, true)
+            }
         }
     }
 
@@ -467,7 +525,8 @@ Rectangle {
             "isBot": false,
             "message": messageText,
             "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
-            "isTyping": false
+            "isTyping": false,
+            "isFilterResponse": false
         })
 
         // Clear input field
@@ -486,18 +545,19 @@ Rectangle {
         } else {
             // Fallback if controller is not available
             hideTypingIndicator()
-            addBotResponse("I'm sorry, but I'm unable to process your request right now. Please try again later.")
+            addBotResponse("I'm sorry, but I'm unable to process your request right now. Please try again later.", false)
             isProcessing = false
         }
     }
 
-    function addBotResponse(responseText) {
+    function addBotResponse(responseText, isFilterResponse) {
         hideTypingIndicator()
         messagesModel.append({
             "isBot": true,
             "message": responseText,
             "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
-            "isTyping": false
+            "isTyping": false,
+            "isFilterResponse": isFilterResponse || false
         })
         isProcessing = false
     }
@@ -507,7 +567,8 @@ Rectangle {
             "isBot": true,
             "message": loadingMessages[currentLoadingMessageIndex],
             "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
-            "isTyping": true
+            "isTyping": true,
+            "isFilterResponse": false
         })
 
         // Start the timer to cycle through loading messages

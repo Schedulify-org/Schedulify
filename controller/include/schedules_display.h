@@ -27,6 +27,7 @@ enum class fileType {
 class SchedulesDisplayController : public ControllerManager {
 Q_OBJECT
     Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
+    Q_PROPERTY(bool isFiltered READ isFiltered NOTIFY filterStateChanged)
 
 public:
     explicit SchedulesDisplayController(QObject *parent = nullptr);
@@ -36,6 +37,7 @@ public:
 
     // Properties
     ScheduleModel* scheduleModel() const { return m_scheduleModel; }
+    bool isFiltered() const { return m_scheduleModel ? m_scheduleModel->isFiltered() : false; }
 
     // QML accessible methods
     Q_INVOKABLE void goBack() override;
@@ -47,7 +49,10 @@ public:
     Q_INVOKABLE void applySorting(const QVariantMap& sortData);
     Q_INVOKABLE void clearSorting();
 
-    // Bot message processing
+    // Filter methods
+    Q_INVOKABLE void resetFilters();
+
+    // Bot message processing - completely rewritten
     Q_INVOKABLE void processBotMessage(const QString& userMessage);
 
     static QString generateFilename(const QString& basePath, int index, fileType type);
@@ -57,8 +62,11 @@ signals:
     void screenshotSaved(const QString& path);
     void screenshotFailed();
     void botResponseReceived(const QString& response);
+    void filterStateChanged();
+    void schedulesFiltered(int filteredCount, int totalCount);
 
-
+private slots:
+    void onScheduleFilterStateChanged();
 
 private:
     std::vector<InformativeSchedule> m_schedules;
@@ -69,6 +77,11 @@ private:
     // Track current sort state for optimization
     QString m_currentSortField;
     bool m_currentSortAscending = true;
+
+    // Helper methods for bot processing
+    BotQueryRequest createBotQueryRequest(const QString& userMessage);
+    void handleSimpleBotResponse(const BotQueryResponse& response);
+    QString generateScheduleMetadata();
 };
 
 #endif // SCHEDULES_DISPLAY_H

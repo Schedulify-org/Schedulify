@@ -72,6 +72,48 @@ struct FileLoadData {
     string filePath;
 };
 
+struct BotQueryRequest {
+    string userMessage;
+    string scheduleMetadata;
+    vector<int> availableScheduleIds;
+
+    BotQueryRequest() = default;
+    BotQueryRequest(const string& message, const string& metadata, const vector<int>& ids)
+            : userMessage(message), scheduleMetadata(metadata), availableScheduleIds(ids) {}
+};
+
+struct BotQueryResponse {
+    string userMessage;
+    string sqlQuery;
+    vector<string> queryParameters;
+    bool isFilterQuery;
+    bool hasError;
+    string errorMessage;
+
+    BotQueryResponse() : isFilterQuery(false), hasError(false) {}
+    BotQueryResponse(const string& message, const string& query, const vector<string>& params, bool isFilter)
+            : userMessage(message), sqlQuery(query), queryParameters(params), isFilterQuery(isFilter), hasError(false) {}
+};
+
+struct ScheduleFilterRequest {
+    string sqlQuery;
+    vector<string> parameters;
+    vector<int> availableScheduleIds;
+
+    ScheduleFilterRequest() = default;
+    ScheduleFilterRequest(const string& query, const vector<string>& params, const vector<int>& ids)
+            : sqlQuery(query), parameters(params), availableScheduleIds(ids) {}
+};
+
+struct ScheduleFilterResult {
+    vector<int> filteredScheduleIds;
+    bool hasError;
+    string errorMessage;
+
+    ScheduleFilterResult() : hasError(false) {}
+    ScheduleFilterResult(const vector<int>& ids) : filteredScheduleIds(ids), hasError(false) {}
+};
+
 enum class ModelOperation {
     GENERATE_COURSES,
     VALIDATE_COURSES,
@@ -80,7 +122,9 @@ enum class ModelOperation {
     PRINT_SCHEDULE,
     LOAD_COURSES_FROM_DB,
     CLEAR_DATABASE,
-    BOT_MESSAGE,
+    BOT_QUERY_SCHEDULES,
+    GET_LAST_FILTERED_IDS,
+    FILTER_SCHEDULES_BY_SQL,
     BACKUP_DATABASE,
     RESTORE_DATABASE,
     GET_DATABASE_STATS,

@@ -122,9 +122,6 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/ScheduleBuilder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/schedule_algorithm/TimeUtils.cpp
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/botAdapter.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/apiManager.cpp
-
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/model_db_integration.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_schema.cpp
@@ -136,6 +133,9 @@ set(PROJECT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_json_helpers.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/cleanup_manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/model/src/db/db_utils.cpp
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/claude_api_integration.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/model/src/sched_bot/sql_validator.cpp
 )
 
 qt_add_resources(RESOURCES view/qml.qrc)

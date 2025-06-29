@@ -15,6 +15,8 @@ Page {
     property var scheduleModel: controller ? controller.scheduleModel : null
     property int currentIndex: scheduleModel ? scheduleModel.currentScheduleIndex : 0
     property int totalSchedules: scheduleModel ? scheduleModel.scheduleCount : 0
+    property int totalAllSchedules: scheduleModel ? scheduleModel.totalScheduleCount : 0
+    property bool isFiltered: controller ? controller.isFiltered : false
     property int numDays: 7
 
     property int numberOfTimeSlots: 13
@@ -31,14 +33,6 @@ Page {
     property real baseTextSize: 12
 
     property var logWindow: null
-
-    // REMOVE THIS CONNECTION - This is causing the duplicate response
-    // Connections {
-    //     target: controller
-    //     function onBotResponseReceived(response) {
-    //         chatBot.addBotResponse(response)
-    //     }
-    // }
 
     MouseArea {
         id: outsideClickArea
@@ -84,6 +78,14 @@ Page {
             if (tableModel) {
                 tableModel.updateRows()
             }
+        }
+    }
+
+    // New connections for filter state
+    Connections {
+        target: controller
+        function onSchedulesFiltered(filteredCount, totalCount) {
+            console.log("Schedules filtered:", filteredCount, "of", totalCount)
         }
     }
 
@@ -148,15 +150,82 @@ Page {
                 }
             }
 
-            Label {
-                id: titleLabel
-                text: "Generated schedules"
-                font.pixelSize: 20
-                color: "#1f2937"
+            // Title with filter indicator
+            RowLayout {
+                id: titleRow
                 anchors {
                     left: coursesBackButton.right
                     leftMargin: 16
                     verticalCenter: parent.verticalCenter
+                }
+                spacing: 12
+
+                Label {
+                    id: titleLabel
+                    text: "Generated schedules"
+                    font.pixelSize: 20
+                    color: "#1f2937"
+                }
+
+                // Filter indicator badge
+                Rectangle {
+                    visible: isFiltered
+                    Layout.preferredWidth: filterText.implicitWidth + 16
+                    Layout.preferredHeight: 24
+                    color: "#dbeafe"
+                    radius: 12
+                    border.color: "#3b82f6"
+                    border.width: 1
+
+                    Text {
+                        id: filterText
+                        anchors.centerIn: parent
+                        text: "Filtered"
+                        font.pixelSize: 10
+                        font.bold: true
+                        color: "#1e40af"
+                    }
+                }
+
+                // Reset filters button
+                Button {
+                    id: resetFiltersButton
+                    visible: isFiltered
+                    Layout.preferredWidth: resetFiltersText.implicitWidth + 20
+                    Layout.preferredHeight: 28
+
+                    background: Rectangle {
+                        color: resetFiltersMouseArea.containsMouse ? "#f87171" : "#ef4444"
+                        radius: 6
+                        border.color: "#dc2626"
+                        border.width: 1
+                    }
+
+                    contentItem: Text {
+                        id: resetFiltersText
+                        text: "Reset Filters"
+                        font.pixelSize: 11
+                        font.bold: true
+                        color: "white"
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    MouseArea {
+                        id: resetFiltersMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            controller.resetFilters()
+                        }
+                    }
+
+                    ToolTip {
+                        visible: resetFiltersMouseArea.containsMouse
+                        text: "Show all schedules"
+                        delay: 500
+                    }
                 }
             }
 
@@ -324,19 +393,33 @@ Page {
                         }
 
                         Rectangle {
-                            Layout.preferredWidth: totalLabel.implicitWidth + 16
+                            Layout.preferredWidth: Math.max(totalLabel.implicitWidth + 16, 80)
                             Layout.preferredHeight: 32
 
                             color: totalSchedules > 0 ? "#dbeafe" : "#f1f5f9"
                             radius: 6
 
-                            Label {
-                                id: totalLabel
+                            Column {
                                 anchors.centerIn: parent
-                                text: totalSchedules > 0 ? totalSchedules : "No available schedules"
-                                font.pixelSize: 14
-                                font.weight: Font.Medium
-                                color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                                spacing: 2
+
+                                Label {
+                                    id: totalLabel
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: totalSchedules > 0 ? totalSchedules : "0"
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                                }
+
+                                // Show filter status
+                                Label {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    visible: isFiltered && totalAllSchedules > 0
+                                    text: `(${totalAllSchedules} total)`
+                                    font.pixelSize: 9
+                                    color: "#64748b"
+                                }
                             }
                         }
 
@@ -773,14 +856,29 @@ Page {
                 border.width: 2
                 radius: 8
 
-                Text {
+                Column {
                     anchors.centerIn: parent
-                    text: "No schedules match your filters.\nTry adjusting your filter criteria."
-                    font.pixelSize: 24
-                    font.bold: true
-                    color: "#6b7280"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                    spacing: 16
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: isFiltered ?
+                            "No schedules match your current filters." :
+                            "No schedules available."
+                        font.pixelSize: 24
+                        font.bold: true
+                        color: "#6b7280"
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: isFiltered
+                        text: "Try asking the bot to adjust your criteria,\nor click 'Reset Filters' to see all schedules."
+                        font.pixelSize: 16
+                        color: "#9ca3af"
+                        horizontalAlignment: Text.AlignHCenter
+                    }
                 }
             }
 

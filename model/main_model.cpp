@@ -1,4 +1,8 @@
 #include "main_model.h"
+#include "claude_api_integration.h"
+#include "sql_validator.h"
+
+std::vector<int> Model::lastFilteredScheduleIds;
 
 std::string getFileExtension(const std::string& filename) {
     size_t dot = filename.find_last_of(".");
@@ -367,10 +371,6 @@ void Model::printSchedule(const InformativeSchedule& infoSchedule) {
     Logger::get().logInfo(message);
 }
 
-vector<string> Model::messageBot(const vector<string>& userInput, const string& data) {
-    return askModel(userInput[0], data);
-}
-
 bool Model::saveSchedulesToDB(const vector<InformativeSchedule>& schedules, const string& setName,
                               const vector<int>& sourceFileIds) {
     try {
@@ -439,6 +439,174 @@ bool Model::deleteScheduleSetFromDB(int setId) {
     } catch (const std::exception& e) {
         Logger::get().logError("Exception deleting schedule set from database: " + string(e.what()));
         return false;
+    }
+}
+
+Model::BotFilterResult Model::processBotMessageWithFiltering(const std::string& userMessage, const std::vector<int>& availableScheduleIds) {
+    BotFilterResult result;
+
+    try {
+        Logger::get().logInfo("=== BOT MESSAGE PROCESSING WORKFLOW ===");
+        Logger::get().logInfo("Step 1: Received user message: " + userMessage);
+
+        // Step 2: Get schedule table schema and metadata
+        std::string scheduleMetadata = generateScheduleTableMetadata();
+        Logger::get().logInfo("Step 2: Generated schedule metadata for Claude");
+
+        // Create request for Claude
+        BotQueryRequest claudeRequest;
+        claudeRequest.userMessage = userMessage;
+        claudeRequest.scheduleMetadata = scheduleMetadata;
+        claudeRequest.availableScheduleIds = availableScheduleIds;
+
+        // Step 3: Send to Claude API
+        Logger::get().logInfo("Step 3: Sending request to Claude API");
+
+        ClaudeAPIClient claudeClient; // Constructor will automatically load API key from environment
+
+        // Check if API key is configured (either from env var or database)
+        if (!claudeClient.isApiKeyConfigured()) {
+            // Try to get from database as fallback
+            std::string dbApiKey = getClaudeAPIKey();
+            if (!dbApiKey.empty()) {
+                claudeClient.setApiKey(dbApiKey);
+                Logger::get().logInfo("Using API key from database as fallback");
+            } else {
+                result.hasError = true;
+                result.errorMessage = "Claude API key not configured. Please set the ANTHROPIC_API_KEY environment variable or configure it in the application settings.";
+                return result;
+            }
+        }
+
+        BotQueryResponse claudeResponse = claudeClient.processScheduleQuery(claudeRequest);
+
+        if (claudeResponse.hasError) {
+            result.hasError = true;
+            result.errorMessage = claudeResponse.errorMessage;
+            return result;
+        }
+
+        Logger::get().logInfo("Step 3 Complete: Received response from Claude");
+        Logger::get().logInfo("Claude message: " + claudeResponse.userMessage);
+        Logger::get().logInfo("Is filter query: " + std::to_string(claudeResponse.isFilterQuery));
+
+        // Set the response message
+        result.responseMessage = claudeResponse.userMessage;
+
+        // Step 4: Apply SQL query if this is a filter request
+        if (claudeResponse.isFilterQuery && !claudeResponse.sqlQuery.empty()) {
+            Logger::get().logInfo("Step 4: Applying SQL filter query");
+            Logger::get().logInfo("SQL Query: " + claudeResponse.sqlQuery);
+
+            // Validate the SQL query
+            auto validationResult = SQLValidator::validateScheduleQuery(claudeResponse.sqlQuery);
+            if (!validationResult.isValid) {
+                Logger::get().logError("SQL validation failed: " + validationResult.errorMessage);
+                result.hasError = true;
+                result.errorMessage = "Invalid filter query generated. Please try rephrasing your request.";
+                return result;
+            }
+
+            // Execute the SQL query on the schedule database
+            std::vector<int> allMatchingIds = executeScheduleQuery(claudeResponse.sqlQuery, claudeResponse.queryParameters);
+
+            // Step 5: Filter to only include available schedule IDs
+            Logger::get().logInfo("Step 5: Filtering results to available schedules");
+            std::set<int> availableSet(availableScheduleIds.begin(), availableScheduleIds.end());
+
+            for (int scheduleId : allMatchingIds) {
+                if (availableSet.find(scheduleId) != availableSet.end()) {
+                    result.filteredScheduleIds.push_back(scheduleId);
+                }
+            }
+
+            Logger::get().logInfo("Step 5 Complete: Found " + std::to_string(result.filteredScheduleIds.size()) +
+                                  " matching schedules out of " + std::to_string(availableScheduleIds.size()) + " available");
+
+        } else {
+            Logger::get().logInfo("Step 4-5: No filtering needed - general response only");
+            // No filtering needed, return all available IDs
+            result.filteredScheduleIds = availableScheduleIds;
+        }
+
+        Logger::get().logInfo("=== BOT WORKFLOW COMPLETED SUCCESSFULLY ===");
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception in bot message processing: " + std::string(e.what()));
+        result.hasError = true;
+        result.errorMessage = "An error occurred while processing your request. Please try again.";
+    }
+
+    return result;
+}
+
+std::string Model::generateScheduleTableMetadata() {
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                return "Database not available";
+            }
+        }
+
+        auto& db = DatabaseManager::getInstance();
+        if (!db.isConnected()) {
+            return "Database not connected";
+        }
+
+        // Use the existing method from schedule manager
+        return db.schedules()->getSchedulesMetadataForBot();
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Failed to generate schedule metadata: " + std::string(e.what()));
+        return "Error generating schedule metadata";
+    }
+}
+
+std::vector<int> Model::executeScheduleQuery(const std::string& sqlQuery, const std::vector<std::string>& parameters) {
+    std::vector<int> scheduleIds;
+
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            Logger::get().logError("Database not initialized for query execution");
+            return scheduleIds;
+        }
+
+        auto& db = DatabaseManager::getInstance();
+        if (!db.isConnected()) {
+            Logger::get().logError("Database not connected for query execution");
+            return scheduleIds;
+        }
+
+        // Execute the custom query using the schedule manager
+        scheduleIds = db.schedules()->executeCustomQuery(sqlQuery, parameters);
+
+        Logger::get().logInfo("SQL query executed successfully, returned " + std::to_string(scheduleIds.size()) + " schedule IDs");
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception executing schedule query: " + std::string(e.what()));
+    }
+
+    return scheduleIds;
+}
+
+std::string Model::getClaudeAPIKey() {
+    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+    const char* key = getenv("ANTHROPIC_API_KEY");
+    if (dbIntegration.isInitialized()) {
+        auto& db = DatabaseManager::getInstance();
+        return db.getMetadata("claude_api_key", key);
+    }
+    return key;
+}
+
+void Model::setClaudeAPIKey(const std::string& apiKey) {
+    auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+    if (dbIntegration.isInitialized()) {
+        auto& db = DatabaseManager::getInstance();
+        db.updateMetadata("claude_api_key", apiKey);
+        Logger::get().logInfo("Claude API key updated");
     }
 }
 
@@ -553,15 +721,38 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
             }
         }
 
-        case ModelOperation::BOT_MESSAGE: {
+        case ModelOperation::BOT_QUERY_SCHEDULES: {
             if (data) {
-                const auto* userInput = static_cast<const vector<string>*>(data);
-                auto* botRespond = new vector<string>(messageBot(*userInput, scheduleMetaData));
-                return botRespond;
+                const auto* queryRequest = static_cast<const BotQueryRequest*>(data);
+
+                // Use the new complete workflow
+                BotFilterResult botResult = processBotMessageWithFiltering(
+                        queryRequest->userMessage,
+                        queryRequest->availableScheduleIds
+                );
+
+                // Convert to the expected response format
+                auto* response = new BotQueryResponse();
+                response->userMessage = botResult.responseMessage;
+                response->hasError = botResult.hasError;
+                response->errorMessage = botResult.errorMessage;
+                response->isFilterQuery = !botResult.filteredScheduleIds.empty() &&
+                                          botResult.filteredScheduleIds.size() != queryRequest->availableScheduleIds.size();
+
+                // Store the filtered IDs for retrieval
+                lastFilteredScheduleIds = botResult.filteredScheduleIds;
+
+                return response;
             } else {
-                Logger::get().logError("invalid message");
+                Logger::get().logError("No bot query request provided");
                 return nullptr;
             }
+        }
+
+        case ModelOperation::GET_LAST_FILTERED_IDS: {
+            // New operation to get the last filtered schedule IDs
+            auto* result = new std::vector<int>(lastFilteredScheduleIds);
+            return result;
         }
 
         case ModelOperation::BACKUP_DATABASE: {

@@ -688,3 +688,246 @@ vector<InformativeSchedule> DatabaseScheduleManager::getSchedulesByMetrics(int m
                                                                            int minAvgEnd, int maxAvgEnd) {
     return {};
 }
+
+vector<int> DatabaseScheduleManager::executeCustomQuery(const string& sqlQuery, const vector<string>& parameters) {
+    vector<int> scheduleIds;
+
+    if (!db.isOpen()) {
+        Logger::get().logError("Database not open for custom query execution");
+        return scheduleIds;
+    }
+
+    // Validate the SQL query for security
+    if (!isValidScheduleQuery(sqlQuery)) {
+        Logger::get().logError("Invalid or unsafe SQL query rejected: " + sqlQuery);
+        return scheduleIds;
+    }
+
+    try {
+        QSqlQuery query(db);
+
+        // Log the query for debugging
+        Logger::get().logInfo("Executing custom schedule query: " + sqlQuery);
+        Logger::get().logInfo("Parameters count: " + std::to_string(parameters.size()));
+
+        if (!query.prepare(QString::fromStdString(sqlQuery))) {
+            Logger::get().logError("Failed to prepare custom query: " + query.lastError().text().toStdString());
+            return scheduleIds;
+        }
+
+        // Bind parameters
+        for (size_t i = 0; i < parameters.size(); ++i) {
+            query.addBindValue(QString::fromStdString(parameters[i]));
+            Logger::get().logInfo("Parameter " + std::to_string(i) + ": " + parameters[i]);
+        }
+
+        if (!query.exec()) {
+            Logger::get().logError("Failed to execute custom query: " + query.lastError().text().toStdString());
+            return scheduleIds;
+        }
+
+        // Extract schedule IDs from results
+        while (query.next()) {
+            QVariant idVariant = query.value(0); // Assume first column is the schedule ID
+            bool ok;
+            int id = idVariant.toInt(&ok);
+
+            if (ok && id > 0) {
+                scheduleIds.push_back(id);
+            } else {
+                Logger::get().logWarning("Invalid schedule ID in query result: " + idVariant.toString().toStdString());
+            }
+        }
+
+        Logger::get().logInfo("Custom query returned " + std::to_string(scheduleIds.size()) + " schedule IDs");
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during custom query execution: " + std::string(e.what()));
+    }
+
+    return scheduleIds;
+}
+
+vector<InformativeSchedule> DatabaseScheduleManager::getSchedulesByIds(const vector<int>& scheduleIds) {
+    vector<InformativeSchedule> schedules;
+
+    if (!db.isOpen()) {
+        Logger::get().logError("Database not open for schedule retrieval by IDs");
+        return schedules;
+    }
+
+    if (scheduleIds.empty()) {
+        Logger::get().logWarning("No schedule IDs provided for retrieval");
+        return schedules;
+    }
+
+    try {
+        // Create IN clause for the query
+        QString inClause = "(";
+        for (size_t i = 0; i < scheduleIds.size(); ++i) {
+            if (i > 0) inClause += ",";
+            inClause += "?";
+        }
+        inClause += ")";
+
+        QString queryStr = QString(R"(
+            SELECT id, schedule_index, schedule_data_json, amount_days, amount_gaps,
+                   gaps_time, avg_start, avg_end
+            FROM schedule
+            WHERE schedule_index IN %1
+            ORDER BY schedule_index
+        )").arg(inClause);
+
+        QSqlQuery query(db);
+        if (!query.prepare(queryStr)) {
+            Logger::get().logError("Failed to prepare schedule retrieval query: " + query.lastError().text().toStdString());
+            return schedules;
+        }
+
+        // Bind schedule IDs
+        for (int id : scheduleIds) {
+            query.addBindValue(id);
+        }
+
+        if (!query.exec()) {
+            Logger::get().logError("Failed to execute schedule retrieval query: " + query.lastError().text().toStdString());
+            return schedules;
+        }
+
+        while (query.next()) {
+            schedules.push_back(createScheduleFromQuery(query));
+        }
+
+        Logger::get().logInfo("Retrieved " + std::to_string(schedules.size()) + " schedules by IDs");
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception during schedule retrieval by IDs: " + std::string(e.what()));
+    }
+
+    return schedules;
+}
+
+string DatabaseScheduleManager::getSchedulesMetadataForBot() {
+    if (!db.isOpen()) {
+        Logger::get().logError("Database not open for metadata generation");
+        return "Database unavailable";
+    }
+
+    string metadata;
+
+    try {
+        // Get table structure information
+        metadata += "SCHEDULE TABLE STRUCTURE:\n";
+        metadata += "Table: schedule\n";
+        metadata += "Primary Key: id (internal database ID)\n";
+        metadata += "Schedule Identifier: schedule_index (user-visible schedule number)\n\n";
+
+        metadata += "FILTERABLE COLUMNS:\n";
+        metadata += "- schedule_index: INTEGER (1-based schedule number, unique identifier)\n";
+        metadata += "- amount_days: INTEGER (number of study days, typically 1-7)\n";
+        metadata += "- amount_gaps: INTEGER (total number of gaps between classes)\n";
+        metadata += "- gaps_time: INTEGER (total gap time in minutes)\n";
+        metadata += "- avg_start: INTEGER (average daily start time in minutes from midnight)\n";
+        metadata += "- avg_end: INTEGER (average daily end time in minutes from midnight)\n\n";
+
+        // Get some statistics
+        QSqlQuery statsQuery(R"(
+            SELECT
+                COUNT(*) as total_schedules,
+                MIN(amount_days) as min_days, MAX(amount_days) as max_days,
+                MIN(amount_gaps) as min_gaps, MAX(amount_gaps) as max_gaps,
+                MIN(gaps_time) as min_gap_time, MAX(gaps_time) as max_gap_time,
+                MIN(avg_start) as min_start, MAX(avg_start) as max_start,
+                MIN(avg_end) as min_end, MAX(avg_end) as max_end
+            FROM schedule
+        )", db);
+
+        if (statsQuery.exec() && statsQuery.next()) {
+            metadata += "CURRENT DATA RANGES:\n";
+            metadata += "- Total schedules: " + std::to_string(statsQuery.value("total_schedules").toInt()) + "\n";
+            metadata += "- Days range: " + std::to_string(statsQuery.value("min_days").toInt()) +
+                        " to " + std::to_string(statsQuery.value("max_days").toInt()) + "\n";
+            metadata += "- Gaps range: " + std::to_string(statsQuery.value("min_gaps").toInt()) +
+                        " to " + std::to_string(statsQuery.value("max_gaps").toInt()) + "\n";
+            metadata += "- Gap time range: " + std::to_string(statsQuery.value("min_gap_time").toInt()) +
+                        " to " + std::to_string(statsQuery.value("max_gap_time").toInt()) + " minutes\n";
+            metadata += "- Start time range: " + std::to_string(statsQuery.value("min_start").toInt()) +
+                        " to " + std::to_string(statsQuery.value("max_start").toInt()) + " minutes (from midnight)\n";
+            metadata += "- End time range: " + std::to_string(statsQuery.value("min_end").toInt()) +
+                        " to " + std::to_string(statsQuery.value("max_end").toInt()) + " minutes (from midnight)\n\n";
+        }
+
+        metadata += "TIME CONVERSION EXAMPLES:\n";
+        metadata += "- 8:00 AM = 480 minutes from midnight\n";
+        metadata += "- 9:00 AM = 540 minutes from midnight\n";
+        metadata += "- 5:00 PM = 1020 minutes from midnight\n";
+        metadata += "- 6:00 PM = 1080 minutes from midnight\n\n";
+
+        metadata += "SQL QUERY REQUIREMENTS:\n";
+        metadata += "- Must SELECT schedule_index (the schedule ID to return)\n";
+        metadata += "- Must use table name 'schedule'\n";
+        metadata += "- Use parameter binding with ? for user values\n";
+        metadata += "- Only SELECT statements allowed (no INSERT, UPDATE, DELETE)\n";
+        metadata += "- Example: SELECT schedule_index FROM schedule WHERE amount_days <= ? AND amount_gaps = ?\n\n";
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception generating schedule metadata: " + std::string(e.what()));
+        metadata += "Error generating metadata: " + std::string(e.what());
+    }
+
+    return metadata;
+}
+
+bool DatabaseScheduleManager::isValidScheduleQuery(const string& sqlQuery) {
+    QString query = QString::fromStdString(sqlQuery).trimmed().toLower();
+
+    // Must start with SELECT
+    if (!query.startsWith("select")) {
+        Logger::get().logWarning("Query rejected: must start with SELECT");
+        return false;
+    }
+
+    // Must not contain dangerous keywords
+    vector<string> forbiddenKeywords = {
+            "insert", "update", "delete", "drop", "create", "alter",
+            "truncate", "grant", "revoke", "exec", "execute",
+            "declare", "cast", "convert", "union", "into"
+    };
+
+    for (const string& keyword : forbiddenKeywords) {
+        if (query.contains(QString::fromStdString(keyword))) {
+            Logger::get().logWarning("Query rejected: contains forbidden keyword: " + keyword);
+            return false;
+        }
+    }
+
+    // Must reference schedule table
+    if (!query.contains("schedule")) {
+        Logger::get().logWarning("Query rejected: must reference 'schedule' table");
+        return false;
+    }
+
+    // Must select schedule_index
+    if (!query.contains("schedule_index")) {
+        Logger::get().logWarning("Query rejected: must select 'schedule_index' column");
+        return false;
+    }
+
+    // Check for valid columns only
+    vector<string> validColumns = getWhitelistedColumns();
+
+    // Basic validation passed
+    Logger::get().logInfo("SQL query validation passed: " + sqlQuery);
+    return true;
+}
+
+vector<string> DatabaseScheduleManager::getWhitelistedTables() {
+    return {"schedule", "schedule_set"};
+}
+
+vector<string> DatabaseScheduleManager::getWhitelistedColumns() {
+    return {
+            "schedule_index", "amount_days", "amount_gaps", "gaps_time",
+            "avg_start", "avg_end", "id", "schedule_set_id", "created_at"
+    };
+}

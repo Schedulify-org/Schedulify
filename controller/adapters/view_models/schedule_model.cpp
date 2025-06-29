@@ -1,33 +1,54 @@
 #include "schedule_model.h"
+#include <QDebug>
+#include <set>
 
 ScheduleModel::ScheduleModel(QObject *parent)
-        : QObject(parent), m_currentScheduleIndex(0) {
+        : QObject(parent), m_currentScheduleIndex(0), m_isFiltered(false) {
 }
 
 void ScheduleModel::loadSchedules(const std::vector<InformativeSchedule>& schedules) {
-    m_schedules = schedules;
-    setCurrentScheduleIndex(0);
+    m_allSchedules = schedules;
 
+    // Reset filter state when loading new schedules
+    clearScheduleFilter();
+
+    emit totalScheduleCountChanged();
     emit scheduleCountChanged();
     emit scheduleDataChanged();
 }
 
 void ScheduleModel::setCurrentScheduleIndex(int index) {
-    if (index >= 0 && index < static_cast<int>(m_schedules.size()) && m_currentScheduleIndex != index) {
+    const auto& activeSchedules = getActiveSchedules();
+
+    if (index >= 0 && index < static_cast<int>(activeSchedules.size()) && m_currentScheduleIndex != index) {
         m_currentScheduleIndex = index;
         emit currentScheduleIndexChanged();
     }
 }
 
+int ScheduleModel::scheduleCount() const {
+    return static_cast<int>(getActiveSchedules().size());
+}
+
+QVariantList ScheduleModel::filteredScheduleIds() const {
+    QVariantList ids;
+    for (int id : m_filteredIds) {
+        ids.append(id);
+    }
+    return ids;
+}
+
 QVariantList ScheduleModel::getDayItems(int scheduleIndex, int dayIndex) const {
-    if (scheduleIndex < 0 || scheduleIndex >= static_cast<int>(m_schedules.size()))
+    const auto& activeSchedules = getActiveSchedules();
+
+    if (scheduleIndex < 0 || scheduleIndex >= static_cast<int>(activeSchedules.size()))
         return {};
 
-    if (dayIndex < 0 || dayIndex >= static_cast<int>(m_schedules[scheduleIndex].week.size()))
+    if (dayIndex < 0 || dayIndex >= static_cast<int>(activeSchedules[scheduleIndex].week.size()))
         return {};
 
     QVariantList items;
-    for (const auto &item : m_schedules[scheduleIndex].week[dayIndex].day_items) {
+    for (const auto &item : activeSchedules[scheduleIndex].week[dayIndex].day_items) {
         QVariantMap itemMap;
         itemMap["courseName"] = QString::fromStdString(item.courseName);
         itemMap["raw_id"] = QString::fromStdString(item.raw_id);
@@ -58,11 +79,12 @@ void ScheduleModel::previousSchedule() {
 }
 
 bool ScheduleModel::canGoNext() const {
-    return m_currentScheduleIndex < static_cast<int>(m_schedules.size()) - 1 && !m_schedules.empty();
+    const auto& activeSchedules = getActiveSchedules();
+    return m_currentScheduleIndex < static_cast<int>(activeSchedules.size()) - 1 && !activeSchedules.empty();
 }
 
 bool ScheduleModel::canGoPrevious() const {
-    return m_currentScheduleIndex > 0 && !m_schedules.empty();
+    return m_currentScheduleIndex > 0 && !getActiveSchedules().empty();
 }
 
 void ScheduleModel::jumpToSchedule(int userScheduleNumber) {
@@ -74,6 +96,102 @@ void ScheduleModel::jumpToSchedule(int userScheduleNumber) {
 }
 
 bool ScheduleModel::canJumpToSchedule(int index) {
-    // Fix: include both bounds checking
-    return index >= 0 && index < static_cast<int>(m_schedules.size());
+    const auto& activeSchedules = getActiveSchedules();
+    return index >= 0 && index < static_cast<int>(activeSchedules.size());
+}
+
+void ScheduleModel::applyScheduleFilter(const QVariantList& scheduleIds) {
+    m_filteredIds.clear();
+
+    // Convert QVariantList to vector<int>
+    for (const QVariant& variant : scheduleIds) {
+        bool ok;
+        int id = variant.toInt(&ok);
+        if (ok) {
+            m_filteredIds.push_back(id);
+        } else {
+            qWarning() << "Invalid schedule ID in filter list:" << variant.toString();
+        }
+    }
+
+    if (m_filteredIds.empty()) {
+        qWarning() << "No valid schedule IDs provided for filtering";
+        clearScheduleFilter();
+        return;
+    }
+
+    updateFilteredSchedules();
+
+    m_isFiltered = true;
+    resetCurrentIndex();
+
+    emit filterStateChanged();
+    emit filteredScheduleIdsChanged();
+    emit scheduleCountChanged();
+    emit scheduleDataChanged();
+
+    qDebug() << "Applied filter with" << m_filteredIds.size() << "schedule IDs";
+    qDebug() << "Filtered schedules count:" << m_filteredSchedules.size();
+}
+
+void ScheduleModel::clearScheduleFilter() {
+    bool wasFiltered = m_isFiltered;
+
+    m_isFiltered = false;
+    m_filteredIds.clear();
+    m_filteredSchedules.clear();
+
+    resetCurrentIndex();
+
+    if (wasFiltered) {
+        emit filterStateChanged();
+        emit filteredScheduleIdsChanged();
+        emit scheduleCountChanged();
+        emit scheduleDataChanged();
+
+        qDebug() << "Cleared schedule filter, showing all" << m_allSchedules.size() << "schedules";
+    }
+}
+
+QVariantList ScheduleModel::getAllScheduleIds() const {
+    QVariantList ids;
+    for (const auto& schedule : m_allSchedules) {
+        ids.append(schedule.index);
+    }
+    return ids;
+}
+
+const vector<InformativeSchedule>& ScheduleModel::getCurrentSchedules() const {
+    return getActiveSchedules();
+}
+
+void ScheduleModel::updateFilteredSchedules() {
+    m_filteredSchedules.clear();
+
+    // Create a set for faster lookup
+    std::set<int> filterIdSet(m_filteredIds.begin(), m_filteredIds.end());
+
+    for (const auto& schedule : m_allSchedules) {
+        if (filterIdSet.find(schedule.index) != filterIdSet.end()) {
+            m_filteredSchedules.push_back(schedule);
+        }
+    }
+
+    qDebug() << "Updated filtered schedules:" << m_filteredSchedules.size() << "out of" << m_allSchedules.size();
+}
+
+void ScheduleModel::resetCurrentIndex() {
+    const auto& activeSchedules = getActiveSchedules();
+
+    if (activeSchedules.empty()) {
+        m_currentScheduleIndex = 0;
+    } else if (m_currentScheduleIndex >= static_cast<int>(activeSchedules.size())) {
+        m_currentScheduleIndex = static_cast<int>(activeSchedules.size()) - 1;
+    }
+
+    emit currentScheduleIndexChanged();
+}
+
+const vector<InformativeSchedule>& ScheduleModel::getActiveSchedules() const {
+    return m_isFiltered ? m_filteredSchedules : m_allSchedules;
 }
