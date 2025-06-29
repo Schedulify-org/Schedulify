@@ -54,7 +54,6 @@ Rectangle {
     // Keep fully opaque
     opacity: 1.0
 
-    // Add subtle shadow effect when open - simplified without animations for now
     Rectangle {
         anchors.fill: parent
         anchors.leftMargin: -5
@@ -63,6 +62,24 @@ Rectangle {
         border.width: isOpen ? 5 : 0
         radius: 8
         z: -1
+    }
+
+    Rectangle {
+        id: leftBorder
+        anchors {
+            left: parent.left
+            top: parent.top
+            bottom: parent.bottom
+        }
+        width: 1
+        color: "#e2e8f0"
+        visible: isOpen
+
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#e2e8f0" }
+            GradientStop { position: 0.5; color: "#e2e8f0" }
+            GradientStop { position: 1.0; color: "#e2e8f0" }
+        }
     }
 
     // Loading message timer
@@ -216,6 +233,7 @@ Rectangle {
             left: parent.left
             right: parent.right
             bottom: inputArea.top
+            leftMargin: 4  // Account for the left border
         }
         color: "#ffffff"
 
@@ -234,7 +252,7 @@ Rectangle {
                         // Add initial bot message with updated functionality
                         append({
                             "isBot": true,
-                            "message": "Hello! I'm your schedule assistant. I can help you filter schedules based on your preferences. Try asking me things like:\n\n• 'Show me schedules with no gaps'\n• 'Find schedules that start after 9 AM'\n• 'I want schedules with maximum 4 study days'\n• 'Show schedules ending before 5 PM'",
+                            "message": "Hello! I'm your schedule assistant. I can help you filter schedules based on your preferences. Try asking me things like:\n\n• 'Show me schedules with no gaps'\n• 'Find schedules that start after 9 AM'\n• 'I want schedules with maximum 4 study days'\n• 'Show schedules ending before 5 PM'\n\nUse the blue 'Filtered' badge in the header to reset filters.",
                             "timestamp": new Date().toLocaleTimeString(Qt.locale(), "hh:mm"),
                             "isTyping": false,
                             "isFilterResponse": false
@@ -429,6 +447,7 @@ Rectangle {
             right: parent.right
             bottom: parent.bottom
         }
+        width: parent.width
         height: 70
         color: "#f8fafc"
         border.color: "#e2e8f0"
@@ -575,12 +594,13 @@ Rectangle {
             addBotResponse(response, false)  // Most responses are not filter responses
         }
 
-        function onSchedulesFiltered(filteredCount, totalCount) {
-            // Add a system message when filters are applied
-            if (filteredCount !== totalCount) {
-                addBotResponse(`✅ Filter applied! Showing ${filteredCount} of ${totalCount} schedules that match your criteria.`, true)
-            }
-        }
+        // REMOVED DUPLICATE: This was causing the duplicate "Filter applied!" message
+        // The message is already handled in the controller and sent via onBotResponseReceived
+        // function onSchedulesFiltered(filteredCount, totalCount) {
+        //     if (filteredCount !== totalCount) {
+        //         addBotResponse(`✅ Filter applied! Showing ${filteredCount} of ${totalCount} schedules that match your criteria.`, true)
+        //     }
+        // }
     }
 
     function sendMessage() {
@@ -652,7 +672,6 @@ Rectangle {
             "isFilterResponse": false
         })
 
-        // Start the timer to cycle through loading messages
         loadingMessageTimer.start()
     }
 

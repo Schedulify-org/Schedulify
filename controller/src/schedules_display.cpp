@@ -1,8 +1,4 @@
 #include "schedules_display.h"
-#include <algorithm>
-#include <vector>
-#include <string>
-#include <QDebug>
 
 SchedulesDisplayController::SchedulesDisplayController(QObject *parent)
         : ControllerManager(parent),
@@ -29,10 +25,18 @@ SchedulesDisplayController::~SchedulesDisplayController() {
     modelConnection = nullptr;
 }
 
+// initiate loading
+
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
     m_schedules = schedules;
     m_scheduleModel->loadSchedules(m_schedules);
 }
+
+void SchedulesDisplayController::goBack() {
+    emit navigateBack();
+}
+
+// filter assistant
 
 void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
     if (!modelConnection) {
@@ -45,7 +49,7 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
     // Create bot query request with current available schedule IDs
     BotQueryRequest queryRequest = createBotQueryRequest(userMessage);
 
-    // Start processing in a separate thread using new constructor
+    // Start processing in a separate thread
     QThread* workerThread = new QThread;
     BotWorker* worker = new BotWorker(modelConnection, queryRequest);
     worker->moveToThread(workerThread);
@@ -53,11 +57,9 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
     // Connect signals
     connect(workerThread, &QThread::started, worker, &BotWorker::processMessage);
 
-    // Use the new structured response signal
+    // Use SINGLE response handler - doesn't matter if demo or real
     connect(worker, QOverload<const BotQueryResponse&>::of(&BotWorker::responseReady),
-            this, [this](const BotQueryResponse& response) {
-                handleSimpleBotResponse(response);
-            });
+            this, &SchedulesDisplayController::handleBotResponse);
 
     connect(worker, &BotWorker::errorOccurred, this, [this](const QString& error) {
         emit botResponseReceived(error);
@@ -72,7 +74,7 @@ void SchedulesDisplayController::processBotMessage(const QString& userMessage) {
     workerThread->start();
 }
 
-void SchedulesDisplayController::handleSimpleBotResponse(const BotQueryResponse& response) {
+void SchedulesDisplayController::handleBotResponse(const BotQueryResponse& response) {
     if (response.hasError) {
         emit botResponseReceived(response.errorMessage.empty()
                                  ? QString("An error occurred while processing your request.")
@@ -80,21 +82,23 @@ void SchedulesDisplayController::handleSimpleBotResponse(const BotQueryResponse&
         return;
     }
 
-    // Always send the user message first
+    // Display the response message to user
     emit botResponseReceived(QString::fromStdString(response.userMessage));
 
-    // If this was a filter query, get the filtered IDs and apply them
+    // If this was a filter query, apply the filter
     if (response.isFilterQuery) {
-        qDebug() << "Filter query detected, getting filtered schedule IDs";
+        qDebug() << "Filter query detected, applying filter";
 
-        // Get the filtered schedule IDs from the model
+        // Get the filtered schedule IDs from model
         void* result = modelConnection->executeOperation(ModelOperation::GET_LAST_FILTERED_IDS, nullptr, "");
 
         if (result) {
             auto* filteredIds = static_cast<std::vector<int>*>(result);
 
+            qDebug() << "Filter returned" << filteredIds->size() << "schedule IDs";
+
             if (filteredIds->empty()) {
-                emit botResponseReceived("No schedules match your criteria. Try adjusting your requirements.");
+                qDebug() << "No schedules match criteria";
             } else {
                 // Convert to QVariantList and apply filter
                 QVariantList qmlIds;
@@ -105,6 +109,10 @@ void SchedulesDisplayController::handleSimpleBotResponse(const BotQueryResponse&
                 if (m_scheduleModel) {
                     m_scheduleModel->applyScheduleFilter(qmlIds);
                     qDebug() << "Applied filter with" << filteredIds->size() << "matching schedules";
+
+                    // Emit signal to update UI
+                    emit schedulesFiltered(static_cast<int>(filteredIds->size()),
+                                           m_scheduleModel->totalScheduleCount());
                 }
             }
 
@@ -113,6 +121,28 @@ void SchedulesDisplayController::handleSimpleBotResponse(const BotQueryResponse&
             emit botResponseReceived("Failed to apply schedule filter. Please try again.");
         }
     }
+}
+
+BotQueryRequest SchedulesDisplayController::createBotQueryRequest(const QString& userMessage) {
+    BotQueryRequest request;
+    request.userMessage = userMessage.toStdString();
+
+    // We don't need schedule metadata here since the model layer will handle it
+    request.scheduleMetadata = "";
+
+    // Get available schedule IDs (currently visible ones)
+    if (m_scheduleModel) {
+        QVariantList currentIds = m_scheduleModel->isFiltered()
+                                  ? m_scheduleModel->filteredScheduleIds()
+                                  : m_scheduleModel->getAllScheduleIds();
+
+        for (const QVariant& id : currentIds) {
+            request.availableScheduleIds.push_back(id.toInt());
+        }
+    }
+
+    qDebug() << "Created bot query request with" << request.availableScheduleIds.size() << "available schedules";
+    return request;
 }
 
 void SchedulesDisplayController::resetFilters() {
@@ -138,61 +168,7 @@ void SchedulesDisplayController::onScheduleFilterStateChanged() {
     }
 }
 
-BotQueryRequest SchedulesDisplayController::createBotQueryRequest(const QString& userMessage) {
-    BotQueryRequest request;
-    request.userMessage = userMessage.toStdString();
-    request.scheduleMetadata = generateScheduleMetadata().toStdString();
-
-    // Get available schedule IDs (currently visible ones)
-    if (m_scheduleModel) {
-        QVariantList currentIds = m_scheduleModel->isFiltered()
-                                  ? m_scheduleModel->filteredScheduleIds()
-                                  : m_scheduleModel->getAllScheduleIds();
-
-        for (const QVariant& id : currentIds) {
-            request.availableScheduleIds.push_back(id.toInt());
-        }
-    }
-
-    qDebug() << "Created bot query request with" << request.availableScheduleIds.size() << "available schedules";
-    return request;
-}
-
-QString SchedulesDisplayController::generateScheduleMetadata() {
-    if (!m_scheduleModel || m_schedules.empty()) {
-        return "No schedules available.";
-    }
-
-    QString metadata;
-    metadata += "Schedule Database Structure:\n";
-    metadata += "- Total schedules: " + QString::number(m_schedules.size()) + "\n";
-    metadata += "- Currently filtered: " + QString(m_scheduleModel->isFiltered() ? "Yes" : "No") + "\n";
-    metadata += "- Visible schedules: " + QString::number(m_scheduleModel->scheduleCount()) + "\n\n";
-
-    metadata += "Available schedule fields for filtering:\n";
-    metadata += "- index: Schedule ID (unique identifier)\n";
-    metadata += "- amount_days: Number of study days (1-7)\n";
-    metadata += "- amount_gaps: Total number of gaps between classes\n";
-    metadata += "- gaps_time: Total time of gaps in minutes\n";
-    metadata += "- avg_start: Average daily start time in minutes from midnight\n";
-    metadata += "- avg_end: Average daily end time in minutes from midnight\n\n";
-
-    // Add sample data for context
-    metadata += "Sample schedule data (first few schedules):\n";
-    int sampleCount = std::min(3, static_cast<int>(m_schedules.size()));
-    for (int i = 0; i < sampleCount; ++i) {
-        const auto& schedule = m_schedules[i];
-        metadata += QString("Schedule %1: days=%2, gaps=%3, gap_time=%4min, avg_start=%5min, avg_end=%6min\n")
-                .arg(schedule.index)
-                .arg(schedule.amount_days)
-                .arg(schedule.amount_gaps)
-                .arg(schedule.gaps_time)
-                .arg(schedule.avg_start)
-                .arg(schedule.avg_end);
-    }
-
-    return metadata;
-}
+// sorting assistant
 
 void SchedulesDisplayController::applySorting(const QVariantMap& sortData) {
     QString sortField;
@@ -281,6 +257,8 @@ void SchedulesDisplayController::clearSorting() {
     emit schedulesSorted(static_cast<int>(m_schedules.size()));
 }
 
+// export menu
+
 void SchedulesDisplayController::saveScheduleAsCSV() {
     int currentIndex = m_scheduleModel->currentScheduleIndex();
     const auto& activeSchedules = m_scheduleModel->getCurrentSchedules();
@@ -305,10 +283,6 @@ void SchedulesDisplayController::printScheduleDirectly() {
     if (currentIndex >= 0 && currentIndex < static_cast<int>(activeSchedules.size())) {
         modelConnection->executeOperation(ModelOperation::PRINT_SCHEDULE, &activeSchedules[currentIndex], "");
     }
-}
-
-void SchedulesDisplayController::goBack() {
-    emit navigateBack();
 }
 
 void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString& savePath) {

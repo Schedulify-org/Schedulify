@@ -147,53 +147,75 @@ Json::Value ClaudeAPIClient::createRequestPayload(const BotQueryRequest& request
 
 std::string ClaudeAPIClient::createSystemPrompt(const std::string& scheduleMetadata) {
     std::string prompt = R"(
-You are a helpful schedule filtering assistant. Your job is to help users filter their class schedules based on their preferences.
+You are SchedBot, an expert schedule filtering assistant. Your job is to analyze user requests and generate SQL queries to filter class schedules.
 
-You have access to a schedule database with the following structure:
+<schedule_data>
 )" + scheduleMetadata + R"(
+</schedule_data>
 
-IMPORTANT INSTRUCTIONS:
-1. When a user asks to filter schedules, you must provide BOTH:
-   - A helpful response explaining what you're doing
-   - A SQL query to filter the schedules
+<instructions>
+When a user asks to filter schedules, you MUST respond in this EXACT format:
 
-2. Your response format must be EXACTLY:
-   RESPONSE: [Your helpful message to the user]
-   SQL: [Your SQL query]
-   PARAMETERS: [Comma-separated list of parameter values, or NONE if no parameters]
+RESPONSE: [Your helpful explanation of what you're filtering for]
+SQL: [The SQL query to execute]
+PARAMETERS: [Comma-separated parameter values, or NONE]
 
-3. SQL Query Rules:
-   - Always SELECT schedule_index FROM schedule WHERE [conditions]
-   - Use ? for parameter binding (never put values directly in SQL)
-   - Only use the columns mentioned in the metadata
-   - Keep queries simple and safe
-   - Only SELECT statements allowed (no INSERT, UPDATE, DELETE)
+For non-filtering questions, respond normally and set SQL to NONE.
+</instructions>
 
-4. Examples:
-   User: "Show me schedules with no gaps"
-   RESPONSE: I'll find all schedules that have zero gaps between classes.
-   SQL: SELECT schedule_index FROM schedule WHERE amount_gaps = ?
-   PARAMETERS: 0
+<examples>
+<example_1>
+User: "Find schedules that start after 9 AM"
+RESPONSE: I'll find schedules where classes typically start after 9:00 AM, giving you a more relaxed morning schedule.
+SQL: SELECT schedule_index FROM schedule WHERE avg_start > ?
+PARAMETERS: 540
+</example_1>
 
-   User: "Find schedules that start after 9 AM"
-   RESPONSE: I'll find schedules where the average start time is after 9:00 AM.
-   SQL: SELECT schedule_index FROM schedule WHERE avg_start > ?
-   PARAMETERS: 540
+<example_2>
+User: "Show me schedules with no gaps"
+RESPONSE: I'll find schedules with zero gaps between classes, giving you continuous class time.
+SQL: SELECT schedule_index FROM schedule WHERE amount_gaps = ?
+PARAMETERS: 0
+</example_2>
 
-   User: "What's the best schedule?"
-   RESPONSE: I can help you find schedules based on specific criteria like fewer gaps, preferred start times, or number of study days. What matters most to you?
-   SQL: NONE
-   PARAMETERS: NONE
+<example_3>
+User: "I want maximum 4 study days"
+RESPONSE: I'll find schedules that spread your classes across 4 days or fewer, giving you more free days.
+SQL: SELECT schedule_index FROM schedule WHERE amount_days <= ?
+PARAMETERS: 4
+</example_3>
 
-5. Time conversion:
-   - 8:00 AM = 480 minutes from midnight
-   - 9:00 AM = 540 minutes from midnight
-   - 5:00 PM = 1020 minutes from midnight
-   - 6:00 PM = 1080 minutes from midnight
+<example_4>
+User: "What's the best schedule?"
+RESPONSE: That depends on your preferences! I can help you find schedules based on specific criteria like fewer gaps, preferred start times, number of study days, or ending times. What matters most to you?
+SQL: NONE
+PARAMETERS: NONE
+</example_4>
+</examples>
 
-6. If the user asks for general information (not filtering), respond helpfully but set SQL to NONE.
+<time_reference>
+Time conversion (minutes from midnight):
+- 8:00 AM = 480 minutes
+- 9:00 AM = 540 minutes
+- 10:00 AM = 600 minutes
+- 11:00 AM = 660 minutes
+- 12:00 PM = 720 minutes
+- 1:00 PM = 780 minutes
+- 2:00 PM = 840 minutes
+- 3:00 PM = 900 minutes
+- 4:00 PM = 960 minutes
+- 5:00 PM = 1020 minutes
+- 6:00 PM = 1080 minutes
+</time_reference>
 
-Be conversational and helpful while being precise with your SQL queries.
+<sql_rules>
+- Always SELECT schedule_index FROM schedule WHERE [conditions]
+- Use ? for parameters, never hardcode values
+- Only use columns: schedule_index, amount_days, amount_gaps, gaps_time, avg_start, avg_end
+- Only SELECT statements allowed
+</sql_rules>
+
+Remember: You MUST follow the exact response format with RESPONSE:, SQL:, and PARAMETERS: labels.
 )";
 
     return prompt;
@@ -217,87 +239,43 @@ BotQueryResponse ClaudeAPIClient::parseClaudeResponse(const std::string& respons
         Json::Reader reader;
         Json::Value root;
 
-        Logger::get().logInfo("Attempting to parse JSON...");
-
         if (!reader.parse(responseData, root)) {
             Logger::get().logError("Failed to parse Claude API JSON response");
-            Logger::get().logError("JSON parse errors: " + reader.getFormattedErrorMessages());
-            Logger::get().logError("Raw response: " + responseData.substr(0, 1000)); // Log first 1000 chars
+            Logger::get().logError("Raw response (first 500 chars): " + responseData.substr(0, 500));
             botResponse.hasError = true;
             botResponse.errorMessage = "Invalid JSON response from Claude API";
             return botResponse;
         }
 
-        Logger::get().logInfo("JSON parsed successfully");
-
-        // Log the structure of the response for debugging
-        Json::StreamWriterBuilder builder;
-        builder["indentation"] = "  ";
-        std::string prettyJson = Json::writeString(builder, root);
-        Logger::get().logInfo("Parsed JSON structure: " + prettyJson.substr(0, 1000)); // First 1000 chars
-
         // Check for error in response
         if (root.isMember("error")) {
-            Logger::get().logError("Error found in Claude response");
             Json::Value error = root["error"];
-            std::string errorMessage = "Unknown error";
-            std::string errorType = "unknown";
-
-            if (error.isMember("message")) {
-                errorMessage = error["message"].asString();
-            }
-            if (error.isMember("type")) {
-                errorType = error["type"].asString();
-            }
-
-            Logger::get().logError("Error type: " + errorType + ", message: " + errorMessage);
+            std::string errorMessage = error.isMember("message") ? error["message"].asString() : "Unknown error";
+            Logger::get().logError("Error in Claude response: " + errorMessage);
             botResponse.hasError = true;
             botResponse.errorMessage = errorMessage;
             return botResponse;
         }
 
         // Extract content
-        if (!root.isMember("content")) {
-            Logger::get().logError("No 'content' field in Claude API response");
-            Logger::get().logError("Available fields: ");
-            for (const auto& key : root.getMemberNames()) {
-                Logger::get().logError("  - " + key);
-            }
+        if (!root.isMember("content") || !root["content"].isArray() || root["content"].empty()) {
+            Logger::get().logError("Invalid content structure in Claude response");
             botResponse.hasError = true;
-            botResponse.errorMessage = "Invalid response format from Claude API - missing content";
+            botResponse.errorMessage = "Invalid response format from Claude API";
             return botResponse;
         }
 
-        Json::Value content = root["content"];
-        if (!content.isArray()) {
-            Logger::get().logError("Content field is not an array");
-            botResponse.hasError = true;
-            botResponse.errorMessage = "Invalid response format from Claude API - content not array";
-            return botResponse;
-        }
-
-        if (content.empty()) {
-            Logger::get().logError("Content array is empty");
-            botResponse.hasError = true;
-            botResponse.errorMessage = "Empty content in Claude API response";
-            return botResponse;
-        }
-
-        Json::Value firstContent = content[0];
+        Json::Value firstContent = root["content"][0];
         if (!firstContent.isMember("text")) {
-            Logger::get().logError("No text content in first content item");
-            Logger::get().logError("First content item fields:");
-            for (const auto& key : firstContent.getMemberNames()) {
-                Logger::get().logError("  - " + key);
-            }
+            Logger::get().logError("No text content in Claude response");
             botResponse.hasError = true;
-            botResponse.errorMessage = "Invalid response format from Claude API - no text in content";
+            botResponse.errorMessage = "No text content in Claude API response";
             return botResponse;
         }
 
         std::string contentText = firstContent["text"].asString();
         Logger::get().logInfo("Extracted content text (length: " + std::to_string(contentText.length()) + ")");
-        Logger::get().logInfo("Content preview: " + contentText.substr(0, 300) + "...");
+        Logger::get().logInfo("Full content text: " + contentText);
 
         if (contentText.empty()) {
             Logger::get().logError("Text content is empty");
@@ -310,35 +288,55 @@ BotQueryResponse ClaudeAPIClient::parseClaudeResponse(const std::string& respons
         std::string sqlQuery;
         std::vector<std::string> parameters;
 
-        Logger::get().logInfo("Attempting to extract SQL query...");
+        Logger::get().logInfo("Attempting to extract SQL query and parameters...");
         if (extractSQLQuery(contentText, sqlQuery, parameters)) {
-            Logger::get().logInfo("SQL query extracted successfully");
-            Logger::get().logInfo("SQL: " + sqlQuery);
-            Logger::get().logInfo("Parameters count: " + std::to_string(parameters.size()));
-            // This is a filter request
+            Logger::get().logInfo("✅ SQL EXTRACTION SUCCESSFUL");
+            Logger::get().logInfo("SQL Query: " + sqlQuery);
+            Logger::get().logInfo("Parameters: " + std::to_string(parameters.size()) + " found");
+            for (size_t i = 0; i < parameters.size(); ++i) {
+                Logger::get().logInfo("  Parameter " + std::to_string(i) + ": " + parameters[i]);
+            }
+
             botResponse.isFilterQuery = true;
             botResponse.sqlQuery = sqlQuery;
             botResponse.queryParameters = parameters;
         } else {
-            Logger::get().logInfo("No SQL query found - treating as general response");
-            // This is a general response
+            Logger::get().logInfo("❌ No SQL query found - treating as general response");
             botResponse.isFilterQuery = false;
         }
 
-        // Extract the user message part
-        Logger::get().logInfo("Extracting user message...");
-        std::regex responseRegex(R"(RESPONSE:\s*([\s\S]+?)(?:\nSQL:|$))", std::regex_constants::icase);
-        std::smatch responseMatch;
+        // Extract the user message part - try structured format first using simple string parsing
+        auto toLowerCase = [](std::string str) {
+            std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+            return str;
+        };
 
-        if (std::regex_search(contentText, responseMatch, responseRegex)) {
-            botResponse.userMessage = responseMatch[1].str();
-            // Trim whitespace
-            botResponse.userMessage.erase(0, botResponse.userMessage.find_first_not_of(" \t\n\r"));
-            botResponse.userMessage.erase(botResponse.userMessage.find_last_not_of(" \t\n\r") + 1);
+        auto trim = [](std::string str) {
+            str.erase(0, str.find_first_not_of(" \t\n\r"));
+            str.erase(str.find_last_not_of(" \t\n\r") + 1);
+            return str;
+        };
+
+        std::string lowerContent = toLowerCase(contentText);
+        size_t responsePos = lowerContent.find("response:");
+
+        if (responsePos != std::string::npos) {
+            // Start after "RESPONSE:"
+            size_t responseStartPos = responsePos + 9; // Length of "response:"
+
+            // Find the end of response section (look for "SQL:" or end of string)
+            size_t responseEndPos = lowerContent.find("sql:", responseStartPos);
+            if (responseEndPos == std::string::npos) {
+                responseEndPos = contentText.length();
+            }
+
+            // Extract response content (use original content, not lowercase)
+            std::string responseContent = contentText.substr(responseStartPos, responseEndPos - responseStartPos);
+            botResponse.userMessage = trim(responseContent);
             Logger::get().logInfo("Extracted structured response message: " + botResponse.userMessage);
         } else {
-            Logger::get().logInfo("No structured response format found, using entire content");
-            // Fallback: use the entire content if no structured format
+            Logger::get().logInfo("No structured RESPONSE: format found, using entire content");
+            // Fallback: use the entire content
             botResponse.userMessage = contentText;
         }
 
@@ -350,8 +348,10 @@ BotQueryResponse ClaudeAPIClient::parseClaudeResponse(const std::string& respons
         }
 
         Logger::get().logInfo("=== PARSING COMPLETED SUCCESSFULLY ===");
-        Logger::get().logInfo("Final response - isFilter: " + std::to_string(botResponse.isFilterQuery) +
-                              ", message length: " + std::to_string(botResponse.userMessage.length()));
+        Logger::get().logInfo("Final response summary:");
+        Logger::get().logInfo("  - Is filter query: " + std::string(botResponse.isFilterQuery ? "YES" : "NO"));
+        Logger::get().logInfo("  - Message length: " + std::to_string(botResponse.userMessage.length()));
+        Logger::get().logInfo("  - SQL query: " + (botResponse.isFilterQuery ? botResponse.sqlQuery : "NONE"));
 
     } catch (const std::exception& e) {
         Logger::get().logError("Exception parsing Claude response: " + std::string(e.what()));
@@ -363,106 +363,105 @@ BotQueryResponse ClaudeAPIClient::parseClaudeResponse(const std::string& respons
 }
 
 bool ClaudeAPIClient::extractSQLQuery(const std::string& content, std::string& sqlQuery, std::vector<std::string>& parameters) {
-    // Extract SQL query
-    std::regex sqlRegex(R"(SQL:\s*(.+?)(?:\nPARAMETERS:|$))", std::regex_constants::icase);
-    std::smatch sqlMatch;
+    Logger::get().logInfo("=== SQL EXTRACTION DEBUG ===");
+    Logger::get().logInfo("Raw content to parse: " + content);
 
-    if (!std::regex_search(content, sqlMatch, sqlRegex)) {
+    // Helper function to convert to lowercase for comparison
+    auto toLowerCase = [](std::string str) {
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+        return str;
+    };
+
+    // Helper function to trim whitespace
+    auto trim = [](std::string str) {
+        str.erase(0, str.find_first_not_of(" \t\n\r"));
+        str.erase(str.find_last_not_of(" \t\n\r") + 1);
+        return str;
+    };
+
+    std::string lowerContent = toLowerCase(content);
+
+    // Find SQL section
+    size_t sqlPos = lowerContent.find("sql:");
+    if (sqlPos == std::string::npos) {
+        Logger::get().logError("No 'SQL:' marker found in content");
         return false;
     }
 
-    std::string rawSql = sqlMatch[1].str();
-    // Trim whitespace
-    rawSql.erase(0, rawSql.find_first_not_of(" \t\n\r"));
-    rawSql.erase(rawSql.find_last_not_of(" \t\n\r") + 1);
+    Logger::get().logInfo("Found SQL marker at position: " + std::to_string(sqlPos));
 
-    // Check if SQL is "NONE"
-    if (rawSql == "NONE" || rawSql == "none") {
+    // Start after "SQL:"
+    size_t sqlStartPos = sqlPos + 4; // Length of "sql:"
+
+    // Find the end of SQL section (look for "PARAMETERS:" or end of string)
+    size_t sqlEndPos = lowerContent.find("parameters:", sqlStartPos);
+    if (sqlEndPos == std::string::npos) {
+        sqlEndPos = content.length();
+    }
+
+    Logger::get().logInfo("SQL section ends at position: " + std::to_string(sqlEndPos));
+
+    // Extract SQL content (use original content, not lowercase)
+    std::string rawSql = content.substr(sqlStartPos, sqlEndPos - sqlStartPos);
+    Logger::get().logInfo("Raw SQL extracted: '" + rawSql + "'");
+
+    // Trim the SQL
+    rawSql = trim(rawSql);
+    Logger::get().logInfo("Trimmed SQL: '" + rawSql + "'");
+
+    // Check if SQL is "NONE" or empty
+    std::string lowerSql = toLowerCase(rawSql);
+    if (lowerSql == "none" || rawSql.empty()) {
+        Logger::get().logInfo("SQL is NONE or empty - not a filter query");
         return false;
     }
 
     sqlQuery = rawSql;
+    Logger::get().logInfo("Final SQL query: " + sqlQuery);
 
-    // Extract parameters
-    std::regex paramRegex(R"(PARAMETERS:\s*(.+?)(?:\n|$))", std::regex_constants::icase);
-    std::smatch paramMatch;
-
+    // Find PARAMETERS section
     parameters.clear();
 
-    if (std::regex_search(content, paramMatch, paramRegex)) {
-        std::string paramString = paramMatch[1].str();
-        // Trim whitespace
-        paramString.erase(0, paramString.find_first_not_of(" \t\n\r"));
-        paramString.erase(paramString.find_last_not_of(" \t\n\r") + 1);
+    size_t paramPos = lowerContent.find("parameters:");
+    if (paramPos != std::string::npos) {
+        Logger::get().logInfo("Found PARAMETERS marker at position: " + std::to_string(paramPos));
 
-        if (paramString != "NONE" && paramString != "none" && !paramString.empty()) {
-            // Split by comma and clean up
-            std::stringstream ss(paramString);
+        // Start after "PARAMETERS:"
+        size_t paramStartPos = paramPos + 11; // Length of "parameters:"
+
+        // Find end of line or end of string
+        size_t paramEndPos = content.find('\n', paramStartPos);
+        if (paramEndPos == std::string::npos) {
+            paramEndPos = content.length();
+        }
+
+        // Extract parameters content (use original content, not lowercase)
+        std::string rawParams = content.substr(paramStartPos, paramEndPos - paramStartPos);
+        Logger::get().logInfo("Raw parameters extracted: '" + rawParams + "'");
+
+        // Trim the parameters
+        rawParams = trim(rawParams);
+        Logger::get().logInfo("Trimmed parameters: '" + rawParams + "'");
+
+        // Check if parameters is "NONE" or empty
+        std::string lowerParams = toLowerCase(rawParams);
+        if (lowerParams != "none" && !rawParams.empty()) {
+            // Split by comma if multiple parameters
+            std::stringstream ss(rawParams);
             std::string param;
             while (std::getline(ss, param, ',')) {
-                // Trim whitespace from each parameter
-                param.erase(0, param.find_first_not_of(" \t\n\r"));
-                param.erase(param.find_last_not_of(" \t\n\r") + 1);
+                param = trim(param);
                 if (!param.empty()) {
                     parameters.push_back(param);
+                    Logger::get().logInfo("Added parameter: '" + param + "'");
                 }
             }
         }
+    } else {
+        Logger::get().logWarning("No PARAMETERS marker found");
     }
 
-    Logger::get().logInfo("Extracted SQL: " + sqlQuery);
-    Logger::get().logInfo("Extracted parameters: " + std::to_string(parameters.size()));
+    Logger::get().logInfo("Final extraction - SQL: '" + sqlQuery + "', Parameters: " + std::to_string(parameters.size()));
 
     return true;
-}
-
-void ClaudeAPIClient::validateApiKeyEnvironment() {
-    const char* apiKey = getenv("ANTHROPIC_API_KEY");
-
-    Logger::get().logInfo("=== API KEY ENVIRONMENT VALIDATION ===");
-
-    if (!apiKey) {
-        Logger::get().logError("ANTHROPIC_API_KEY environment variable is not set");
-        return;
-    }
-
-    std::string rawKey = std::string(apiKey);
-    Logger::get().logInfo("Raw API key length: " + std::to_string(rawKey.length()));
-
-    // Check for problematic characters
-    bool hasProblems = false;
-    for (size_t i = 0; i < rawKey.length(); i++) {
-        char c = rawKey[i];
-        if (c == '\n') {
-            Logger::get().logWarning("API key contains newline at position " + std::to_string(i));
-            hasProblems = true;
-        }
-        if (c == '\r') {
-            Logger::get().logWarning("API key contains carriage return at position " + std::to_string(i));
-            hasProblems = true;
-        }
-        if (c == '\t') {
-            Logger::get().logWarning("API key contains tab at position " + std::to_string(i));
-            hasProblems = true;
-        }
-        if (c == ' ') {
-            Logger::get().logWarning("API key contains space at position " + std::to_string(i));
-            hasProblems = true;
-        }
-        if (c < 32 || c > 126) {
-            Logger::get().logWarning("API key contains non-printable character (ASCII " +
-                                     std::to_string((int)c) + ") at position " + std::to_string(i));
-            hasProblems = true;
-        }
-    }
-
-    if (!hasProblems) {
-        Logger::get().logInfo("API key format appears clean");
-    }
-
-    // Show first and last few characters for verification
-    if (rawKey.length() > 20) {
-        Logger::get().logInfo("API key starts with: '" + rawKey.substr(0, 15) + "'");
-        Logger::get().logInfo("API key ends with: '" + rawKey.substr(rawKey.length() - 10) + "'");
-    }
 }

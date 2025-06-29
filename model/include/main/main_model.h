@@ -17,6 +17,7 @@
 #include "db_manager.h"
 #include "sql_validator.h"
 #include "claude_api_integration.h"
+#include "schedule_filter_service.h"
 
 #include <algorithm>
 #include <cctype>
@@ -72,6 +73,7 @@ private:
     static vector<InformativeSchedule> loadSchedulesFromDB(int setId = -1);
     static vector<ScheduleSetEntity> getScheduleSetsFromDB();
     static bool deleteScheduleSetFromDB(int setId);
+    static BotQueryResponse generateDemoResponse(const BotQueryRequest& request);
 
     // Bot query processing - main coordination method
     static BotFilterResult processBotQuery(const BotQueryRequest& request);

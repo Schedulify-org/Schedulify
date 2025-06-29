@@ -31,7 +31,6 @@ private:
 
     static BotQueryResponse parseClaudeResponse(const std::string& responseData);
     static bool extractSQLQuery(const std::string& content, std::string& sqlQuery, std::vector<std::string>& parameters);
-    static void validateApiKeyEnvironment();
 
     const std::string CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
     const std::string CLAUDE_MODEL = "claude-3-5-sonnet-20241022";

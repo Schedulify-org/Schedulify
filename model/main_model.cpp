@@ -3,13 +3,92 @@
 std::vector<int> Model::lastFilteredScheduleIds;
 
 std::string getFileExtension(const std::string& filename) {
-    size_t dot = filename.find_last_of(".");
+    size_t dot = filename.find_last_of('.');
     if (dot == std::string::npos) {
         return "";
     }
     std::string ext = filename.substr(dot + 1);
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
     return ext;
+}
+
+BotQueryResponse Model::generateDemoResponse(const BotQueryRequest& request) {
+    BotQueryResponse response;
+
+    Logger::get().logInfo("=== GENERATING DEMO RESPONSE ===");
+    Logger::get().logInfo("User message: " + request.userMessage);
+    Logger::get().logInfo("Available schedule IDs: " + std::to_string(request.availableScheduleIds.size()));
+
+    // Generate demo text response based on user message
+    std::string userMsg = request.userMessage;
+    std::transform(userMsg.begin(), userMsg.end(), userMsg.begin(), ::tolower);
+
+    if (userMsg.find("gap") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules with specific gap requirements. Showing filtered results based on your gap preferences.";
+        response.isFilterQuery = true;
+    } else if (userMsg.find("start") != std::string::npos || userMsg.find("morning") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules matching your start time preferences. Displaying schedules that meet your morning requirements.";
+        response.isFilterQuery = true;
+    } else if (userMsg.find("day") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules with your preferred number of study days. Showing optimized day distributions.";
+        response.isFilterQuery = true;
+    } else if (userMsg.find("end") != std::string::npos || userMsg.find("evening") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules matching your end time preferences. Displaying schedules that finish according to your requirements.";
+        response.isFilterQuery = true;
+    } else {
+        // Generic response for other queries
+        response.userMessage = "🔍 Demo Filter Applied: I understand your request and have filtered schedules accordingly. Here are the matching results!";
+        response.isFilterQuery = true;
+    }
+
+    // Generate 10 random schedule IDs between 1-40 that are also in available IDs
+    std::vector<int> demoFilteredIds;
+    std::set<int> availableSet(request.availableScheduleIds.begin(), request.availableScheduleIds.end());
+
+    // Create a pool of IDs between 1-40 that are also available
+    std::vector<int> candidateIds;
+    for (int i = 1; i <= 40; i++) {
+        if (availableSet.find(i) != availableSet.end()) {
+            candidateIds.push_back(i);
+        }
+    }
+
+    // If we have candidates, randomly select up to 10
+    if (!candidateIds.empty()) {
+        // Use current time as seed for randomness
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
+        // Shuffle and take up to 10
+        std::random_shuffle(candidateIds.begin(), candidateIds.end());
+        int numToTake = std::min(10, static_cast<int>(candidateIds.size()));
+
+        for (int i = 0; i < numToTake; i++) {
+            demoFilteredIds.push_back(candidateIds[i]);
+        }
+    } else {
+        // Fallback: if no candidates in 1-40 range, take first 10 available
+        int count = 0;
+        for (int id : request.availableScheduleIds) {
+            if (count >= 10) break;
+            demoFilteredIds.push_back(id);
+            count++;
+        }
+    }
+
+    // Store the filtered IDs for later retrieval
+    lastFilteredScheduleIds = demoFilteredIds;
+
+    response.hasError = false;
+    response.sqlQuery = ""; // Not needed for demo
+    response.queryParameters.clear(); // Not needed for demo
+
+    Logger::get().logInfo("Demo response generated: " + std::to_string(demoFilteredIds.size()) + " filtered IDs");
+    Logger::get().logInfo("Filtered IDs: ");
+    for (int id : demoFilteredIds) {
+        Logger::get().logInfo("  - " + std::to_string(id));
+    }
+
+    return response;
 }
 
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
@@ -127,19 +206,19 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 const auto* queryRequest = static_cast<const BotQueryRequest*>(data);
                 auto* response = new BotQueryResponse();
 
-                // Process the bot query and get filtered schedule IDs
-                auto botResult = processBotQuery(*queryRequest);
+                try {
+                    *response = generateDemoResponse(*queryRequest);
 
-                // Set response fields
-                response->userMessage = botResult.responseMessage;
-                response->hasError = botResult.hasError;
-                response->errorMessage = botResult.errorMessage;
-                response->isFilterQuery = botResult.isFilterQuery;
+                    return response;
 
-                // Store filtered IDs for later retrieval
-                lastFilteredScheduleIds = botResult.filteredScheduleIds;
+                } catch (const std::exception& e) {
+                    Logger::get().logError("Exception in demo bot query processing: " + std::string(e.what()));
+                    response->hasError = true;
+                    response->errorMessage = "An error occurred while processing your demo request";
+                    response->isFilterQuery = false;
+                    return response;
+                }
 
-                return response;
             } else {
                 Logger::get().logError("No bot query request provided");
                 return nullptr;
@@ -270,6 +349,10 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 Logger::get().logError("Exception getting schedule statistics: " + string(e.what()));
                 return nullptr;
             }
+        }
+
+        case ModelOperation::FILTER_SCHEDULES_BY_SQL: {
+            break;
         }
     }
     return nullptr;
@@ -666,75 +749,4 @@ bool Model::deleteScheduleSetFromDB(int setId) {
         Logger::get().logError("Exception deleting schedule set from database: " + string(e.what()));
         return false;
     }
-}
-
-Model::BotFilterResult Model::processBotQuery(const BotQueryRequest& request) {
-    BotFilterResult result;
-
-    try {
-        Logger::get().logInfo("=== BOT QUERY PROCESSING ===");
-        Logger::get().logInfo("User message: " + request.userMessage);
-        Logger::get().logInfo("Available schedule IDs: " + std::to_string(request.availableScheduleIds.size()));
-
-        // Use the Claude API integration to process the query
-        ClaudeAPIClient claudeClient;
-        BotQueryResponse claudeResponse = claudeClient.processScheduleQuery(request);
-
-        if (claudeResponse.hasError) {
-            result.hasError = true;
-            result.errorMessage = claudeResponse.errorMessage;
-            return result;
-        }
-
-        result.responseMessage = claudeResponse.userMessage;
-        result.isFilterQuery = claudeResponse.isFilterQuery;
-
-        // If this is a filter query, execute the SQL and filter results
-        if (claudeResponse.isFilterQuery && !claudeResponse.sqlQuery.empty()) {
-            Logger::get().logInfo("Executing filter query: " + claudeResponse.sqlQuery);
-
-            auto& dbIntegration = ModelDatabaseIntegration::getInstance();
-            if (!dbIntegration.isInitialized()) {
-                if (!dbIntegration.initializeDatabase()) {
-                    result.hasError = true;
-                    result.errorMessage = "Database not available for filtering";
-                    return result;
-                }
-            }
-
-            auto& db = DatabaseManager::getInstance();
-            if (!db.isConnected()) {
-                result.hasError = true;
-                result.errorMessage = "Database connection failed";
-                return result;
-            }
-
-            // Execute the SQL query to get matching schedule IDs
-            std::vector<int> allMatchingIds = db.schedules()->executeCustomQuery(
-                    claudeResponse.sqlQuery, claudeResponse.queryParameters);
-
-            // Filter to only include available schedule IDs
-            std::set<int> availableSet(request.availableScheduleIds.begin(), request.availableScheduleIds.end());
-            for (int scheduleId : allMatchingIds) {
-                if (availableSet.find(scheduleId) != availableSet.end()) {
-                    result.filteredScheduleIds.push_back(scheduleId);
-                }
-            }
-
-            Logger::get().logInfo("Filter complete: " + std::to_string(result.filteredScheduleIds.size()) +
-                                  " schedules match criteria");
-        } else {
-            // No filtering needed, return all available IDs
-            result.filteredScheduleIds = request.availableScheduleIds;
-        }
-
-        Logger::get().logInfo("=== BOT QUERY COMPLETED ===");
-
-    } catch (const std::exception& e) {
-        Logger::get().logError("Exception in bot query processing: " + std::string(e.what()));
-        result.hasError = true;
-        result.errorMessage = "An error occurred while processing your request";
-    }
-
-    return result;
 }

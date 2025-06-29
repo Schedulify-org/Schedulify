@@ -18,6 +18,9 @@
 #include <QQuickItemGrabResult>
 #include <QtQuick/QQuickItem>
 #include <QThread>
+#include <algorithm>
+#include <vector>
+#include <QDebug>
 
 enum class fileType {
     PNG,
@@ -74,14 +77,12 @@ private:
     IModel* modelConnection;
     QMap<QString, QString> m_sortKeyMap;
 
-    // Track current sort state for optimization
     QString m_currentSortField;
     bool m_currentSortAscending = true;
 
-    // Helper methods for bot processing
+    // Helper methods for bot
     BotQueryRequest createBotQueryRequest(const QString& userMessage);
-    void handleSimpleBotResponse(const BotQueryResponse& response);
-    QString generateScheduleMetadata();
+    void handleBotResponse(const BotQueryResponse& response);
 };
 
 #endif // SCHEDULES_DISPLAY_H

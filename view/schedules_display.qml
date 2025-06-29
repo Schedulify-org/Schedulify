@@ -175,66 +175,65 @@ Page {
                     font.pixelSize: 20
                     color: "#1f2937"
                 }
+            }
 
-                // Filter indicator badge
-                Rectangle {
-                    visible: isFiltered
-                    Layout.preferredWidth: filterText.implicitWidth + 16
-                    Layout.preferredHeight: 24
-                    color: "#dbeafe"
+            Button {
+                id: filterResetButton
+                anchors {
+                    left: titleRow.right
+                    leftMargin: 16
+                    verticalCenter: parent.verticalCenter
+                }
+                visible: isFiltered
+                Layout.preferredWidth: filterResetText.implicitWidth + 16
+                Layout.preferredHeight: 24
+
+                background: Rectangle {
+                    color: filterResetMouseArea.containsMouse ? "#dc2626" : "#3b82f6"
                     radius: 12
-                    border.color: "#3b82f6"
+                    border.color: filterResetMouseArea.containsMouse ? "#dc2626" : "#3b82f6"
                     border.width: 1
 
-                    Text {
-                        id: filterText
-                        anchors.centerIn: parent
-                        text: "Filtered"
-                        font.pixelSize: 10
-                        font.bold: true
-                        color: "#1e40af"
+                    // Smooth color transition
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 200
+                        }
                     }
                 }
 
-                // Reset filters button
-                Button {
-                    id: resetFiltersButton
-                    visible: isFiltered
-                    Layout.preferredWidth: resetFiltersText.implicitWidth + 20
-                    Layout.preferredHeight: 28
+                contentItem: Text {
+                    id: filterResetText
+                    anchors.centerIn: parent
+                    text: filterResetMouseArea.containsMouse ? "Reset Filters" : "Filtered"
+                    font.pixelSize: 10
+                    font.bold: true
+                    color: "white"
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
 
-                    background: Rectangle {
-                        color: resetFiltersMouseArea.containsMouse ? "#f87171" : "#ef4444"
-                        radius: 6
-                        border.color: "#dc2626"
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        id: resetFiltersText
-                        text: "Reset Filters"
-                        font.pixelSize: 11
-                        font.bold: true
-                        color: "white"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    MouseArea {
-                        id: resetFiltersMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            controller.resetFilters()
+                    // Smooth text transition
+                    Behavior on text {
+                        PropertyAnimation {
+                            duration: 150
                         }
                     }
+                }
 
-                    ToolTip {
-                        visible: resetFiltersMouseArea.containsMouse
-                        text: "Show all schedules"
-                        delay: 500
+                MouseArea {
+                    id: filterResetMouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        controller.resetFilters()
                     }
+                }
+
+                ToolTip {
+                    visible: filterResetMouseArea.containsMouse
+                    text: "Click to show all schedules"
+                    delay: 500
                 }
             }
 
@@ -408,27 +407,21 @@ Page {
                             color: totalSchedules > 0 ? "#dbeafe" : "#f1f5f9"
                             radius: 6
 
-                            Column {
+                            Label {
+                                id: totalLabel
                                 anchors.centerIn: parent
-                                spacing: 2
-
-                                Label {
-                                    id: totalLabel
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: totalSchedules > 0 ? totalSchedules : "0"
-                                    font.pixelSize: 14
-                                    font.weight: Font.Medium
-                                    color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                                text: {
+                                    if (totalSchedules <= 0) return "0"
+                                    if (isFiltered && totalAllSchedules > 0) {
+                                        return `${totalSchedules} (out of ${totalAllSchedules})`
+                                    }
+                                    return totalSchedules.toString()
                                 }
-
-                                // Show filter status
-                                Label {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    visible: isFiltered && totalAllSchedules > 0
-                                    text: `(${totalAllSchedules} total)`
-                                    font.pixelSize: 9
-                                    color: "#64748b"
-                                }
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                color: totalSchedules > 0 ? "#1d4ed8" : "#64748b"
+                                horizontalAlignment: Text.AlignHCenter
+                                wrapMode: Text.WordWrap
                             }
                         }
 
@@ -891,7 +884,7 @@ Page {
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         visible: isFiltered
-                        text: "Try asking the bot to adjust your criteria,\nor click 'Reset Filters' to see all schedules."
+                        text: "Try asking the bot to adjust your criteria,\nor click the filter indicator to reset."
                         font.pixelSize: 16
                         color: "#9ca3af"
                         horizontalAlignment: Text.AlignHCenter
