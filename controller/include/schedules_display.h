@@ -23,17 +23,36 @@ enum class fileType {
 };
 
 class SchedulesDisplayController : public ControllerManager {
-    Q_OBJECT
-        Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
+Q_OBJECT
+    Q_PROPERTY(ScheduleModel* scheduleModel READ scheduleModel CONSTANT)
 
-    public:
+public:
     explicit SchedulesDisplayController(QObject *parent = nullptr);
     ~SchedulesDisplayController() override;
 
+    // Keep old method for backward compatibility during transition
     void loadScheduleData(const std::vector<InformativeSchedule>& schedules);
+
+    // Semester-specific loading and switching
+    Q_INVOKABLE void loadSemesterScheduleData(const QString& semester, const std::vector<InformativeSchedule>& schedules);
+    Q_INVOKABLE void switchToSemester(const QString& semester);
+    Q_INVOKABLE void allSemestersGenerated();
+
+    // Reset to default semester
+    Q_INVOKABLE void resetToSemesterA();
 
     // Properties
     ScheduleModel* scheduleModel() const { return m_scheduleModel; }
+
+    // Semester query methods
+    Q_INVOKABLE QString getCurrentSemester() const { return m_currentSemester; }
+    Q_INVOKABLE bool hasSchedulesForSemester(const QString& semester) const;
+    Q_INVOKABLE int getScheduleCountForSemester(const QString& semester) const;
+
+    // Loading state management methods
+    Q_INVOKABLE bool isSemesterLoading(const QString& semester) const;
+    Q_INVOKABLE bool isSemesterFinished(const QString& semester) const;
+    Q_INVOKABLE bool canClickSemester(const QString& semester) const;
 
     // QML accessible methods
     Q_INVOKABLE void goBack() override;
@@ -45,23 +64,53 @@ class SchedulesDisplayController : public ControllerManager {
     Q_INVOKABLE void applySorting(const QVariantMap& sortData);
     Q_INVOKABLE void clearSorting();
 
-    static QString generateFilename(const QString& basePath, int index, fileType type);
+    // Include semester in filename
+    static QString generateFilename(const QString& basePath, int index, fileType type, const QString& semester = "");
 
-    signals:
-        void schedulesSorted(int totalCount);
-        void screenshotSaved(const QString& path);
-        void screenshotFailed();
+    // Methods to be called from CourseSelectionController
+    void setSemesterLoading(const QString& semester, bool loading);
+    void setSemesterFinished(const QString& semester, bool finished);
+    void clearAllSchedules();
+
+
+signals:
+    void schedulesSorted(int totalCount);
+    void screenshotSaved(const QString& path);
+    void screenshotFailed();
+
+    // Semester-specific signals
+    void currentSemesterChanged();
+    void semesterSchedulesLoaded(const QString& semester);
+    void allSemestersReady();
+
+    // Loading state signals
+    void semesterLoadingStateChanged(const QString& semester);
+    void semesterFinishedStateChanged(const QString& semester);
 
 private:
-    std::vector<InformativeSchedule> m_schedules;
+    // Per-semester schedule storage
+    std::vector<InformativeSchedule> m_schedulesA;
+    std::vector<InformativeSchedule> m_schedulesB;
+    std::vector<InformativeSchedule> m_schedulesSummer;
+
+    // Semester management properties
+    QString m_currentSemester = "A"; // Track which semester is currently being displayed
+    bool m_allSemestersLoaded = false;
+
+    // Loading state tracking
+    QMap<QString, bool> m_semesterLoadingState;  // Track if semester is currently loading
+    QMap<QString, bool> m_semesterFinishedState; // Track if semester has finished loading
+
     ScheduleModel* m_scheduleModel;
     IModel* modelConnection;
     QMap<QString, QString> m_sortKeyMap;
 
-
     // Track current sort state for optimization
     QString m_currentSortField;
     bool m_currentSortAscending = true;
+
+    // Helper methods
+    std::vector<InformativeSchedule>* getCurrentScheduleVector();
 };
 
 #endif // SCHEDULES_DISPLAY_H

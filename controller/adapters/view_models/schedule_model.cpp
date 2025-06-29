@@ -71,7 +71,6 @@ void ScheduleModel::jumpToSchedule(int userScheduleNumber) {
     if (canJumpToSchedule(index)) {
         setCurrentScheduleIndex(index);
     }
-    // Remove the emit here - setCurrentScheduleIndex already emits it
 }
 
 bool ScheduleModel::canJumpToSchedule(int index) {

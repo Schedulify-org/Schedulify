@@ -95,24 +95,62 @@ InformativeSchedule ScheduleBuilder::convertToInformativeSchedule(const vector<C
 
     try {
         map<int, vector<ScheduleItem>> daySchedules;
-
         const vector<string> dayNames = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
         for (const auto& selection : selections) {
+            // Process lecture group
             if (selection.lectureGroup) {
                 processGroupSessions(selection, selection.lectureGroup, "Lecture", daySchedules);
             }
 
+            // Process tutorial group
             if (selection.tutorialGroup) {
                 processGroupSessions(selection, selection.tutorialGroup, "Tutorial", daySchedules);
             }
 
+            // Process lab group
             if (selection.labGroup) {
                 processGroupSessions(selection, selection.labGroup, "Lab", daySchedules);
             }
 
+            // Process block group
             if (selection.blockGroup) {
                 processGroupSessions(selection, selection.blockGroup, "Block", daySchedules);
+            }
+
+            // Process departmental sessions group
+            if (selection.departmentalGroup) {
+                processGroupSessions(selection, selection.departmentalGroup, "Departmental", daySchedules);
+            }
+
+            // Process reinforcement group
+            if (selection.reinforcementGroup) {
+                processGroupSessions(selection, selection.reinforcementGroup, "Reinforcement", daySchedules);
+            }
+
+            // Process guidance group
+            if (selection.guidanceGroup) {
+                processGroupSessions(selection, selection.guidanceGroup, "Guidance", daySchedules);
+            }
+
+            // Process colloquium group
+            if (selection.colloquiumGroup) {
+                processGroupSessions(selection, selection.colloquiumGroup, "Colloquium", daySchedules);
+            }
+
+            // Process registration group
+            if (selection.registrationGroup) {
+                processGroupSessions(selection, selection.registrationGroup, "Registration", daySchedules);
+            }
+
+            // Process thesis group
+            if (selection.thesisGroup) {
+                processGroupSessions(selection, selection.thesisGroup, "Thesis", daySchedules);
+            }
+
+            // Process project group
+            if (selection.projectGroup) {
+                processGroupSessions(selection, selection.projectGroup, "Project", daySchedules);
             }
         }
 
