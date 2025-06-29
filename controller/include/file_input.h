@@ -6,7 +6,6 @@
 #include "model_interfaces.h"
 #include "course_selection.h"
 #include "logger.h"
-
 #include <QFileDialog>
 #include <QStandardPaths>
 

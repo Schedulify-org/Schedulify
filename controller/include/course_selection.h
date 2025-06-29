@@ -20,15 +20,15 @@
 #include <QQuickWindow>
 #include <QTimer>
 
-// Struct to represent a block time
+// Time block for blocking schedule slots
 struct BlockTime {
     QString day;
     QString startTime;
     QString endTime;
-    QString semester; // ADD this line
+    QString semester; // semester assignment
 
     BlockTime(const QString& d, const QString& st, const QString& et, const QString& sem = "A")
-            : day(d), startTime(st), endTime(et), semester(sem) {} // UPDATE constructor
+            : day(d), startTime(st), endTime(et), semester(sem) {} // default to semester A
 };
 
 class CourseSelectionController final : public ControllerManager {
@@ -68,7 +68,7 @@ public:
     // Semester filtering functionality
     Q_INVOKABLE void filterBySemester(const QString& semester);
 
-    // NEW: Semester-specific methods
+    // Semester-specific utilities
     Q_INVOKABLE QString getCourseSemester(int courseIndex);
     Q_INVOKABLE bool canAddCourseToSemester(int courseIndex);
 
@@ -83,7 +83,7 @@ public:
 private slots:
     void onValidationTimeout();
 
-    // NEW: Semester-specific schedule generation slots
+    // Handle semester schedule generation completion
     void onSemesterSchedulesGenerated(const QString& semester, vector<InformativeSchedule>* schedules);
 
 signals:
@@ -92,7 +92,7 @@ signals:
     void errorMessage(const QString &message);
     void validationStateChanged();
 
-    // NEW: Semester-specific signal
+    // Emitted when semester schedules are ready
     void semesterSchedulesGenerated(const QString& semester, vector<InformativeSchedule>* schedules);
 
 private:
@@ -111,7 +111,7 @@ private:
     vector<Course> blockTimes;
     vector<BlockTime> userBlockTimes;
 
-    // UPDATED: Replace single vectors with semester-specific vectors
+    // Per-semester course selections
     vector<Course> selectedCoursesA;
     vector<Course> selectedCoursesB;
     vector<Course> selectedCoursesSummer;
@@ -130,10 +130,10 @@ private:
     QThread* validatorThread = nullptr;
     QThread* workerThread = nullptr;
 
-    // NEW: Semester-specific helper methods
+    // Semester-specific helper methods
     void updateSelectedCoursesModel();
     void generateSemesterSchedules(const QString& semester);
-    void checkAndNavigateToSchedules();  // ADD THIS LINE - This is what was missing!
+    void checkAndNavigateToSchedules();
 
     void updateBlockTimesModel();
     Course createSingleBlockTimeCourse();
@@ -152,7 +152,7 @@ private:
     bool matchesSemesterFilter(const Course& course) const;
     bool matchesSearchFilter(const Course& course, const QString& searchText) const;
 
-    // NEW: Per-semester block time methods
+    // Per-semester block time handling
     vector<BlockTime> getBlockTimesForCurrentSemester(const QString& semester);
     Course createSingleBlockTimeCourseForSemester(const vector<BlockTime>& semesterBlockTimes, const QString& semester);
 

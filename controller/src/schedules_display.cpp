@@ -31,7 +31,7 @@ SchedulesDisplayController::~SchedulesDisplayController() {
     modelConnection = nullptr;
 }
 
-// KEPT: Old method for backward compatibility during transition
+// Old method for backward compatibility during transition
 void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeSchedule> &schedules) {
     // For backward compatibility, load into Semester A
     m_schedulesA = schedules;
@@ -39,7 +39,7 @@ void SchedulesDisplayController::loadScheduleData(const std::vector<InformativeS
     m_scheduleModel->loadSchedules(m_schedulesA);
 }
 
-// NEW METHOD: Load schedules for a specific semester
+// Load schedules for a specific semester
 void SchedulesDisplayController::loadSemesterScheduleData(const QString& semester, const std::vector<InformativeSchedule>& schedules) {
     if (semester == "A") {
         m_schedulesA = schedules;
@@ -60,7 +60,7 @@ void SchedulesDisplayController::loadSemesterScheduleData(const QString& semeste
     emit semesterSchedulesLoaded(semester);
 }
 
-// NEW METHOD: Switch between semesters
+// Switch between semesters
 void SchedulesDisplayController::switchToSemester(const QString& semester) {
     if (m_currentSemester == semester) {
         return; // Already on this semester
@@ -86,13 +86,13 @@ void SchedulesDisplayController::switchToSemester(const QString& semester) {
     emit currentSemesterChanged();
 }
 
-// NEW METHOD: Called when all semesters are generated
+// Called when all semesters are generated
 void SchedulesDisplayController::allSemestersGenerated() {
     m_allSemestersLoaded = true;
     emit allSemestersReady();
 }
 
-// NEW METHOD: Reset to Semester A - THIS IS THE NEW METHOD YOU NEED
+// Reset to Semester A
 void SchedulesDisplayController::resetToSemesterA() {
     m_currentSemester = "A";
     // If Semester A has schedules, load them into the model
@@ -102,7 +102,7 @@ void SchedulesDisplayController::resetToSemesterA() {
     emit currentSemesterChanged();
 }
 
-// NEW METHOD: Check if a semester has schedules
+// Check if a semester has schedules
 bool SchedulesDisplayController::hasSchedulesForSemester(const QString& semester) const {
     if (semester == "A") {
         return !m_schedulesA.empty();
@@ -114,17 +114,17 @@ bool SchedulesDisplayController::hasSchedulesForSemester(const QString& semester
     return false;
 }
 
-// NEW METHOD: Check if a semester is currently loading
+// Check if a semester is currently loading
 bool SchedulesDisplayController::isSemesterLoading(const QString& semester) const {
     return m_semesterLoadingState.value(semester, false);
 }
 
-// NEW METHOD: Check if a semester has finished loading
+// Check if a semester has finished loading
 bool SchedulesDisplayController::isSemesterFinished(const QString& semester) const {
     return m_semesterFinishedState.value(semester, false);
 }
 
-// NEW METHOD: Check if a semester button can be clicked
+// Check if a semester button can be clicked
 bool SchedulesDisplayController::canClickSemester(const QString& semester) const {
     // A semester can be clicked if:
     // 1. It has finished loading (has schedules)
@@ -132,7 +132,7 @@ bool SchedulesDisplayController::canClickSemester(const QString& semester) const
     return isSemesterFinished(semester) && !isSemesterLoading(semester) && hasSchedulesForSemester(semester);
 }
 
-// NEW METHOD: Set semester loading state
+// Set semester loading state
 void SchedulesDisplayController::setSemesterLoading(const QString& semester, bool loading) {
     if (m_semesterLoadingState.value(semester, false) != loading) {
         m_semesterLoadingState[semester] = loading;
@@ -140,7 +140,7 @@ void SchedulesDisplayController::setSemesterLoading(const QString& semester, boo
     }
 }
 
-// NEW METHOD: Set semester finished state
+// Set semester finished state
 void SchedulesDisplayController::setSemesterFinished(const QString& semester, bool finished) {
     if (m_semesterFinishedState.value(semester, false) != finished) {
         m_semesterFinishedState[semester] = finished;
@@ -148,7 +148,7 @@ void SchedulesDisplayController::setSemesterFinished(const QString& semester, bo
     }
 }
 
-// NEW METHOD: Get schedule count for a semester
+// Get schedule count for a semester
 int SchedulesDisplayController::getScheduleCountForSemester(const QString& semester) const {
     if (semester == "A") {
         return static_cast<int>(m_schedulesA.size());
@@ -160,7 +160,7 @@ int SchedulesDisplayController::getScheduleCountForSemester(const QString& semes
     return 0;
 }
 
-// NEW METHOD: Get current schedule vector
+// Get current schedule vector
 std::vector<InformativeSchedule>* SchedulesDisplayController::getCurrentScheduleVector() {
     if (m_currentSemester == "A") {
         return &m_schedulesA;
@@ -172,7 +172,7 @@ std::vector<InformativeSchedule>* SchedulesDisplayController::getCurrentSchedule
     return nullptr;
 }
 
-// UPDATED: Apply sorting to current semester
+// Apply sorting to current semester
 void SchedulesDisplayController::applySorting(const QVariantMap& sortData) {
     QString sortField;
     bool isAscending = true;
@@ -247,7 +247,7 @@ void SchedulesDisplayController::applySorting(const QVariantMap& sortData) {
     emit schedulesSorted(static_cast<int>(currentSchedules->size()));
 }
 
-// UPDATED: Clear sorting for current semester
+// Clear sorting for current semester
 void SchedulesDisplayController::clearSorting() {
     std::vector<InformativeSchedule>* currentSchedules = getCurrentScheduleVector();
     if (!currentSchedules) {
@@ -266,7 +266,7 @@ void SchedulesDisplayController::clearSorting() {
     emit schedulesSorted(static_cast<int>(currentSchedules->size()));
 }
 
-// UPDATED: Save CSV for current semester
+// Save CSV for current semester
 void SchedulesDisplayController::saveScheduleAsCSV() {
     std::vector<InformativeSchedule>* currentSchedules = getCurrentScheduleVector();
     if (!currentSchedules || currentSchedules->empty()) {
@@ -287,7 +287,7 @@ void SchedulesDisplayController::saveScheduleAsCSV() {
     }
 }
 
-// UPDATED: Print schedule for current semester
+// Print schedule for current semester
 void SchedulesDisplayController::printScheduleDirectly() {
     std::vector<InformativeSchedule>* currentSchedules = getCurrentScheduleVector();
     if (!currentSchedules || currentSchedules->empty()) {
@@ -304,7 +304,7 @@ void SchedulesDisplayController::goBack() {
     emit navigateBack();
 }
 
-// UPDATED: Capture screenshot with semester in filename
+// Capture screenshot with semester in filename
 void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString& savePath) {
     if (!item) {
         emit screenshotFailed();
@@ -343,7 +343,7 @@ void SchedulesDisplayController::captureAndSave(QQuickItem* item, const QString&
     });
 }
 
-// UPDATED: Generate filename with optional semester suffix
+// Generate filename with optional semester suffix
 QString SchedulesDisplayController::generateFilename(const QString& basePath, int index, fileType type, const QString& semester) {
     QString filename;
     QString semesterSuffix = semester.isEmpty() ? "" : QString("_%1").arg(semester);

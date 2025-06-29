@@ -26,13 +26,13 @@ using DaySlots = vector<OptimizedSlot>;
 using RoomSchedule = unordered_map<int, DaySlots>;
 using BuildingSchedule = unordered_map<RoomKey, RoomSchedule>;
 
-// UPDATED: Main validation function
+// Main validation function
 vector<string> validate_courses(vector<Course> courses);
 
-// NEW: Validate courses within a single semester
+// Validate courses within a single semester
 vector<string> validateSemesterCourses(const vector<Course>& courses, const string& semesterName);
 
-// UPDATED: Add semester context to function signatures
+// Add semester context to function signatures
 void processSessionGroups(const vector<Group>& groups, const string& courseId,
                           BuildingSchedule& schedule, vector<string>& errors, const string& semesterName);
 

@@ -31,7 +31,7 @@ Page {
 
     property var logWindow: null
 
-    // NEW: Semester navigation properties
+    // Semester navigation properties
     property string currentSemester: controller ? controller.getCurrentSemester() : "A"
     property bool allSemestersLoaded: controller ? controller.allSemestersLoaded : false
 
@@ -81,7 +81,7 @@ Page {
         }
     }
 
-    // NEW: Connections for semester management
+    // Connections for semester management
     Connections {
         target: controller
         function onCurrentSemesterChanged() {
@@ -141,7 +141,7 @@ Page {
         }
     }
 
-    // FIXED Header - reduced height since schedule navigation moved to top row
+    // Header - reduced height since schedule navigation moved to top row
     Rectangle {
         id: header
         width: parent.width
@@ -158,7 +158,7 @@ Page {
                 margins: 15
             }
 
-            // FIXED: Top row now contains back button, title, schedule navigation, and action buttons
+            // Top row now contains back button, title, schedule navigation, and action buttons
             Item {
                 id: topRow
                 anchors {
@@ -1239,7 +1239,7 @@ Page {
                             return "";
                         }
 
-                        // Updated color assignment in the delegate Rectangle
+                        // Color assignment in the delegate Rectangle
                         color: {
                             if (model.column === 0) {
                                 return "#d1d5db";

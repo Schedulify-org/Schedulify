@@ -68,7 +68,7 @@ Page {
         return allCourses;
     }
 
-    // NEW FUNCTION: Check if we can add a course based on its semester
+    // Check if we can add a course based on its semester
     function canAddCourseToSemester(courseIndex) {
         // Use refreshCounter to make this reactive
         var dummy = refreshCounter;
@@ -93,7 +93,7 @@ Page {
         return semesterCount < 7;
     }
 
-    // NEW FUNCTION: Get total selected courses across all semesters (for display only)
+    // Get total selected courses across all semesters (for display only)
     function getTotalSelectedCoursesCount() {
         // Use refreshCounter to make this reactive
         var dummy = refreshCounter;

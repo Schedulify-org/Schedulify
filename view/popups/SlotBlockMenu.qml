@@ -6,7 +6,7 @@ import QtQuick.Controls.Basic
 Popup {
     id: root
 
-    // UPDATED: Modified signal to include semester
+    // Modified signal to include semester
     signal blockTimeAdded(string day, string startTime, string endTime, string semester)
 
     // Properties
@@ -15,11 +15,11 @@ Popup {
     property string errorMessage: ""
     property bool entireDay: false
 
-    // NEW: Semester selection property
+    // Semester selection property
     property string selectedSemester: "A" // Default to Semester A
 
     width: 400
-    height: 480  // UPDATED: Increased height for semester selection
+    height: 480  // Increased height for semester selection
     modal: true
     focus: true
     clip: true
@@ -87,14 +87,14 @@ Popup {
         var startTime = getFormattedTime(startHour);
         var endTime = getFormattedTime(endHour);
 
-        // UPDATED: Include semester in the signal
+        // Include semester in the signal
         root.blockTimeAdded(day, startTime, endTime, selectedSemester);
 
         daySelector.currentIndex = 0;
         startHour = 8;
         endHour = 9;
         entireDay = false;
-        selectedSemester = "A"; // UPDATED: Reset to default
+        selectedSemester = "A"; // Reset to default
         errorMessage = "";
 
         root.close();
@@ -261,7 +261,7 @@ Popup {
             }
         }
 
-        // NEW: Semester selection
+        // Semester selection
         Item {
             id: semesterSelectionSection
             anchors {
@@ -421,7 +421,7 @@ Popup {
         Item {
             id: timeSelectionSection
             anchors {
-                top: semesterSelectionSection.bottom // UPDATED: Changed from daySelectionSection.bottom
+                top: semesterSelectionSection.bottom // Changed from daySelectionSection.bottom
                 topMargin: 20
                 left: parent.left
                 right: parent.right

@@ -1,4 +1,4 @@
-// ==== UPDATE validate_courses.cpp ====
+// validate_courses.cpp
 
 #include "validate_courses.h"
 #include <algorithm>
@@ -15,12 +15,12 @@ bool OptimizedSlot::overlapsWith(const OptimizedSlot& other) const {
     return (start_minutes < other.end_minutes && other.start_minutes < end_minutes);
 }
 
-// UPDATED: Main validation function - now validates per semester
+// Main validation function - now validates per semester
 vector<string> validate_courses(vector<Course> courses) {
     vector<string> errors;
     errors.reserve(50);
 
-    // NEW: Group courses by semester
+    // Group courses by semester
     unordered_map<int, vector<Course>> coursesBySemester;
 
     for (const auto& course : courses) {
@@ -38,7 +38,7 @@ vector<string> validate_courses(vector<Course> courses) {
         }
     }
 
-    // NEW: Validate each semester separately
+    // Validate each semester separately
     for (const auto& semesterPair : coursesBySemester) {
         int semester = semesterPair.first;
         const vector<Course>& semesterCourses = semesterPair.second;
@@ -65,7 +65,7 @@ vector<string> validate_courses(vector<Course> courses) {
     return errors;
 }
 
-// NEW: Validate courses within a single semester
+// Validate courses within a single semester
 vector<string> validateSemesterCourses(const vector<Course>& courses, const string& semesterName) {
     BuildingSchedule schedule;
     vector<string> errors;
@@ -86,7 +86,7 @@ vector<string> validateSemesterCourses(const vector<Course>& courses, const stri
     return errors;
 }
 
-// UPDATED: Add semester context to session group processing
+// Add semester context to session group processing
 void processSessionGroups(const vector<Group>& groups, const string& courseId,
                           BuildingSchedule& schedule, vector<string>& errors, const string& semesterName) {
     for (const auto& group : groups) {
@@ -96,7 +96,7 @@ void processSessionGroups(const vector<Group>& groups, const string& courseId,
     }
 }
 
-// UPDATED: Add semester context to session processing
+// Add semester context to session processing
 void processSession(const Session& session, const string& courseId,
                     BuildingSchedule& schedule, vector<string>& errors, const string& semesterName) {
     if (session.building_number.empty() || session.room_number.empty()) {
