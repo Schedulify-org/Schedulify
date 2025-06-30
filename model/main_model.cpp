@@ -2,95 +2,6 @@
 
 std::vector<int> Model::lastFilteredScheduleIds;
 
-std::string getFileExtension(const std::string& filename) {
-    size_t dot = filename.find_last_of('.');
-    if (dot == std::string::npos) {
-        return "";
-    }
-    std::string ext = filename.substr(dot + 1);
-    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    return ext;
-}
-
-BotQueryResponse Model::generateDemoResponse(const BotQueryRequest& request) {
-    BotQueryResponse response;
-
-    Logger::get().logInfo("=== GENERATING DEMO RESPONSE ===");
-    Logger::get().logInfo("User message: " + request.userMessage);
-    Logger::get().logInfo("Available schedule IDs: " + std::to_string(request.availableScheduleIds.size()));
-
-    // Generate demo text response based on user message
-    std::string userMsg = request.userMessage;
-    std::transform(userMsg.begin(), userMsg.end(), userMsg.begin(), ::tolower);
-
-    if (userMsg.find("gap") != std::string::npos) {
-        response.userMessage = "🔍 Demo Filter Applied: Found schedules with specific gap requirements. Showing filtered results based on your gap preferences.";
-        response.isFilterQuery = true;
-    } else if (userMsg.find("start") != std::string::npos || userMsg.find("morning") != std::string::npos) {
-        response.userMessage = "🔍 Demo Filter Applied: Found schedules matching your start time preferences. Displaying schedules that meet your morning requirements.";
-        response.isFilterQuery = true;
-    } else if (userMsg.find("day") != std::string::npos) {
-        response.userMessage = "🔍 Demo Filter Applied: Found schedules with your preferred number of study days. Showing optimized day distributions.";
-        response.isFilterQuery = true;
-    } else if (userMsg.find("end") != std::string::npos || userMsg.find("evening") != std::string::npos) {
-        response.userMessage = "🔍 Demo Filter Applied: Found schedules matching your end time preferences. Displaying schedules that finish according to your requirements.";
-        response.isFilterQuery = true;
-    } else {
-        // Generic response for other queries
-        response.userMessage = "🔍 Demo Filter Applied: I understand your request and have filtered schedules accordingly. Here are the matching results!";
-        response.isFilterQuery = true;
-    }
-
-    // Generate 10 random schedule IDs between 1-40 that are also in available IDs
-    std::vector<int> demoFilteredIds;
-    std::set<int> availableSet(request.availableScheduleIds.begin(), request.availableScheduleIds.end());
-
-    // Create a pool of IDs between 1-40 that are also available
-    std::vector<int> candidateIds;
-    for (int i = 1; i <= 40; i++) {
-        if (availableSet.find(i) != availableSet.end()) {
-            candidateIds.push_back(i);
-        }
-    }
-
-    // If we have candidates, randomly select up to 10
-    if (!candidateIds.empty()) {
-        // Use current time as seed for randomness
-        std::srand(static_cast<unsigned int>(std::time(nullptr)));
-
-        // Shuffle and take up to 10
-        std::random_shuffle(candidateIds.begin(), candidateIds.end());
-        int numToTake = std::min(10, static_cast<int>(candidateIds.size()));
-
-        for (int i = 0; i < numToTake; i++) {
-            demoFilteredIds.push_back(candidateIds[i]);
-        }
-    } else {
-        // Fallback: if no candidates in 1-40 range, take first 10 available
-        int count = 0;
-        for (int id : request.availableScheduleIds) {
-            if (count >= 10) break;
-            demoFilteredIds.push_back(id);
-            count++;
-        }
-    }
-
-    // Store the filtered IDs for later retrieval
-    lastFilteredScheduleIds = demoFilteredIds;
-
-    response.hasError = false;
-    response.sqlQuery = ""; // Not needed for demo
-    response.queryParameters.clear(); // Not needed for demo
-
-    Logger::get().logInfo("Demo response generated: " + std::to_string(demoFilteredIds.size()) + " filtered IDs");
-    Logger::get().logInfo("Filtered IDs: ");
-    for (int id : demoFilteredIds) {
-        Logger::get().logInfo("  - " + std::to_string(id));
-    }
-
-    return response;
-}
-
 void* Model::executeOperation(ModelOperation operation, const void* data, const string& path) {
     switch (operation) {
         case ModelOperation::GENERATE_COURSES: {
@@ -207,7 +118,7 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
                 auto* response = new BotQueryResponse();
 
                 try {
-                    *response = generateDemoResponse(*queryRequest);
+                    *response = processClaudeQuery(*queryRequest);
 
                     return response;
 
@@ -356,6 +267,201 @@ void* Model::executeOperation(ModelOperation operation, const void* data, const 
         }
     }
     return nullptr;
+}
+
+std::string getFileExtension(const std::string& filename) {
+    size_t dot = filename.find_last_of('.');
+    if (dot == std::string::npos) {
+        return "";
+    }
+    std::string ext = filename.substr(dot + 1);
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+    return ext;
+}
+
+BotQueryResponse Model::generateDemoResponse(const BotQueryRequest& request) {
+    BotQueryResponse response;
+
+    Logger::get().logInfo("=== GENERATING DEMO RESPONSE ===");
+    Logger::get().logInfo("User message: " + request.userMessage);
+    Logger::get().logInfo("Available schedule IDs: " + std::to_string(request.availableScheduleIds.size()));
+
+    // Generate demo text response based on user message
+    std::string userMsg = request.userMessage;
+    std::transform(userMsg.begin(), userMsg.end(), userMsg.begin(), ::tolower);
+
+    if (userMsg.find("gap") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules with specific gap requirements. Showing filtered results based on your gap preferences.";
+        response.isFilterQuery = true;
+    } else if (userMsg.find("start") != std::string::npos || userMsg.find("morning") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules matching your start time preferences. Displaying schedules that meet your morning requirements.";
+        response.isFilterQuery = true;
+    } else if (userMsg.find("day") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules with your preferred number of study days. Showing optimized day distributions.";
+        response.isFilterQuery = true;
+    } else if (userMsg.find("end") != std::string::npos || userMsg.find("evening") != std::string::npos) {
+        response.userMessage = "🔍 Demo Filter Applied: Found schedules matching your end time preferences. Displaying schedules that finish according to your requirements.";
+        response.isFilterQuery = true;
+    } else {
+        // Generic response for other queries
+        response.userMessage = "🔍 Demo Filter Applied: I understand your request and have filtered schedules accordingly. Here are the matching results!";
+        response.isFilterQuery = true;
+    }
+
+    // Generate 10 random schedule IDs between 1-40 that are also in available IDs
+    std::vector<int> demoFilteredIds;
+    std::set<int> availableSet(request.availableScheduleIds.begin(), request.availableScheduleIds.end());
+
+    // Create a pool of IDs between 1-40 that are also available
+    std::vector<int> candidateIds;
+    for (int i = 1; i <= 40; i++) {
+        if (availableSet.find(i) != availableSet.end()) {
+            candidateIds.push_back(i);
+        }
+    }
+
+    // If we have candidates, randomly select up to 10
+    if (!candidateIds.empty()) {
+        // Use current time as seed for randomness
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
+        // Shuffle and take up to 10
+        std::random_shuffle(candidateIds.begin(), candidateIds.end());
+        int numToTake = std::min(10, static_cast<int>(candidateIds.size()));
+
+        for (int i = 0; i < numToTake; i++) {
+            demoFilteredIds.push_back(candidateIds[i]);
+        }
+    } else {
+        // Fallback: if no candidates in 1-40 range, take first 10 available
+        int count = 0;
+        for (int id : request.availableScheduleIds) {
+            if (count >= 10) break;
+            demoFilteredIds.push_back(id);
+            count++;
+        }
+    }
+
+    // Store the filtered IDs for later retrieval
+    lastFilteredScheduleIds = demoFilteredIds;
+
+    response.hasError = false;
+    response.sqlQuery = ""; // Not needed for demo
+    response.queryParameters.clear(); // Not needed for demo
+
+    Logger::get().logInfo("Demo response generated: " + std::to_string(demoFilteredIds.size()) + " filtered IDs");
+    Logger::get().logInfo("Filtered IDs: ");
+    for (int id : demoFilteredIds) {
+        Logger::get().logInfo("  - " + std::to_string(id));
+    }
+
+    return response;
+}
+
+BotQueryResponse Model::processClaudeQuery(const BotQueryRequest& request) {
+    BotQueryResponse response;
+
+    try {
+        auto& dbIntegration = ModelDatabaseIntegration::getInstance();
+        if (!dbIntegration.isInitialized()) {
+            if (!dbIntegration.initializeDatabase()) {
+                Logger::get().logError("Database not available for processing request");
+                response.hasError = true;
+                response.errorMessage = "Database not available for processing your request";
+                return response;
+            }
+        }
+
+        auto& db = DatabaseManager::getInstance();
+        if (!db.isConnected()) {
+            Logger::get().logError("Database not connected");
+            response.hasError = true;
+            response.errorMessage = "Database connection unavailable";
+            return response;
+        }
+
+        // Create enhanced request (no logging of metadata length)
+        BotQueryRequest enhancedRequest = request;
+        enhancedRequest.scheduleMetadata = db.schedules()->getSchedulesMetadataForBot();
+
+        // Try Claude API
+        ClaudeAPIClient claudeClient;
+        response = claudeClient.processScheduleQuery(enhancedRequest);
+
+        cout << response.sqlQuery << endl;
+        for (const string& param : response.queryParameters) {
+            cout << param << endl;
+        }
+
+        // Handle rate limiting with fallback (minimal logging)
+        if (response.hasError &&
+            (response.errorMessage.find("overloaded") != std::string::npos ||
+             response.errorMessage.find("rate limit") != std::string::npos ||
+             response.errorMessage.find("429") != std::string::npos ||
+             response.errorMessage.find("529") != std::string::npos)) {
+
+            Logger::get().logWarning("Claude API overloaded - using fallback");
+            response = ClaudeAPIClient::generateFallbackResponse(enhancedRequest);
+
+            if (!response.hasError) {
+                response.userMessage = "⚠️ Claude API is currently busy, using simplified pattern matching.\n\n" + response.userMessage;
+            }
+        }
+
+        if (response.hasError) {
+            Logger::get().logError("Claude processing failed: " + response.errorMessage);
+            return response;
+        }
+
+        // Execute SQL filter if needed (minimal logging)
+        if (response.isFilterQuery && !response.sqlQuery.empty()) {
+            SQLValidator::ValidationResult validation = SQLValidator::validateScheduleQuery(response.sqlQuery);
+            if (!validation.isValid) {
+                Logger::get().logError("Generated query failed validation: " + validation.errorMessage);
+                response.hasError = true;
+                response.errorMessage = "Generated query failed security validation: " + validation.errorMessage;
+                return response;
+            }
+
+            vector<int> allMatchingIds = db.schedules()->executeCustomQuery(response.sqlQuery, response.queryParameters);
+
+            // Filter to available IDs
+            vector<int> filteredIds;
+            std::set<int> availableSet(request.availableScheduleIds.begin(), request.availableScheduleIds.end());
+
+            for (int scheduleId : allMatchingIds) {
+                if (availableSet.find(scheduleId) != availableSet.end()) {
+                    filteredIds.push_back(scheduleId);
+                }
+            }
+
+            lastFilteredScheduleIds = filteredIds;
+
+            // Update response message
+            if (filteredIds.empty()) {
+                response.userMessage += "\n\n❌ No schedules match your criteria in the current set.";
+                if (response.sqlQuery.find("earliest_start") != std::string::npos) {
+                    response.userMessage += "\n\n💡 Tip: Try 'start after 9 AM' or 'start after 8 AM' for more results.";
+                }
+            } else {
+                response.userMessage += "\n\n✅ Filter applied! Showing " +
+                                        std::to_string(filteredIds.size()) + " of " +
+                                        std::to_string(request.availableScheduleIds.size()) +
+                                        " schedules that match your criteria.";
+            }
+        } else {
+            // Non-filter query - return all available schedules
+            lastFilteredScheduleIds = request.availableScheduleIds;
+        }
+
+        return response;
+
+    } catch (const std::exception& e) {
+        Logger::get().logError("Exception in Claude query processing: " + std::string(e.what()));
+        response.hasError = true;
+        response.errorMessage = "An error occurred while processing your request: " + std::string(e.what());
+        return response;
+    }
 }
 
 vector<Course> Model::generateCourses(const string& path) {
@@ -633,14 +739,13 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
     Logger::get().logInfo("Generating schedules for " + std::to_string(userInput.size()) + " courses");
 
-    bool enableProgressiveWriting = userInput.size() >= 5;
+    // CHANGE: Always enable progressive writing for database persistence
+    bool enableProgressiveWriting = true; // Changed from: userInput.size() >= 5
 
     ScheduleBuilder builder;
     vector<InformativeSchedule> schedules;
 
     if (enableProgressiveWriting) {
-        Logger::get().logInfo("Large schedule generation detected - enabling progressive database writing");
-
         try {
             auto& dbIntegration = ModelDatabaseIntegration::getInstance();
             if (!dbIntegration.isInitialized()) {
@@ -657,10 +762,23 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
 
     if (enableProgressiveWriting) {
         string setName = "Generated Schedules - " + QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss").toStdString();
-        vector<int> sourceFileIds;
+        vector<int> sourceFileIds; // You might want to get actual file IDs here
         schedules = builder.build(userInput, true, setName, sourceFileIds);
+
+        // VERIFY schedules were saved
+        auto& db = DatabaseManager::getInstance();
+        if (db.isConnected()) {
+            int savedCount = db.schedules()->getScheduleCount();
+            Logger::get().logInfo("Schedules in database after generation: " + std::to_string(savedCount));
+        }
     } else {
         schedules = builder.build(userInput, false);
+
+        // FALLBACK: Manual save if progressive writing failed
+        if (!schedules.empty()) {
+            Logger::get().logInfo("Manually saving " + std::to_string(schedules.size()) + " schedules to database");
+            saveSchedulesToDB(schedules, "Generated Schedules", {});
+        }
     }
 
     if (schedules.empty()) {
@@ -669,10 +787,6 @@ vector<InformativeSchedule> Model::generateSchedules(const vector<Course>& userI
     }
 
     Logger::get().logInfo("Generated " + std::to_string(schedules.size()) + " possible schedules");
-
-    if (enableProgressiveWriting) {
-        Logger::get().logInfo("Schedules have been written to database during generation");
-    }
     return schedules;
 }
 

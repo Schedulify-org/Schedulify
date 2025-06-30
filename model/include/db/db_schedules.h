@@ -79,6 +79,7 @@ private:
     static bool isValidScheduleQuery(const string& sqlQuery);
     vector<string> getWhitelistedTables();
     static vector<string> getWhitelistedColumns();
+    void debugScheduleQuery(const string& debugQuery);
 };
 
 #endif // DB_SCHEDULES_H

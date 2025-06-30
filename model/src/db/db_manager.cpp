@@ -337,10 +337,8 @@ bool DatabaseManager::isQtApplicationReady() {
 }
 
 bool DatabaseManager::initializeDatabase(const QString& dbPath) {
-    // Check if Qt is ready before attempting database operations
     if (!isQtApplicationReady()) {
         Logger::get().logError("Cannot initialize database: Qt Application not ready");
-        Logger::get().logError("Database initialization must be called after QApplication is created");
         return false;
     }
 
@@ -360,12 +358,10 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
 
     bool isExistingDatabase = QFile::exists(databasePath);
 
-    // Remove any existing connection
     if (QSqlDatabase::contains("schedulify_connection")) {
         QSqlDatabase::removeDatabase("schedulify_connection");
     }
 
-    // Create new connection
     db = QSqlDatabase::addDatabase("QSQLITE", "schedulify_connection");
     db.setDatabaseName(databasePath);
 
@@ -374,27 +370,22 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
         return false;
     }
 
-    Logger::get().logInfo("Database opened successfully at: " + databasePath.toStdString());
-
     // Initialize managers
     schemaManager = std::make_unique<DatabaseSchema>(db);
     fileManager = std::make_unique<DatabaseFileManager>(db);
     courseManager = std::make_unique<DatabaseCourseManager>(db);
     scheduleManager = std::make_unique<DatabaseScheduleManager>(db);
 
-    // Try to validate existing database first
+    // Check schema requirements
     bool needsSchemaCreation = false;
     bool needsSchemaUpgrade = false;
     int currentSchemaVersion = 0;
 
     if (isExistingDatabase) {
-        // Check if metadata table exists
         QSqlQuery checkQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='metadata'", db);
         if (!checkQuery.exec() || !checkQuery.next()) {
-            Logger::get().logWarning("Metadata table not found - database needs initialization");
             needsSchemaCreation = true;
         } else {
-            // Check schema version
             QSqlQuery versionQuery("SELECT value FROM metadata WHERE key = 'schema_version'", db);
             if (versionQuery.exec() && versionQuery.next()) {
                 string version = versionQuery.value(0).toString().toStdString();
@@ -403,34 +394,29 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
                 if (currentSchemaVersion < getCurrentSchemaVersion()) {
                     needsSchemaUpgrade = true;
                 } else if (currentSchemaVersion > getCurrentSchemaVersion()) {
-                    Logger::get().logError("Database schema version is newer than supported - cannot proceed");
+                    Logger::get().logError("Database schema version is newer than supported");
                     closeDatabase();
                     return false;
                 }
             } else {
-                Logger::get().logWarning("No schema version found - needs initialization");
                 needsSchemaCreation = true;
             }
         }
 
-        // If existing database seems valid, try to validate full schema
         if (!needsSchemaCreation && !needsSchemaUpgrade) {
             if (!schemaManager->validateSchema()) {
-                Logger::get().logWarning("Schema validation failed - will recreate tables");
+                Logger::get().logWarning("Schema validation failed - recreating tables");
                 needsSchemaCreation = true;
-            } else {
-                Logger::get().logInfo("Existing database validated successfully");
             }
         }
     } else {
-        Logger::get().logInfo("No existing database - will create new one");
         needsSchemaCreation = true;
     }
 
     // Handle schema upgrade
     if (needsSchemaUpgrade) {
         if (!schemaManager->upgradeSchema(currentSchemaVersion, getCurrentSchemaVersion())) {
-            Logger::get().logError("Schema upgrade failed - will recreate database");
+            Logger::get().logError("Schema upgrade failed - recreating database");
             needsSchemaCreation = true;
             needsSchemaUpgrade = false;
         } else {
@@ -438,25 +424,21 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
         }
     }
 
-    // Create or recreate schema if needed
+    // Create schema if needed
     if (needsSchemaCreation) {
-        // Create tables using schema manager
         if (!schemaManager->createTables()) {
             Logger::get().logError("Failed to create database tables");
             closeDatabase();
             return false;
         }
 
-        // Insert initial metadata
         insertMetadata("schema_version", std::to_string(getCurrentSchemaVersion()), "Database schema version");
         insertMetadata("created_at", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString(), "Database creation timestamp");
-
-        Logger::get().logInfo("Database schema created successfully");
     }
 
-    // Create indexes (safe to call multiple times)
+    // Create indexes
     if (!schemaManager->createIndexes()) {
-        Logger::get().logWarning("Some indexes failed to create - continuing anyway");
+        Logger::get().logWarning("Some indexes failed to create");
     }
 
     // Test write capability
@@ -469,11 +451,8 @@ bool DatabaseManager::initializeDatabase(const QString& dbPath) {
         return false;
     }
 
-    // Update last access time
     updateMetadata("last_access", QDateTime::currentDateTime().toString(Qt::ISODate).toStdString());
-
     isInitialized = true;
-    Logger::get().logInfo("Database initialization completed successfully");
 
     return true;
 }

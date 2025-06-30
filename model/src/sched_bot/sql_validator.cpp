@@ -10,50 +10,42 @@ SQLValidator::ValidationResult SQLValidator::validateScheduleQuery(const std::st
     }
 
     std::string normalizedQuery = normalizeQuery(sqlQuery);
-    Logger::get().logInfo("Validating SQL query: " + normalizedQuery);
 
-    // 1. Must be SELECT only
     if (!isSelectOnlyQuery(normalizedQuery)) {
         result.isValid = false;
         result.errorMessage = "Only SELECT queries are allowed";
         return result;
     }
 
-    // 2. Check for forbidden keywords
     if (containsForbiddenKeywords(normalizedQuery)) {
         result.isValid = false;
         result.errorMessage = "Query contains forbidden keywords";
         return result;
     }
 
-    // 3. Must use whitelisted tables only
     if (!usesWhitelistedTablesOnly(normalizedQuery)) {
         result.isValid = false;
         result.errorMessage = "Query uses non-whitelisted tables";
         return result;
     }
 
-    // 4. Must use whitelisted columns only
     if (!usesWhitelistedColumnsOnly(normalizedQuery)) {
         result.isValid = false;
         result.errorMessage = "Query uses non-whitelisted columns";
         return result;
     }
 
-    // 5. Must select schedule_index
     if (!requiresScheduleIndex(normalizedQuery)) {
         result.isValid = false;
         result.errorMessage = "Query must SELECT schedule_index column";
         return result;
     }
 
-    // 6. Parameter count validation
     int paramCount = countParameters(normalizedQuery);
-    if (paramCount > 10) { // Reasonable limit
+    if (paramCount > 10) {
         result.warnings.push_back("Query has many parameters (" + std::to_string(paramCount) + ")");
     }
 
-    Logger::get().logInfo("SQL query validation passed");
     return result;
 }
 
@@ -63,11 +55,9 @@ bool SQLValidator::containsForbiddenKeywords(const std::string& query) {
 
     for (const std::string& keyword : forbidden) {
         QString qKeyword = QString::fromStdString(keyword);
-
-        // Use word boundaries to avoid false positives
         QRegularExpression regex("\\b" + qKeyword + "\\b");
         if (regex.match(qQuery).hasMatch()) {
-            Logger::get().logWarning("Found forbidden keyword: " + keyword);
+            // Remove: Logger::get().logWarning("Found forbidden keyword: " + keyword);
             return true;
         }
     }
@@ -104,7 +94,7 @@ bool SQLValidator::usesWhitelistedTablesOnly(const std::string& query) {
 
     for (const std::string& table : tables) {
         if (std::find(whitelist.begin(), whitelist.end(), table) == whitelist.end()) {
-            Logger::get().logWarning("Non-whitelisted table found: " + table);
+            // Remove: Logger::get().logWarning("Non-whitelisted table found: " + table);
             return false;
         }
     }
@@ -118,12 +108,12 @@ bool SQLValidator::usesWhitelistedColumnsOnly(const std::string& query) {
 
     for (const std::string& column : columns) {
         if (column == "*") {
-            Logger::get().logWarning("Wildcard (*) not allowed in SELECT");
+            // Remove: Logger::get().logWarning("Wildcard (*) not allowed in SELECT");
             return false;
         }
 
         if (std::find(whitelist.begin(), whitelist.end(), column) == whitelist.end()) {
-            Logger::get().logWarning("Non-whitelisted column found: " + column);
+            // Remove: Logger::get().logWarning("Non-whitelisted column found: " + column);
             return false;
         }
     }
@@ -253,9 +243,37 @@ std::vector<std::string> SQLValidator::getWhitelistedTables() {
 
 std::vector<std::string> SQLValidator::getWhitelistedColumns() {
     return {
-            "schedule_index", "amount_days", "amount_gaps", "gaps_time",
-            "avg_start", "avg_end", "id", "schedule_set_id", "created_at",
-            "set_name", "source_file_ids_json", "schedule_count"
+            // Primary identifier
+            "schedule_index",
+
+            // Basic existing metrics
+            "amount_days", "amount_gaps", "gaps_time", "avg_start", "avg_end",
+
+            // Enhanced time-based metrics
+            "earliest_start", "latest_end", "longest_gap", "total_class_time",
+
+            // Day pattern metrics
+            "consecutive_days", "days_json", "weekend_classes",
+
+            // Time preference flags (most commonly queried)
+            "has_morning_classes", "has_early_morning",
+            "has_evening_classes", "has_late_evening",
+
+            // Daily intensity metrics
+            "max_daily_hours", "min_daily_hours", "avg_daily_hours",
+
+            // Gap and break patterns
+            "has_lunch_break", "max_daily_gaps", "avg_gap_length",
+
+            // Schedule efficiency metrics
+            "schedule_span", "compactness_ratio", "weekday_only",
+
+            // Individual weekday flags
+            "has_monday", "has_tuesday", "has_wednesday",
+            "has_thursday", "has_friday", "has_saturday", "has_sunday",
+
+            // System columns
+            "id", "schedule_set_id", "created_at"
     };
 }
 

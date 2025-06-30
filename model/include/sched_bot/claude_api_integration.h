@@ -23,6 +23,7 @@ public:
 
     // Main API method
     BotQueryResponse processScheduleQuery(const BotQueryRequest& request);
+    static BotQueryResponse generateFallbackResponse(const BotQueryRequest& request);
 
 private:
     // API interaction methods

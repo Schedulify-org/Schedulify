@@ -74,6 +74,7 @@ private:
     static vector<ScheduleSetEntity> getScheduleSetsFromDB();
     static bool deleteScheduleSetFromDB(int setId);
     static BotQueryResponse generateDemoResponse(const BotQueryRequest& request);
+    static BotQueryResponse processClaudeQuery(const BotQueryRequest& request);
 
     // Bot query processing - main coordination method
     static BotFilterResult processBotQuery(const BotQueryRequest& request);

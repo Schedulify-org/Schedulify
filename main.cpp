@@ -15,14 +15,20 @@ int main(int argc, char *argv[])
     Logger::get().logInitiate();
     Logger::get().logInfo("Application started - Qt initialized");
 
-    // Now that QApplication exists, we can safely initialize database-related components
     try {
-        // Initialize database integration after Qt is ready
         auto& dbIntegration = ModelDatabaseIntegration::getInstance();
         if (!dbIntegration.initializeDatabase()) {
             Logger::get().logWarning("Database initialization failed - continuing without persistence");
         } else {
             Logger::get().logInfo("Database initialized successfully");
+        }
+        if (dbIntegration.isInitialized()) {
+            auto& db = DatabaseManager::getInstance();
+            if (db.isConnected() && db.schedules()) {
+                Logger::get().logInfo("Schedule database ready for use");
+            } else {
+                Logger::get().logError("Schedule database not properly initialized");
+            }
         }
     } catch (const std::exception& e) {
         Logger::get().logWarning("Database initialization exception: " + std::string(e.what()));
@@ -39,6 +45,8 @@ int main(int argc, char *argv[])
 
     // Register the ButtonController with QML
     engine.rootContext()->setContextProperty("controller", &controller);
+
+    engine.rootContext()->setContextProperty("Logger", &Logger::get());
 
     // Load the QML file from resources
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));

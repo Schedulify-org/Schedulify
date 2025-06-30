@@ -252,42 +252,142 @@ string ScheduleBuilder::getCourseRawIdById(int courseId) {
 }
 
 void ScheduleBuilder::calculateScheduleMetrics(InformativeSchedule& schedule) {
+    // Initialize all metrics
     int totalDaysWithItems = 0;
     int totalGaps = 0;
     int totalGapTime = 0;
     int totalStartTime = 0;
     int totalEndTime = 0;
 
+    // NEW: Enhanced metrics
+    int earliestStart = INT_MAX;
+    int latestEnd = 0;
+    int longestGap = 0;
+    int totalClassTime = 0;
+    int consecutiveDays = 0;
+    int maxDailyHours = 0;
+    int minDailyHours = INT_MAX;
+    int totalDailyHours = 0;
+    int maxDailyGaps = 0;
+    int totalGapsForAvg = 0;
+    int gapCount = 0;
+    int scheduleSpan = 0;
+
+    // Boolean flags
+    bool hasEarlyMorning = false;     // Before 8:30 AM (510 min)
+    bool hasMorning = false;          // Before 10:00 AM (600 min)
+    bool hasEvening = false;          // After 6:00 PM (1080 min)
+    bool hasLateEvening = false;      // After 8:00 PM (1200 min)
+    bool hasLunchBreak = false;       // Gap between 12:00-14:00 (720-840 min)
+    bool weekendClasses = false;
+
+    // Day tracking
+    std::vector<int> daysWithClasses;
+    std::vector<bool> dayHasClasses(8, false); // Index 0 unused, 1-7 for days
+
     try {
-        for (const auto& scheduleDay : schedule.week) {
+        for (int dayIndex = 0; dayIndex < static_cast<int>(schedule.week.size()); dayIndex++) {
+            const auto& scheduleDay = schedule.week[dayIndex];
+
             if (scheduleDay.day_items.empty()) {
                 continue;
             }
 
-            // calculate amount of none empty days
             totalDaysWithItems++;
+            int algorithmDay = dayIndex + 1; // Convert to 1-7 format
+            daysWithClasses.push_back(algorithmDay);
+            dayHasClasses[algorithmDay] = true;
 
-            // start and end times for day
+            // Check for weekend classes (Saturday=7, Sunday=1)
+            if (algorithmDay == 1 || algorithmDay == 7) {
+                weekendClasses = true;
+            }
+
+            // Daily calculations
             int dayStartMinutes = TimeUtils::toMinutes(scheduleDay.day_items.front().start);
             int dayEndMinutes = TimeUtils::toMinutes(scheduleDay.day_items.back().end);
+            int dailyClassTime = 0;
+            int dailyGaps = 0;
+
+            // Update global earliest/latest
+            earliestStart = std::min(earliestStart, dayStartMinutes);
+            latestEnd = std::max(latestEnd, dayEndMinutes);
 
             totalStartTime += dayStartMinutes;
             totalEndTime += dayEndMinutes;
 
-            // Calculate gaps for day
-            for (size_t i = 0; i < scheduleDay.day_items.size() - 1; i++) {
-                int currentEndMinutes = TimeUtils::toMinutes(scheduleDay.day_items[i].end);
-                int nextStartMinutes = TimeUtils::toMinutes(scheduleDay.day_items[i + 1].start);
+            // Check time preferences
+            if (dayStartMinutes < 510) hasEarlyMorning = true;  // Before 8:30 AM
+            if (dayStartMinutes < 600) hasMorning = true;       // Before 10:00 AM
+            if (dayEndMinutes > 1080) hasEvening = true;        // After 6:00 PM
+            if (dayEndMinutes > 1200) hasLateEvening = true;    // After 8:00 PM
 
-                int gapDuration = nextStartMinutes - currentEndMinutes;
+            // Calculate daily class time and gaps
+            for (size_t i = 0; i < scheduleDay.day_items.size(); i++) {
+                const auto& item = scheduleDay.day_items[i];
+                int itemStart = TimeUtils::toMinutes(item.start);
+                int itemEnd = TimeUtils::toMinutes(item.end);
+                dailyClassTime += (itemEnd - itemStart);
 
-                if (gapDuration >= 30) {
-                    totalGaps++;
-                    totalGapTime += gapDuration;
+                // Check for gaps
+                if (i < scheduleDay.day_items.size() - 1) {
+                    int currentEndMinutes = itemEnd;
+                    int nextStartMinutes = TimeUtils::toMinutes(scheduleDay.day_items[i + 1].start);
+                    int gapDuration = nextStartMinutes - currentEndMinutes;
+
+                    if (gapDuration >= 30) {  // 30+ minute gap
+                        totalGaps++;
+                        dailyGaps++;
+                        totalGapTime += gapDuration;
+                        totalGapsForAvg += gapDuration;
+                        gapCount++;
+                        longestGap = std::max(longestGap, gapDuration);
+
+                        // Check for lunch break (gap overlapping 12:00-14:00)
+                        if (currentEndMinutes <= 840 && nextStartMinutes >= 720) { // 12:00-14:00 range
+                            hasLunchBreak = true;
+                        }
+                    }
                 }
             }
+
+            totalClassTime += dailyClassTime;
+            maxDailyGaps = std::max(maxDailyGaps, dailyGaps);
+
+            // Daily hours calculation (convert minutes to hours, rounded)
+            int dailyHours = (dailyClassTime + 30) / 60; // Round to nearest hour
+            maxDailyHours = std::max(maxDailyHours, dailyHours);
+            if (totalDaysWithItems == 1) {
+                minDailyHours = dailyHours;
+            } else {
+                minDailyHours = std::min(minDailyHours, dailyHours);
+            }
+            totalDailyHours += dailyHours;
         }
 
+        // Calculate consecutive days
+        if (!daysWithClasses.empty()) {
+            std::sort(daysWithClasses.begin(), daysWithClasses.end());
+            int currentStreak = 1;
+            int maxStreak = 1;
+
+            for (size_t i = 1; i < daysWithClasses.size(); i++) {
+                if (daysWithClasses[i] == daysWithClasses[i-1] + 1) {
+                    currentStreak++;
+                    maxStreak = std::max(maxStreak, currentStreak);
+                } else {
+                    currentStreak = 1;
+                }
+            }
+            consecutiveDays = maxStreak;
+        }
+
+        // Calculate schedule span and compactness
+        if (earliestStart != INT_MAX && latestEnd > 0) {
+            scheduleSpan = latestEnd - earliestStart;
+        }
+
+        // Set basic metrics
         schedule.amount_days = totalDaysWithItems;
         schedule.amount_gaps = totalGaps;
         schedule.gaps_time = totalGapTime;
@@ -301,12 +401,81 @@ void ScheduleBuilder::calculateScheduleMetrics(InformativeSchedule& schedule) {
             schedule.avg_end = 0;
         }
 
+        // NEW: Set enhanced metrics
+        schedule.earliest_start = (earliestStart == INT_MAX) ? 0 : earliestStart;
+        schedule.latest_end = latestEnd;
+        schedule.longest_gap = longestGap;
+        schedule.total_class_time = totalClassTime;
+        schedule.consecutive_days = consecutiveDays;
+        schedule.max_daily_hours = maxDailyHours;
+        schedule.min_daily_hours = (minDailyHours == INT_MAX) ? 0 : minDailyHours;
+        schedule.avg_daily_hours = totalDaysWithItems > 0 ? totalDailyHours / totalDaysWithItems : 0;
+        schedule.max_daily_gaps = maxDailyGaps;
+        schedule.avg_gap_length = gapCount > 0 ? totalGapsForAvg / gapCount : 0;
+        schedule.schedule_span = scheduleSpan;
+        schedule.compactness_ratio = scheduleSpan > 0 ? static_cast<double>(totalClassTime) / scheduleSpan : 0.0;
+
+        // Boolean flags
+        schedule.has_early_morning = hasEarlyMorning;
+        schedule.has_morning_classes = hasMorning;
+        schedule.has_evening_classes = hasEvening;
+        schedule.has_late_evening = hasLateEvening;
+        schedule.has_lunch_break = hasLunchBreak;
+        schedule.weekend_classes = weekendClasses;
+        schedule.weekday_only = !weekendClasses && totalDaysWithItems > 0;
+
+        // Individual day flags
+        schedule.has_monday = dayHasClasses[2];    // Monday is day 2 in algorithm
+        schedule.has_tuesday = dayHasClasses[3];
+        schedule.has_wednesday = dayHasClasses[4];
+        schedule.has_thursday = dayHasClasses[5];
+        schedule.has_friday = dayHasClasses[6];
+        schedule.has_saturday = dayHasClasses[7];
+        schedule.has_sunday = dayHasClasses[1];    // Sunday is day 1 in algorithm
+
+        // Days JSON array
+        schedule.days_json = "[";
+        for (size_t i = 0; i < daysWithClasses.size(); i++) {
+            if (i > 0) schedule.days_json += ",";
+            schedule.days_json += std::to_string(daysWithClasses[i]);
+        }
+        schedule.days_json += "]";
+
     } catch (const exception& e) {
-        Logger::get().logError("Exception in calculateScheduleMetrics: " + string(e.what()));
+        Logger::get().logError("Exception in enhanced calculateScheduleMetrics: " + string(e.what()));
+        // Set safe defaults on error
         schedule.amount_days = 0;
         schedule.amount_gaps = 0;
         schedule.gaps_time = 0;
         schedule.avg_start = 0;
         schedule.avg_end = 0;
+        // Set all new fields to safe defaults
+        schedule.earliest_start = 0;
+        schedule.latest_end = 0;
+        schedule.longest_gap = 0;
+        schedule.total_class_time = 0;
+        schedule.consecutive_days = 0;
+        schedule.max_daily_hours = 0;
+        schedule.min_daily_hours = 0;
+        schedule.avg_daily_hours = 0;
+        schedule.max_daily_gaps = 0;
+        schedule.avg_gap_length = 0;
+        schedule.schedule_span = 0;
+        schedule.compactness_ratio = 0.0;
+        schedule.has_early_morning = false;
+        schedule.has_morning_classes = false;
+        schedule.has_evening_classes = false;
+        schedule.has_late_evening = false;
+        schedule.has_lunch_break = false;
+        schedule.weekend_classes = false;
+        schedule.weekday_only = false;
+        schedule.has_monday = false;
+        schedule.has_tuesday = false;
+        schedule.has_wednesday = false;
+        schedule.has_thursday = false;
+        schedule.has_friday = false;
+        schedule.has_saturday = false;
+        schedule.has_sunday = false;
+        schedule.days_json = "[]";
     }
 }

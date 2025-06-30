@@ -112,6 +112,8 @@ InformativeSchedule DatabaseJsonHelpers::scheduleFromJson(const string& json, in
                                                           int amount_days, int amount_gaps, int gaps_time,
                                                           int avg_start, int avg_end) {
     InformativeSchedule schedule;
+
+    // Set basic metrics
     schedule.index = schedule_index;
     schedule.amount_days = amount_days;
     schedule.amount_gaps = amount_gaps;
@@ -119,6 +121,7 @@ InformativeSchedule DatabaseJsonHelpers::scheduleFromJson(const string& json, in
     schedule.avg_start = avg_start;
     schedule.avg_end = avg_end;
 
+    // Parse the JSON schedule data
     QJsonDocument doc = QJsonDocument::fromJson(QByteArray::fromStdString(json));
     if (!doc.isObject()) return schedule;
 
